@@ -3,10 +3,9 @@
 <Root>
   <Module  name = "LoreHound"
     movie       = "LoreHound\LoreHound.swf"
-    flags       = "GMF_DONT_UNLOAD"
     depth_layer = "Back"
     sub_depth   = "0"
     variable    = "ReleaseTheLoreHound"
-    criteria    = "ReleaseTheLoreHound &amp;&amp; (guimode &amp; GUIMODEFLAGS_INPLAY)"    
+    criteria    = "ReleaseTheLoreHound"
   />
 </Root>
