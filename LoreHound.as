@@ -138,16 +138,16 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 	}
 	
 	// Dispatch notifications
-	if (m_FifoMessageLore & loreType == loreType) {			
+	if ((m_FifoMessageLore & loreType) == loreType) {			
 		Chat.SignalShowFIFOMessage.Emit(fifoMessage, 0);			
 		}
-	if (m_ChatMessageLore & loreType == loreType) {		
+	if ((m_ChatMessageLore & loreType) == loreType) {		
 		Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: " + chatMessage);
 		if (loreType == ef_LoreType_Unknown || m_DebugDetails) {
 			Utils.PrintChatText("Details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
 		}
 	}		
-	if (m_LogMessageLore & loreType == loreType) {
+	if ((m_LogMessageLore & loreType) == loreType) {
 		Log.Error("LoreHound", logMessage);
 		if (loreType == ef_LoreType_Unknown || m_DebugDetails) {
 			Log.Error("LoreHound", "Details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
