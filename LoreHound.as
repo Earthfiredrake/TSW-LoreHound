@@ -22,8 +22,9 @@ var m_FifoMessageLore:Number = ef_LoreType_None; // Popup FiFo messages onscreen
 var m_ChatMessageLore:Number = ef_LoreType_Drop | ef_LoreType_Unknown; // System chat messages
 var m_LogMessageLore:Number = ef_LoreType_Unknown; // ClientLog.txt output (Tagged: Scaleform.LoreHound)
 
-var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
+// Debugging settings
 var m_DebugDetails:Boolean = false; // Dump extended info to chat or log output
+var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
 
 function onLoad():Void {
 	VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
@@ -94,7 +95,7 @@ function ClassifyID(formatStr:String):Number {
 }
 
 function CheckLocalizedName(formatStr:String):Boolean {
-	// Have the localization system provide us with a language dependent string to compare with
+	// Have the localization system provide a language dependent string to compare with
 	// In English this ends up being "Lore", hopefully it is similarly common in other languages
 	var testStr:String = LDBFormat.LDBGetText(50200, 7128026);
 	
@@ -117,7 +118,7 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 			break;
 		case ef_LoreType_Drop:
 			fifoMessage = "A lore dropped!";
-			chatMessage = "Dropped lore nearby";
+			chatMessage = "Dropped lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
 			logMessage = "Dropped lore (" + formatStr + " [" + dynelID + "])";
 			break;
 		case ef_LoreType_Special:
