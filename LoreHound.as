@@ -9,6 +9,9 @@ import com.GameInterface.VicinitySystem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
+import com.GameInterface.DistributedValue;
+import com.GameInterface.Tradepost;
+
 // Category flags for represented lore types
 var ef_LoreType_None:Number = 0;
 var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
@@ -23,11 +26,21 @@ var m_ChatMessageLore:Number = ef_LoreType_Drop | ef_LoreType_Unknown; // System
 var m_LogMessageLore:Number = ef_LoreType_Unknown; // ClientLog.txt output (Tagged: Scaleform.LoreHound)
 
 // Debugging settings
+var m_DebugAutomatedReports:Boolean = true; // If Unknown lore items (or other identifiable errors) are detected, automatically sends a report when the AH is next accessed
 var m_DebugDetails:Boolean = false; // Dump extended info to chat or log output
 var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
 
+// Automated error report system
+var m_MailHandler:DistributedValue;
+
 function onLoad():Void {
+	// Lore detection signal
 	VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
+	
+	// Automatic error reporting
+	m_MailHandler = DistributedValue.Create("tradepost_window");
+	m_MailHandler.SignalChanged.Connect(SendErrorReport, this);	
+	Tradepost.SignalMailResult.Connect(VerifyMail, this);
 }
 
 // Notes on Dynels:
@@ -153,5 +166,19 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 		if (loreType == ef_LoreType_Unknown || m_DebugDetails) {
 			Log.Error("LoreHound", "Details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
 		}
+	}
+}
+
+function SendErrorReport(dv:DistributedValue):Void {
+	// TODO: Compose the message from the queue
+	if(m_DebugAutomatedReports && dv.GetValue()) {		
+		Tradepost.SendMail("Peloprata", "Test Message", 0));
+	}
+}
+
+function VerifyMail(success:Boolean, error:String):Void {
+	if (success) {
+		Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: An automated report of uncategorized lore items has been sent.");
+		// TODO: Clear the report queue
 	}
 }
