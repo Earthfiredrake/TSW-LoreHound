@@ -4,6 +4,7 @@
 import com.GameInterface.Chat;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Log;
+import com.GameInterface.MathLib.Vector3;
 import com.GameInterface.Utils;
 import com.GameInterface.VicinitySystem;
 import com.Utils.ID32;
@@ -25,9 +26,21 @@ var m_FifoMessageLore:Number = ef_LoreType_None; // Popup FiFo messages onscreen
 var m_ChatMessageLore:Number = ef_LoreType_Drop | ef_LoreType_Unknown; // System chat messages
 var m_LogMessageLore:Number = ef_LoreType_Unknown; // ClientLog.txt output (Tagged: Scaleform.LoreHound)
 
+// Category flags for extended debug information
+var ef_DebugDetails_None:Number = 0;
+var ef_DebugDetails_FormatString:Number = 1 << 0; // Trimmed contents of format string, to avoid automatic evaluation
+var ef_DebugDetails_Location:Number = 1 << 1; // Playfield ID and coordinate vector
+var ef_DebugDetails_StatDump:Number = 1 << 2; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
+var ef_DebugDetails_All:Number = (1 << 3) -1;
+
+// Number of stat IDs to test [0,N) when doing a StatDump (this can cause significant performance hitches, particularly with large ranges)
+// This number is high enough to catch all of the values discovered with a test of various static lores (of the first million statIDs)
+// Unfortunately none seem to be useful, would like to test further with drop lores
+var c_DebugDetails_StatCount:Number = 1110; 
+
 // Debugging settings
 var m_DebugAutomatedReports:Boolean = true; // If Unknown lore items (or other identifiable errors) are detected, automatically sends a report when the AH is next accessed
-var m_DebugDetails:Boolean = false; // Dump extended info to chat or log output
+var m_DebugDetails:Number = ef_DebugDetails_None; // Dump extended info to chat or log output
 var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
 
 // Automated error report system
@@ -50,7 +63,7 @@ function onLoad():Void {
 //   GetPosition() - World coordinates
 //   GetDistanceToPlayer() - ~20m when approaching lore, drops may trigger much closer
 //   IsRendered() - Seems to only consider occlusion and clipping, not consistent on lore already claimed
-//   GetStat() - Unknown if any of these are useful, with a mode parameter of 0, a scan of the first million stats provided:
+//   GetStat() - Unknown if any of these are useful, the mode parameter does not seem to change the value/lack of one, a scan of the first million stats provided:
 //     #12 - Unknown, consistently 7456524 across current data sample
 //     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 //     #1050 - Unknown, usually 6, though other numbers have been observed
@@ -93,6 +106,7 @@ function ClassifyID(formatStr:String):Number {
 	var formatStrID:String = formatStr.substring(formatStr.indexOf('id="') + 4);
 	formatStrID = formatStrID.substring(0, formatStrID.indexOf('"'));
 	
+	// Here be the magic numbers (probably planted by the Dragon)
 	switch (formatStrID) {
 		case "7128026":
 			return ef_LoreType_Common;
@@ -109,7 +123,7 @@ function ClassifyID(formatStr:String):Number {
 
 function CheckLocalizedName(formatStr:String):Boolean {
 	// Have the localization system provide a language dependent string to compare with
-	// In English this ends up being "Lore", hopefully it is similarly common in other languages
+	// In English this ends up being "Lore", hopefully it is similarly generic and likely to match in other languages
 	var testStr:String = LDBFormat.LDBGetText(50200, 7128026);
 	
 	return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
@@ -151,20 +165,43 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 			break;
 	}
 	
-	// Dispatch notifications
-	if ((m_FifoMessageLore & loreType) == loreType) {			
-		Chat.SignalShowFIFOMessage.Emit(fifoMessage, 0);			
+	// Compose additional debug info if requested
+	// (Unknown lore always requires certain information for identification purposes)
+	// This info is ommitted from FIFO messages to avoid major screen spam
+	var debugDetails:Array = new Array();
+	if (loreType == ef_LoreType_Unknown || (m_DebugDetails & ef_DebugDetails_FormatString) == ef_DebugDetails_FormatString) {
+		debugDetails.push("Identity details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
+	}
+	if (loretype == ef_LoreType_Unknown || (m_DebugDetails & ef_DebugDetails_Location) == ef_DebugDetails_Location) {
+		// Not entirely clear on what the "attractor" parameter is for, but leaving it at 0 lines up with world coordinates reported through other means (shift F9, topbars)
+		// In world coordinates, Y is vertical and, as the least relevant coordinate, it is therefore listed last.
+		var pos:Vector3 = dynel.GetPosition(0);
+		debugDetails.push("Playfield: " + dynel.GetPlayfieldID() + " Coordinates: [" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + "]");
+	}	
+	if ((m_DebugDetails & ef_DebugDetails_StatDump) == ef_DebugDetails_StatDump) {
+		debugDetails.push("Stat Dump:"); // Fishing expedition, trying to find anything potentially useful
+		for (var statID:Number = 0; statID < c_DebugDetails_StatCount; ++statID) {			
+			var val = dynel.GetStat(statID, 0);
+			if (val != undefined && val != 0) {
+				debugDetails.push("Stat: #" + statID + " Value: " + val);
+			}		
 		}
-	if ((m_ChatMessageLore & loreType) == loreType) {		
+	}
+	
+	// Dispatch notifications
+	if ((m_FifoMessageLore & loreType) == loreType) {
+		Chat.SignalShowFIFOMessage.Emit(fifoMessage, 0);
+		}
+	if ((m_ChatMessageLore & loreType) == loreType) {
 		Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: " + chatMessage);
-		if (loreType == ef_LoreType_Unknown || m_DebugDetails) {
-			Utils.PrintChatText("Details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
+		for (var i:Number = 0; i < debugDetails.length; ++i) {
+			Utils.PrintChatText(debugDetails[i]);
 		}
 	}		
 	if ((m_LogMessageLore & loreType) == loreType) {
 		Log.Error("LoreHound", logMessage);
-		if (loreType == ef_LoreType_Unknown || m_DebugDetails) {
-			Log.Error("LoreHound", "Details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
+		for (var i:Number = 0; i < debugDetails.length; ++i) {
+			Log.Error("LoreHound", debugDetails[i]);
 		}
 	}
 }
