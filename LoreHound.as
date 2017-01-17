@@ -112,6 +112,7 @@ function ClassifyID(formatStr:String):Number {
 			return ef_LoreType_Common;
 		case "9240080":
 			return ef_LoreType_Drop;
+		case "7647988": // HF6 (possibly related to the demonic crystal? investigate further)
 		case "7993128": // Shrouded Lore (End of Days)
 		case "9135398": // Two one-off lores found in MFB
 		case "9135406":
@@ -172,7 +173,7 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 	if (loreType == ef_LoreType_Unknown || (m_DebugDetails & ef_DebugDetails_FormatString) == ef_DebugDetails_FormatString) {
 		debugDetails.push("Identity details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 ));
 	}
-	if (loretype == ef_LoreType_Unknown || (m_DebugDetails & ef_DebugDetails_Location) == ef_DebugDetails_Location) {
+	if (loreType == ef_LoreType_Unknown || (m_DebugDetails & ef_DebugDetails_Location) == ef_DebugDetails_Location) {
 		// Not entirely clear on what the "attractor" parameter is for, but leaving it at 0 lines up with world coordinates reported through other means (shift F9, topbars)
 		// In world coordinates, Y is vertical and, as the least relevant coordinate, it is therefore listed last.
 		var pos:Vector3 = dynel.GetPosition(0);
