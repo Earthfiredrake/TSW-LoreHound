@@ -11,7 +11,9 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
 import com.GameInterface.DistributedValue;
+import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
+import com.LoreHound.ReportData;
 
 // Category flags for represented lore types
 var ef_LoreType_None:Number = 0;
@@ -25,6 +27,7 @@ var ef_LoreType_All:Number = (1 << 4) - 1;
 var m_FifoMessageLore:Number = ef_LoreType_None; // Popup FiFo messages onscreen
 var m_ChatMessageLore:Number = ef_LoreType_Drop | ef_LoreType_Unknown; // System chat messages
 var m_LogMessageLore:Number = ef_LoreType_Unknown; // ClientLog.txt output (Tagged: Scaleform.LoreHound)
+var m_MailMessageLore:Number = ef_LoreType_Unknown; // Lore to package as an automatic bug report
 
 // Category flags for extended debug information
 var ef_DebugDetails_None:Number = 0;
@@ -39,21 +42,30 @@ var ef_DebugDetails_All:Number = (1 << 3) -1;
 var c_DebugDetails_StatCount:Number = 1110; 
 
 // Debugging settings
-var m_DebugAutomatedReports:Boolean = true; // If Unknown lore items (or other identifiable errors) are detected, automatically sends a report when the AH is next accessed
+var m_DebugAutomatedReports:Boolean; // If Unknown lore items (or other identifiable errors) are detected, automatically sends a report when the AH is next accessed
 var m_DebugDetails:Number = ef_DebugDetails_None; // Dump extended info to chat or log output
 var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
 
 // Automated error report system
-var m_MailHandler:DistributedValue;
+var m_ReportQueue:Array = new Array();
+var m_ReportSplitIndex:Number = 0; // There is a character limit for the mail system, if too many reports are queued this is the restart index for subsequent messages
+var m_MailTrigger:DistributedValue;
+var c_MailRecipient:String = "Peloprata";
 
 function onLoad():Void {
 	// Lore detection signal
 	VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
-	
+		
 	// Automatic error reporting
-	m_MailHandler = DistributedValue.Create("tradepost_window");
-	m_MailHandler.SignalChanged.Connect(SendErrorReport, this);	
-	Tradepost.SignalMailResult.Connect(VerifyMail, this);
+	// Can't send mail to ourselves, so no point in trying
+	m_DebugAutomatedReports = Character.GetClientCharacter().GetName() != c_MailRecipient;
+	if (m_DebugAutomatedReports) {
+		// Sending mail requires that the tradepost window be open, so the automated reports must be queued until that occurs, and then sent.	
+		m_MailTrigger = DistributedValue.Create("tradepost_window");
+		m_MailTrigger.SignalChanged.Connect(SendErrorReport, this);	
+		// We also want to verify that the mail was successfully sent before discarding the report
+		Tradepost.SignalMailResult.Connect(VerifyMail, this);
+	}
 }
 
 // Notes on Dynels:
@@ -155,8 +167,8 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 			logMessage = "Special lore (" + formatStr + " [" + dynelID + "])";
 			break;
 		case ef_LoreType_Unknown:
-			fifoMessage = "Unknown lore; Please tell Peloprata.";
-			chatMessage = "Unknown lore detected, please tell Peloprata (" + formatStr + " [" + dynelID + "])";
+			fifoMessage = "Unknown lore detected.";
+			chatMessage = "Unknown lore detected (" + formatStr + " [" + dynelID + "])";
 			logMessage = "Unknown lore (" + formatStr + " [" + dynelID + "])";
 			break;
 		default:
@@ -205,18 +217,66 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 			Log.Error("LoreHound", debugDetails[i]);
 		}
 	}
+	if ((m_MailMessageLore & loreType) == loreType) {
+		// To reduce spam, ensure that dynelIDs are unique (a particular pickup should only be reported on once)
+		var exists:Boolean = false;
+		for (var i:Number = 0; i < m_ReportQueue.length; ++i) {
+			if(m_ReportQueue[i].m_ID == dynelID.m_Instance) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			m_ReportQueue.push(new ReportData(dynelID.m_Instance, "Category: " + loreType + "(" + LDBFormat.Translate(formatStr) + " [" + dynelID.m_Instance + "]", debugDetails));
+			Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: An automated report on detected lore has been compiled, and will be sent the next time you access the bank.");
+		}
+	}
 }
 
-function SendErrorReport(dv:DistributedValue):Void {
-	// TODO: Compose the message from the queue
-	if(m_DebugAutomatedReports && dv.GetValue()) {		
-		Tradepost.SendMail("Peloprata", "Test Message", 0));
+function ReadyToSendMail(dv:DistributedValue):Void {
+	if (m_DebugAutomatedReports && dv.GetValue()) {
+		SendErrorReport(0);
+	}
+}
+
+function SendErrorReport(attempt:Number):Void {
+    if (m_ReportQueue.length > 0) {	
+		// Compose the message from the queue, ensuring it is not longer than the character limit on mail (I believe that it's 3000 chars)
+		var msg:String = "LoreHound: Automated report";
+		while (m_ReportSplitIndex < m_ReportQueue.length && (msg.length + m_ReportQueue[m_ReportSplitIndex].m_Text.length) < 3000) {
+			msg += "\n" + m_ReportQueue[m_ReportSplitIndex++].m_Text;
+		}
+		
+		// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0.
+		//   While a FiFo message is displayed by sending mail, it is easy to overlook and does not tell you who the recipient was.
+		if (!Tradepost.SendMail(c_MailRecipient, msg, 0)) {
+			// If it could not be sent, retry 5 times with a small delay in between
+			m_ReportSplitIndex = 0;			
+			if (attempt < 5) {
+				setTimeout(SendErrorReport, 10, attempt+1);
+			} else {				
+				Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: One or more automated reports failed to send and will be retried later.");
+			}
+		}
 	}
 }
 
 function VerifyMail(success:Boolean, error:String):Void {
 	if (success) {
-		Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: An automated report of uncategorized lore items has been sent.");
-		// TODO: Clear the report queue
-	}
+		// Clear any sent reports from the array, and reset the index
+		m_ReportQueue.splice(0, m_ReportSplitIndex);
+		m_ReportSplitIndex = 0;
+		// Continue to send reports as needed
+		if (m_ReportQueue.length > 0) {
+			// 10ms delay here to avoid flow control cancelling our mail
+			setTimeout(SendErrorReport, 10, 0);			
+		} else {
+			// TEST: This should only print after all have succeeded, and only once.
+			Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: All queued reports have been sent. Thank you for your assistance.");			
+		}
+	} else {
+		// Failed, reset the index without clearing the array, it will retry the next time ReadyToSendMail is triggered.
+		m_ReportSplitIndex = 0;
+		Utils.PrintChatText("<font color='#00FFFF'>LoreHound</font>: One or more automated reports failed to be delivered and will be retried later. (Reason: " + error + ")");
+	}	
 }
