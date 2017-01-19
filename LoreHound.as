@@ -13,10 +13,11 @@ import com.Utils.LDBFormat;
 // Category flags for represented lore types
 var ef_LoreType_None:Number = 0;
 var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
-var ef_LoreType_Drop:Number = 1 << 1; // Lore which drops from monsters
-var ef_LoreType_Special:Number = 1 << 2; // Unusual lore, often triggered
-var ef_LoreType_Unknown:Number = 1 << 3; // Newly detected lore, will need to be catalogued
-var ef_LoreType_All:Number = (1 << 4) - 1;
+var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
+var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
+var ef_LoreType_Special:Number = 1 << 3; // Unusual lore
+var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
+var ef_LoreType_All:Number = (1 << 5) - 1;
 
 // Sets which notifications are used for which lore types
 var m_FifoMessageLore:Number = ef_LoreType_None; // Popup FiFo messages onscreen
@@ -97,9 +98,14 @@ function ClassifyID(formatStr:String):Number {
 	switch (formatStrID) {
 		case "7128026":
 			return ef_LoreType_Common;
+		case "7661215": // DW6 (Post boss lore spawn)
+		case "7647988": // HF6 (Post boss lore spawn)
+		case "7647983": // Fac6 (Post boss lore spawn)
+		case "7647985": // Fac5 (Post boss lore spawn)
+		case "7647986": // Fac3 (Post boss lore spawn)
+			return ef_LoreType_Triggered;
 		case "9240080":
 			return ef_LoreType_Drop;
-		case "7647988": // HF6 (possibly related to the demonic crystal? investigate further)
 		case "7993128": // Shrouded Lore (End of Days)
 		case "9135398": // Two one-off lores found in MFB
 		case "9135406":
@@ -136,8 +142,13 @@ function SendLoreNotifications(loreType:Number, dynel:Dynel) {
 			chatMessage = "Dropped lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
 			logMessage = "Dropped lore (" + formatStr + " [" + dynelID + "])";
 			break;
+		case ef_LoreType_Triggered:
+			fifoMessage = "A lore has appeared.";
+			chatMessage = "Triggered lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
+			logMessage = "Triggered lore (" + formatStr + " [" + dynelID + "])";
+			break;
 		case ef_LoreType_Special:
-			fifoMessage = "Lore nearby.";
+			fifoMessage = "Special lore nearby.";
 			chatMessage = "Unusal lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
 			logMessage = "Special lore (" + formatStr + " [" + dynelID + "])";
 			break;
