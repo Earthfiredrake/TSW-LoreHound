@@ -57,7 +57,7 @@ function onLoad():Void {
 	VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		
 	// Automatic error reporting	
-	m_AutoReport = new AutoReport(c_ModName, c_DevName);	
+	m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName);	
 }
 
 // Notes on Dynels:

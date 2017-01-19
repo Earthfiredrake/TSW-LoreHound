@@ -19,6 +19,7 @@ import com.GameInterface.Utils;
 class com.LoreHound.lib.AutoReport {
 				
     private var m_ModName:String;				
+	private var m_ModVersion:String;
 	private var m_Recipient:String;				
 				
 	private var m_ReportQueue:Array = new Array();
@@ -30,7 +31,7 @@ class com.LoreHound.lib.AutoReport {
 
 	// modName will be used as part of the identifying header for mailed reports
 	// devCharName is the ingame nickname of the character to whom the mail should be sent
-	public function AutoReport(modName:String, devCharName:String) {
+	public function AutoReport(modName:String, modVer:String, devCharName:String) {
 		m_ModName = modName;
 		m_Recipient = devCharName;
 		// Sending mail requires the bank window be open, so we hook to that as our trigger
@@ -65,7 +66,7 @@ class com.LoreHound.lib.AutoReport {
 	
 	private function SendReport(attempt:Number):Void {
 		if (m_ReportQueue.length > 0) {
-			var msg:String = m_ModName + ": Automated report";
+			var msg:String = m_ModName + ": Automated report (" + m_ModVersion + ")";
 			while (m_ReportSplitIndex < m_ReportQueue.length && (msg.length + m_ReportQueue[m_ReportSplitIndex].toString().length) < c_MaxMailLength) {
 				msg += "\n" + m_ReportQueue[m_ReportSplitIndex++].toString();
 			}
