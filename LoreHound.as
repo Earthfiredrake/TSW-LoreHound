@@ -45,8 +45,8 @@ var ef_DebugDetails_All:Number = (1 << 3) -1;
 var c_DebugDetails_StatCount:Number = 1110; 
 
 // Debugging settings
-var m_DebugAutomatedReports:Boolean = true; // If Unknown lore items (or other identifiable errors) are detected, automatically sends a report when the AH is next accessed
-var m_DebugDetails:Number = ef_DebugDetails_None; // Dump extended info to chat or log output
+var m_DebugAutomatedReports:Boolean = true; // Send automatic reports (currently only affects future detections, will not cancel existing queue)
+var m_DebugDetails:Number = ef_DebugDetails_None; // Dump extended info to non-fifo output
 var m_DebugVerify:Boolean = true; // Do additional tests to detect inaccurate early discards
 
 // Automated error report system
@@ -63,11 +63,11 @@ function onLoad():Void {
 // Notes on Dynels:
 //   GetName() - Actually a remoteformat xml tag, for the LDB localization system
 //   GetID() - The type seems to be constant for all lore, each placed lore seems to consistently maintain a unique instance, but dropped lore may select one at random
-//   GetPlayfieldID() - Unsure how to convert this to a playfield name, Playfield data objects lack a source
-//   GetPosition() - World coordinates
-//   GetDistanceToPlayer() - ~20m when approaching lore, drops may trigger much closer
+//   GetPlayfieldID() - Unsure how to convert this to a playfield name through API; No way to generate Playfield data objects? Currently using lookup table on forum.
+//   GetPosition() - World coordinates (Y is vertical)
+//   GetDistanceToPlayer() - ~20m when approaching lore, drops and triggers may initially be much closer when first detected
 //   IsRendered() - Seems to only consider occlusion and clipping, not consistent on lore already claimed
-//   GetStat() - Unknown if any of these are useful, the mode parameter does not seem to change the value/lack of one, a scan of the first million stats provided:
+//   GetStat() - Unknown if any of these are useful, the mode parameter does not seem to change the value/lack of one, a scan of the first million stats and five modes provided:
 //     #12 - Unknown, consistently 7456524 across current data sample
 //     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 //     #1050 - Unknown, usually 6, though other numbers have been observed
@@ -75,8 +75,9 @@ function onLoad():Void {
 //     While the function definition suggests a relationship with the global Stat enum
 //       the only matching value is 1050, mapping to "CarsGroup", whatever that is
 //   Unfortunately, there does not seem to be any existing connection between the Dynel data, and the Lore entries,
-//     if additional features making use of that relationship are desired, it may require a hardcoded mapping of instance ids
+//     if additional features making use of that relationship are desired, it may require a hardcoded mapping of instance ids for placed/triggered lore
 //     (a script comparing lore coordinates could merge instance ids with an existing list of lore locations)
+//     For the primary purpose of identifying drop lore, it may need to track nearby monsters and detect when they die, which is far less than ideal.
 
 function LoreSniffer(dynelID:ID32):Void {
 	var dynel:Dynel;
@@ -129,7 +130,7 @@ function ClassifyID(formatStr:String):Number {
 function CheckLocalizedName(formatStr:String):Boolean {
 	// Have the localization system provide a language dependent string to compare with
 	// In English this ends up being "Lore", hopefully it is similarly generic and likely to match in other languages
-	var testStr:String = LDBFormat.LDBGetText(50200, 7128026);
+	var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // (Format string identifiers for commonly placed lore)
 	
 	return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 }
