@@ -16,7 +16,7 @@ import com.LoreHound.ReportData;
 // Mod info
 var c_ModName:String = "LoreHound";
 var c_DevName:String = "Peloprata";
-var c_Version:String = "v0.1-alpha";
+var c_Version:String = "v0.1.1-alpha";
 
 // Category flags for represented lore types
 var ef_LoreType_None:Number = 0;

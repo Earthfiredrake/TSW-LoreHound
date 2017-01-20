@@ -33,6 +33,7 @@ class com.LoreHound.lib.AutoReport {
 	// devCharName is the ingame nickname of the character to whom the mail should be sent
 	public function AutoReport(modName:String, modVer:String, devCharName:String) {
 		m_ModName = modName;
+		m_ModVersion = modVer;
 		m_Recipient = devCharName;
 		// Sending mail requires the bank window be open, so we hook to that as our trigger
 		m_MailTrigger = DistributedValue.Create("tradepost_window");
