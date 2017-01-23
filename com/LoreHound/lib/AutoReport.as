@@ -8,8 +8,8 @@ import com.GameInterface.Utils;
 
 // Automated error/information reporting framework
 // Accepts arbitrary report items, as long as they have an:
-//   Accessible and comparable "m_ID" attribute, to reduce duplicate reporting
-//   Accessible toString() method, to convert the data into a valid output
+//   Accessible and comparable "id" attribute, to reduce duplicate reporting
+//   Accessible "text" attribute, providing the message to be dispatched
 // Compiles a list of unique(by ID) report items
 // when the user enters the bank interface it will attempt to send those reports automaticly by ingame mail
 
@@ -46,10 +46,10 @@ class com.LoreHound.lib.AutoReport {
 		if (Character.GetClientCharacter().GetName() == m_Recipient) {
 			// Unable to send mail to self, so prevent building up a report queue
 			return false;
-		}
-		for (var i:Number = 0; i < m_ReportQueue.length; ++i) {
+		}		
+		for (var i:Number = 0; i < m_ReportQueue.length; ++i) {			
 			// Ensure that report ids are unique (to avoid redundant info)
-			if (m_ReportQueue[i].m_ID == report.m_ID) {
+			if (m_ReportQueue[i].id == report.id) {
 				return false;
 			}
 		}
@@ -68,8 +68,8 @@ class com.LoreHound.lib.AutoReport {
 	private function SendReport(attempt:Number):Void {
 		if (m_ReportQueue.length > 0) {
 			var msg:String = m_ModName + ": Automated report (" + m_ModVersion + ")";
-			while (m_ReportSplitIndex < m_ReportQueue.length && (msg.length + m_ReportQueue[m_ReportSplitIndex].toString().length) < c_MaxMailLength) {
-				msg += "\n" + m_ReportQueue[m_ReportSplitIndex++].toString();
+			while (m_ReportSplitIndex < m_ReportQueue.length && (msg.length + m_ReportQueue[m_ReportSplitIndex].text.length) < c_MaxMailLength) {
+				msg += "\n" + m_ReportQueue[m_ReportSplitIndex++].text;
 			}
 			
 			// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0.

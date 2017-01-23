@@ -56,21 +56,21 @@ class com.LoreHound.LoreHound {
 	private var m_AutoReport:AutoReport;
 
 	public function LoreHound() {
-	// Variables initialized here will be detected by the ingame debug menu
-	m_FifoMessageLore = ef_LoreType_None;
-	m_ChatMessageLore = ef_LoreType_Common | ef_LoreType_Drop | ef_LoreType_Unknown;
-	m_LogMessageLore = ef_LoreType_Unknown;
-	m_MailMessageLore = ef_LoreType_Unknown;
-	
-	c_DebugDetails_StatCount = 1110;
-	m_DebugAutomatedReports = true;
-	m_DebugDetails = ef_DebugDetails_Location;
-	m_DebugVerify = true;
-	
-	// Lore detection signal
-	VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);		
-	// Automatic error reporting
-	m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName);	
+		// Variables initialized here will be detected by the ingame debug menu
+		m_FifoMessageLore = ef_LoreType_None;
+		m_ChatMessageLore = ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown;
+		m_LogMessageLore = ef_LoreType_Unknown;
+		m_MailMessageLore = ef_LoreType_Special | ef_LoreType_Unknown;
+		
+		c_DebugDetails_StatCount = 1110;
+		m_DebugAutomatedReports = true;
+		m_DebugDetails = ef_DebugDetails_Location;
+		m_DebugVerify = true;
+		
+		// Lore detection signal
+		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);		
+		// Automatic error reporting
+		m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName);	
 	}
 
 	// Notes on Dynels:
@@ -128,6 +128,8 @@ class com.LoreHound.LoreHound {
 		switch (formatStrID) {
 			case "7128026":
 				return ef_LoreType_Common;
+			case "7648084": // Pol (Hidden zombie lore)
+							// Pol (Drone spawn) is ??
 			case "7661215": // DW6 (Post boss lore spawn)
 			case "7647988": // HF6 (Post boss lore spawn)
 			case "7647983": // Fac6 (Post boss lore spawn)
@@ -168,15 +170,15 @@ class com.LoreHound.LoreHound {
 				chatMessage = "Common lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
 				logMessage = "Common lore (" + formatStr + " [" + dynelID + "])";
 				break;
-			case ef_LoreType_Drop:
-				fifoMessage = "A lore dropped!";
-				chatMessage = "Dropped lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
-				logMessage = "Dropped lore (" + formatStr + " [" + dynelID + "])";
-				break;
 			case ef_LoreType_Triggered:
 				fifoMessage = "A lore has appeared.";
 				chatMessage = "Triggered lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
 				logMessage = "Triggered lore (" + formatStr + " [" + dynelID + "])";
+				break;
+			case ef_LoreType_Drop:
+				fifoMessage = "A lore dropped!";
+				chatMessage = "Dropped lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])";
+				logMessage = "Dropped lore (" + formatStr + " [" + dynelID + "])";
 				break;
 			case ef_LoreType_Special:
 				fifoMessage = "Special lore nearby.";
@@ -235,7 +237,13 @@ class com.LoreHound.LoreHound {
 			}
 		}
 		if (m_DebugAutomatedReports && (m_MailMessageLore & loreType) == loreType) {
-			m_AutoReport.AddReport(new ReportData(dynelID.m_Instance, "Category: " + loreType + "(" + LDBFormat.Translate(formatStr) + " [" + dynelID.m_Instance + "]", debugDetails));
+			var report:String = "Category: " + loreType + " (" + LDBFormat.Translate(formatStr) + " [" + dynelID.m_Instance + "])";
+			if (debugDetails.length > 0) {
+				report += "\n" + debugDetails.join("\n");			
+			}
+			m_AutoReport.AddReport({ id: dynelID.m_Instance, 
+									 text: report 
+								  });
 		}
 	}
 
