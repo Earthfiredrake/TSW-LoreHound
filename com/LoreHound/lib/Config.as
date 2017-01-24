@@ -2,10 +2,11 @@
 import com.Utils.Archive;
 import com.Utils.Signal;
 
-class com.LoreHound.lib.Settings {
+class com.LoreHound.lib.Config {
 	
 	public var SignalValueChanged:Signal;
 	
+	private var m_DistributedSettings:Object;
 	private var m_ArchiveName:String;
 	private var m_Settings:Object;
 	
@@ -20,6 +21,12 @@ class com.LoreHound.lib.Settings {
 			value: defaultValue,
 			defaultValue: defaultValue
 		};
+	}
+	
+	public function NewDistributedSetting(key:String):Void {
+		m_DistributedSettings[key] = {
+			
+		}
 	}
 	
 	public function GetValue(key:String) {
@@ -50,14 +57,22 @@ class com.LoreHound.lib.Settings {
 	}
 	
 	public function FromArchive(archive:Archive) {
-		
+		if (archive == undefined || !(archive instanceof Archive)) return;
+		for (var key:String in m_Settings) {
+			var value = archive.FindEntry(key, null);
+			if (value == null) continue;
+			
+			m_Settings[key].value = value;
+		}
 	}
 	
 	public function ToArchive(): Archive {
-		var data:Archive = new Archive();
+		var archive:Archive = new Archive();
 		for (var key:String in m_Settings) {
-			var value:Object = m_Settings[name];
+			var value:Object = m_Settings[key];
+			archive.AddEntry(key, value);
 		}
+		return archive;
 	}
 
 }
