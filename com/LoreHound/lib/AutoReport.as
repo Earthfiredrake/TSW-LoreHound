@@ -87,21 +87,24 @@ class com.LoreHound.lib.AutoReport {
 	}
 	
 	private function VerifyReceipt(success:Boolean, error:String):Void {
-		if (success) {
-			// Clear sent reports
-			m_ReportQueue.splice(0, m_ReportSplitIndex);
-			m_ReportSplitIndex = 0;
-			// Continue sending reports as needed
-			if (m_ReportQueue.length > 0) {
-				// 10ms delay to avoid flow control systems
-				setTimeout(SendReport, 10, 0);
+		// We only care if we actually sent our own messages, not about other mail
+		if (m_ReportSplitIndex > 0) { 
+			if (success) {
+				// Clear sent reports
+				m_ReportQueue.splice(0, m_ReportSplitIndex);
+				m_ReportSplitIndex = 0;
+				// Continue sending reports as needed
+				if (m_ReportQueue.length > 0) {
+					// 10ms delay to avoid flow control systems
+					setTimeout(SendReport, 10, 0);
+				} else {
+					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: All queued reports have been sent. Thank you for your assistance.");
+				}
 			} else {
-				Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: All queued reports have been sent. Thank you for your assistance.");
+				// Reset index, but keep remaining array to retry later
+				m_ReportSplitIndex = 0;
+				Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: One or more automated reports could not be delivered, and will be retried later. (Reason: " + error + ")");
 			}
-		} else {
-			// Reset index, but keep remaining array to retry later
-			m_ReportSplitIndex = 0;
-			Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: One or more automated reports could not be delivered, and will be retried later. (Reason: " + error + ")");
 		}
 	}
 
