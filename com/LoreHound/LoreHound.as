@@ -128,9 +128,12 @@ class com.LoreHound.LoreHound {
 		switch (formatStrID) {
 			case "7128026":
 				return ef_LoreType_Common;
-			case "7648084": // Pol (Hidden zombie lore)
+			case "7648084": // Pol (Hidden zombie, after #1)
 							// Pol (Drone spawn) is ??
 			case "7661215": // DW6 (Post boss lore spawn)
+			case "7648451": // Ankh (Orochi adds, after #1)
+			case "7648450": // Ankh (Mummy adds, after #3)
+			case "7648449": // Ankh (Pit dwellers)
 			case "7647988": // HF6 (Post boss lore spawn)
 			case "7647983": // Fac6 (Post boss lore spawn)
 			case "7647985": // Fac5 (Post boss lore spawn)
