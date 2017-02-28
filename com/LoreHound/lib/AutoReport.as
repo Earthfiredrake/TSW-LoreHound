@@ -20,10 +20,10 @@ import com.LoreHound.lib.Config;
 //   This concept may result in versioning issues however.
 
 class com.LoreHound.lib.AutoReport {
-	
+
 	private var m_Enabled:Boolean = false;
 	private var m_Config:Config;
-	
+
 	public function get IsEnabled():Boolean { return m_Enabled; }
 	public function set IsEnabled(value:Boolean) {
 		if (Character.GetClientCharacter().GetName() == m_Recipient) {
@@ -41,14 +41,14 @@ class com.LoreHound.lib.AutoReport {
 			m_Enabled = value;
 		}
 	}
-	
+
     private var m_ModName:String;
 	private var m_ModVersion:String;
 	private var m_Recipient:String;
 
 	private var m_ReportSplitIndex:Number = 0;
 	private var m_MailTrigger:DistributedValue;
-	
+
 	private static var c_MaxRetries = 5;
 	private static var c_RetryDelay = 10;
 	private static var c_MaxMailLength = 3000;
@@ -59,19 +59,19 @@ class com.LoreHound.lib.AutoReport {
 	public function AutoReport(modName:String, modVer:String, devCharName:String, config:Config) {
 		m_ModName = modName;
 		m_ModVersion = modVer;
-		m_Recipient = devCharName;		
+		m_Recipient = devCharName;
 		config.NewSetting("ReportQueue", new Array());
 		config.NewSetting("ReportsSent", new Array());
 		m_Config = config;
 		m_MailTrigger = DistributedValue.Create("tradepost_window");
 		IsEnabled = true; // Attempts to start the service
 	}
-	
+
 	public function AddReport(report:Object):Boolean {
 		if (!IsEnabled) {
-			// Don't build up queue while system is disabled			
+			// Don't build up queue while system is disabled
 			return false;
-		}		
+		}
 		// Ensure that report ids are only sent once
 		var contains = function (array:Array, comparator:Function):Boolean {
 			for (var i:Number = 0; i < array.length; ++i) {
@@ -81,21 +81,22 @@ class com.LoreHound.lib.AutoReport {
 		}
 		var queue:Array = m_Config.GetValue("ReportQueue");
 		if (contains(m_Config.GetValue("ReportsSent"), function (id):Boolean { return id == report.id; }) ||
-			contains(queue, function (pending):Boolean { return pending.id == report.id; })) {								
+			contains(queue, function (pending):Boolean { return pending.id == report.id; })) {
 				return false;
 		}
 		queue.push(report);
+		m_Config.IsDirty = true;
 		Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: An automated report has been generated, and will be sent when next you are at the bank.");
 		return true;
 	}
-	
+
 	private function TriggerReports(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
 			// Only try to send when the bank is opened
 			SendReport(0);
 		}
 	}
-	
+
 	private function SendReport(attempt:Number):Void {
 		var queue:Array = m_Config.GetValue("ReportQueue");
 		if (queue.length > 0) {
@@ -104,7 +105,7 @@ class com.LoreHound.lib.AutoReport {
 			while (m_ReportSplitIndex < queue.length && (msg.length + queue[m_ReportSplitIndex].text.length) < c_MaxMailLength) {
 				msg += "\n" + queue[m_ReportSplitIndex++].text;
 			}
-			
+
 			// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0.
 			//   While a FiFo message is displayed by sending mail, it is easy to overlook and does not tell you who the recipient was.
 			if (!Tradepost.SendMail(m_Recipient, msg, 0)) {
@@ -118,10 +119,10 @@ class com.LoreHound.lib.AutoReport {
 			}
 		}
 	}
-	
+
 	private function VerifyReceipt(success:Boolean, error:String):Void {
 		// We only care if we actually sent our own messages, not about other mail
-		if (m_ReportSplitIndex > 0) { 
+		if (m_ReportSplitIndex > 0) {
 			if (success) {
 				// Record and clear sent reports
 				var queue:Array = m_Config.GetValue("ReportQueue");
@@ -131,6 +132,7 @@ class com.LoreHound.lib.AutoReport {
 				}
 				queue.splice(0, m_ReportSplitIndex);
 				m_ReportSplitIndex = 0;
+				m_Config.IsDirty = true;
 				// Continue sending reports as needed
 				if (queue.length > 0) {
 					// Delay to avoid triggering flow restrictions
