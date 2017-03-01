@@ -12,16 +12,19 @@ import com.Utils.Signal;
 
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
+// The setting name "ArchiveType" is reserved for internal use
 
 class com.LoreHound.lib.Config {
 
-	public var SignalValueChanged:Signal;// (settingName:String, newValue, oldValue):Void
+	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void
 
+ 	// The distributed value archive which this (top level) config should save to
+	// Nested archives cannot be saved directly, and use the name specified at the parent level, should leave this undefined
 	private var m_ArchiveName:String;
 	private var m_Settings:Object;
-	private var m_DirtyFlag:Boolean;
+	private var m_DirtyFlag:Boolean = false;
 
-	// Checks if this, or any internal Config settings object, is dirty
+	// Checks if this, or any nested Config settings object, is dirty
 	public function get IsDirty():Boolean {
 		if (m_DirtyFlag == true) { return true; }
 		for (var key:String in m_Settings) {
@@ -43,11 +46,13 @@ class com.LoreHound.lib.Config {
 	}
 
 	public function NewSetting(key:String, defaultValue):Void {
+		if (key == "ArchiveType") { return; } // Reserved
 		m_Settings[key] = {
 			value: defaultValue,
 			defaultValue: defaultValue
 		};
-		m_DirtyFlag = true;
+		// Dirty flag not required
+		// Worst case: An unsaved default setting is changed by an upgrade
 	}
 
 	public function GetValue(key:String) {
@@ -75,10 +80,10 @@ class com.LoreHound.lib.Config {
 	private function ToArchive():Archive {
 		var archive:Archive = new Archive();
 		archive.AddEntry("ArchiveType", "Config");
-		// Tag this archive as a Config object;
 		for (var key:String in m_Settings) {
 			archive.AddEntry(key, Package(GetValue(key)));
 		}
+		m_DirtyFlag = false;
 		return archive;
 	}
 
@@ -90,10 +95,10 @@ class com.LoreHound.lib.Config {
 			var values:Archive = new Archive();
 			wrapper.AddEntry("ArchiveType", value instanceof Array ? "Array" : "Object");
 			for (var key:String in value) {
-				wrapper.AddEntry("keys", key);
+				wrapper.AddEntry("Keys", key);
 				values.AddEntry(key, Package(value[key]));
 			}
-			wrapper.AddEntry("values", values);
+			wrapper.AddEntry("Values", values);
 			return wrapper;
 		}
 		return value; // Basic type
@@ -110,6 +115,7 @@ class com.LoreHound.lib.Config {
 			}
 			SetValue(key, Unpack(element, key));
 		}
+		m_DirtyFlag = false;
 		return this;
 	}
 
@@ -118,12 +124,13 @@ class com.LoreHound.lib.Config {
 			var type:String = element.FindEntry("ArchiveType");
 			switch (type) {
 				case "Config":
+					// Have to use the existing config, as it has the defined fields
 					return m_Settings[key].value.FromArchive(element);
 				case "Array":
 				case "Object": // Serialized unspecified type
 					var value = type == "Array" ? new Array() : new Object();
-					var keys:Array = element.FindEntryArray("keys");
-					var values:Archive = element.FindEntry("values");
+					var keys:Array = element.FindEntryArray("Keys");
+					var values:Archive = element.FindEntry("Values");
 					for (var i in keys) {
 						value[keys[i]] = Unpack(values.FindEntry(keys[i]));
 					}
@@ -138,14 +145,13 @@ class com.LoreHound.lib.Config {
 	public function LoadConfig():Void {
 		if (m_ArchiveName != undefined) {
 			FromArchive(DistributedValue.GetDValue(m_ArchiveName));
-			m_DirtyFlag = false;
 		}
 	}
 
 	public function SaveConfig():Void {
 		if (m_ArchiveName != undefined && IsDirty()) {
 			DistributedValue.SetDValue(m_ArchiveName, ToArchive());
-			m_DirtyFlag = false;
 		}
 	}
+
 }
