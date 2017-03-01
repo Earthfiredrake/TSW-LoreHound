@@ -54,6 +54,7 @@ class com.LoreHound.LoreHound {
 	private var m_AutoReport:AutoReport; // Automated error report system
 
 	public function LoreHound() {
+		m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName); // Initialized first so that its Config is available to be nestsed
 		m_Config = CreateConfigWrapper(c_ConfigArchive);
 
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
@@ -62,8 +63,6 @@ class com.LoreHound.LoreHound {
 		c_Details_StatCount = 1110;
 		m_DebugVerify = true;
 		m_DebugTrace = true;
-
-		m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName, m_Config.GetValue("AutoReport"));
 
 		m_Config.LoadConfig();
 		UpdateInstall();
@@ -96,7 +95,7 @@ class com.LoreHound.LoreHound {
 		// - Is always included when detecting Unknown category lore (Location and ID only, to help with identification and categorization)
 		settings.NewSetting("Details", ef_Details_Location);
 
-		settings.NewSetting("AutoReport", new Config()); // Child configuration for auto report system, passed to that system for definitions
+		settings.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
 
 		// Hook to detect important setting changes
 		settings.SignalValueChanged.Connect(ConfigChanged, this);
