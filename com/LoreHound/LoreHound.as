@@ -12,17 +12,12 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
 import com.LoreHound.lib.AutoReport;
-import com.LoreHound.lib.Config;
+import com.LoreHound.lib.ConfigWrapper;
+import com.LoreHound.lib.Mod;
 
-class com.LoreHound.LoreHound {
-
-	// Mod info
-	private static var c_ModName:String = "LoreHound";
-	private static var c_Version:String = "v0.1.1.alpha";
-	private static var c_DevName:String = "Peloprata";
+class com.LoreHound.LoreHound extends Mod {
 
 	private static var c_ModEnabledVar:String = "ReleaseTheLoreHound";
-	private static var c_ConfigArchive:String = c_ModName + "Config";
 
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
@@ -45,61 +40,46 @@ class com.LoreHound.LoreHound {
 	// Unfortunately none seem to be useful, would like to test further with drop lores
 	private var c_Details_StatCount:Number;
 
-	private var m_Config:Config; // Persistent settings saved to user settings file
-
 	// Debugging settings
 	private var m_DebugVerify:Boolean; // Don't immediately discard dynels which don't match the expected pattern, do further testing to try to protect against early discards
-	private var m_DebugTrace:Boolean; // Show additional messages to trace program flow and logic
 
 	private var m_AutoReport:AutoReport; // Automated error report system
 
 	public function LoreHound() {
-		m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName); // Initialized first so that its Config is available to be nestsed
-		m_Config = CreateConfigWrapper(c_ConfigArchive);
+		super("LoreHound","v0.1.1.alpha");
+		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
+
+		LoadConfig();
+		UpdateInstall();
 
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
 		c_Details_StatCount = 1110;
 		m_DebugVerify = true;
-		m_DebugTrace = true;
-
-		m_Config.LoadConfig();
-		UpdateInstall();
 
 		// Lore detection signal
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 
-		Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Is on the prowl.");
+		ChatMsg("Is on the prowl.");
 	}
 
-	private function TraceMsg(msg:String) : Void {
-		if (m_DebugTrace) {
-			Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Trace - " + msg);
-		}
-	}
-
-	private function CreateConfigWrapper(name:String) : Config {
-		var settings = new Config(name);
-		settings.NewSetting("Version", c_Version);
-		settings.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
-
+	private function InitializeConfig() : Void {
 		// Notification types
-		settings.NewSetting("FifoLevel", ef_LoreType_None);
-		settings.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
-		settings.NewSetting("LogLevel", ef_LoreType_Unknown);
-		settings.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
+		Config.NewSetting("FifoLevel", ef_LoreType_None);
+		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
+		Config.NewSetting("LogLevel", ef_LoreType_Unknown);
+		Config.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
 		// - Is always included when detecting Unknown category lore (Location and ID only, to help with identification and categorization)
-		settings.NewSetting("Details", ef_Details_Location);
+		Config.NewSetting("Details", ef_Details_Location);
 
-		settings.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
+		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
 
 		// Hook to detect important setting changes
-		settings.SignalValueChanged.Connect(ConfigChanged, this);
-		return settings;
+		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue) {
@@ -112,53 +92,15 @@ class com.LoreHound.LoreHound {
 		}
 	}
 
-	private function UpdateInstall() : Void {
-		if (!m_Config.GetValue("Installed")) {
-			// Placeholder install routine
-			m_Config.SetValue("Installed", true);
-			return; // No existing version to update
-		}
+	public function DoUpdate() : Void {
+		TraceMsg("Update was detected.");
 
-		var versionChange:Number = CompareVersions(m_Config.GetDefault("Version"), m_Config.GetValue("Version"));
-		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) {
-				TraceMsg("Update was detected.");
+		// Minimize settings clutter by purging auto-report records of newly categorized IDs
+		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
+		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
+		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
 
-				// Minimize settings clutter by purging auto-report records of newly categorized IDs
-				var autoRepConfig:Config = m_Config.GetValue("AutoReport");
-				autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
-				autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
-
-				Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Has been updated to " + m_Config.GetDefault("Version"));
-			}
-			// Reset the version number, as the change has occured
-			m_Config.SetValue("Version", m_Config.GetDefault("Version"));
-		}
-	}
-
-	// Compares two version strings (format v#.#.#[.alpha|.beta])
-	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
-	// If positive, then the first version is higher, negative means first version was lower
-	// A return of 0 indicates that the versions were the same
-	private static function CompareVersions(firstVer:String, secondVer:String) : Number {
-		var first:Array = firstVer.substr(1).split(".");
-		var second:Array = secondVer.substr(1).split(".");
-		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
-			if (first[i] != second[i]) {
-				if (i < 3) {
-					return Number(first[i]) < Number(second[i]) ? -(i + 1) : i + 1;
-				} else {
-					// One's alpha and the other is beta, all other values the same
-					return first[i] == "alpha" ? -4 : 4;
-				}
-				break;
-			}
-		}
-		// Version number is the same, but one may still have a pre-release tag
-		if (first.length != second.length) {
-			return first.length > second.length ? -4 : 4;
-		}
-		return 0;
+		ChatMsg("Has been updated to " + Config.GetDefault("Version"));
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function) : Array {
@@ -170,19 +112,6 @@ class com.LoreHound.LoreHound {
 		}
 		TraceMsg("Cleanup removed " + (array.length - cleanedArray.length) + " records, " + cleanedArray.length + " records remain.");
 		return cleanedArray;
-	}
-
-	public function Activate() {
-		// Placeholder function
-		TraceMsg("Activated");
-	}
-
-	public function Deactivate() {
-		// Tradeoff:
-		//   Saving here will be more frequent but protect against crashes better
-		//   Most calls quick polls of Config dirty flag with no actual save request
-		m_Config.SaveConfig();
-		TraceMsg("Deactivated");
 	}
 
 	// Notes on Dynel API:
@@ -325,7 +254,7 @@ class com.LoreHound.LoreHound {
 	// This info is ommitted from FIFO messages
 	// Unknown lore always requests format string and location for identification purposes
 	private function GetDetailStrings(loreType:Number, dynel:Dynel):Array {
-		var details:Number = m_Config.GetValue("Details");
+		var details:Number = Config.GetValue("Details");
 		var detailStrings:Array = new Array();
 		var formatStr:String = dynel.GetName();
 
@@ -352,22 +281,23 @@ class com.LoreHound.LoreHound {
 	}
 
 	private function DispatchMessages(loreType:Number, loreID:Number, messageStrings:Array, detailStrings:Array) : Void {
-		if ((m_Config.GetValue("FifoLevel") & loreType) == loreType) {
+		if ((Config.GetValue("FifoLevel") & loreType) == loreType) {
 			Chat.SignalShowFIFOMessage.Emit(messageStrings[0], 0);
 			}
-		if ((m_Config.GetValue("ChatLevel") & loreType) == loreType) {
-			Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: " + messageStrings[1]);
+		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
+			ChatMsg(messageStrings[1]);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
+				// Direct access to avoid repeating header blob
 				Utils.PrintChatText(detailStrings[i]);
 			}
 		}
-		if ((m_Config.GetValue("LogLevel") & loreType) == loreType) {
-			Log.Error(c_ModName, messageStrings[2]);
+		if ((Config.GetValue("LogLevel") & loreType) == loreType) {
+			LogMsg(messageStrings[2]);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
-				Log.Error(c_ModName, detailStrings[i]);
+				LogMsg(detailStrings[i]);
 			}
 		}
-		if ((m_Config.GetValue("MailLevel") & loreType) == loreType) {
+		if ((Config.GetValue("MailLevel") & loreType) == loreType) {
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {
 				report += "\n" + detailStrings.join("\n");

@@ -7,7 +7,7 @@ import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
 import com.GameInterface.Utils;
 
-import com.LoreHound.lib.Config;
+import com.LoreHound.lib.ConfigWrapper;
 
 // Automated error/information reporting framework
 // Accepts arbitrary report items, as long as they have an:
@@ -20,7 +20,7 @@ import com.LoreHound.lib.Config;
 class com.LoreHound.lib.AutoReport {
 
 	private var m_Enabled:Boolean = false;
-	private var m_Config:Config;
+	private var m_Config:ConfigWrapper;
 
 	public function get IsEnabled():Boolean { return m_Enabled; }
 	public function set IsEnabled(value:Boolean) {
@@ -57,7 +57,7 @@ class com.LoreHound.lib.AutoReport {
 		m_ModVersion = modVer;
 		m_Recipient = devCharName;
 
-		m_Config = new Config();
+		m_Config = new ConfigWrapper();
 	 	m_Config.NewSetting("QueuedReports", new Array());
 		m_Config.NewSetting("PriorReports", new Array());
 
@@ -65,7 +65,7 @@ class com.LoreHound.lib.AutoReport {
 		IsEnabled = true;
 	}
 
-	public function GetConfigWrapper():Config {
+	public function GetConfigWrapper():ConfigWrapper {
 		return m_Config;
 	}
 
