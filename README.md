@@ -32,7 +32,7 @@ For testing purposes, please note if you see any lores which are miscategorized,
 Currently the mod should work with any version of the client, but this is untested. Notification text is mostly in English (parts may be localized due to internal processing by the game). Should there be sufficient interest (and capable volunteers), providing translations of the messages should be relatively trivial.
 
 Features which are in progress and should be visible on the develop branch shortly, with releases to follow:
-+ Persistant configuration settings
++ Configuration GUI
 
 Additional features, which need further investigation to see if they're possible:
 + Full identification of lore (Topic & Entry #)

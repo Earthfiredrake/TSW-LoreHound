@@ -16,9 +16,6 @@ import com.LoreHound.lib.ConfigWrapper;
 import com.LoreHound.lib.Mod;
 
 class com.LoreHound.LoreHound extends Mod {
-
-	private static var c_ModEnabledVar:String = "ReleaseTheLoreHound";
-
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
 	private static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
@@ -46,7 +43,7 @@ class com.LoreHound.LoreHound extends Mod {
 	private var m_AutoReport:AutoReport; // Automated error report system
 
 	public function LoreHound() {
-		super("LoreHound","v0.1.1.alpha");
+		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound");
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
 		LoadConfig();
@@ -60,6 +57,8 @@ class com.LoreHound.LoreHound extends Mod {
 
 		// Lore detection signal
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
+
+		RegisterWithTopbar();
 
 		ChatMsg("Is on the prowl.");
 	}

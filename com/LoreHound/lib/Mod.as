@@ -2,8 +2,10 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import com.GameInterface.DistributedValue;
 import com.GameInterface.Log;
 import com.GameInterface.Utils;
+import com.Utils.Signal;
 
 import com.LoreHound.lib.ConfigWrapper;
 
@@ -14,6 +16,7 @@ class com.LoreHound.lib.Mod {
 	public function get ModName():String { return m_ModName; }
 	public function get Version():String { return m_Version; }
 	public function get DevName():String { return "Peloprata"; } // Others should replace
+	public function get ToggleVar():String { return m_ToggleVar; } // Name of DistributedValue toggle for mod (as in .xml)
 
 	public function get ConfigArchiveName():String { return ModName + "Config"; }
 	public function get Config():ConfigWrapper { return m_Config; }
@@ -24,17 +27,18 @@ class com.LoreHound.lib.Mod {
 	private static var ChatLeadColor:String = "#00FFFF";
 
 	// Minimal constructor, as derived class cannot defer construction
-	public function Mod(modName:String, version:String) {
+	public function Mod(modName:String, version:String, toggleVar:String) {
 		m_DebugTrace = true;
 		m_ModName = modName;
 		m_Version = version;
+		m_ToggleVar = toggleVar;
 	}
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
 	public function LoadConfig():Void {
-		m_Config = new ConfigWrapper(archiveName);
-		config.NewSetting("Version", Version);
-		config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
+		m_Config = new ConfigWrapper(ConfigArchiveName);
+		Config.NewSetting("Version", Version);
+		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		InitializeConfig();
 		Config.LoadConfig();
 	}
@@ -65,6 +69,27 @@ class com.LoreHound.lib.Mod {
 
 	// Placeholder function for overriden behaviour
 	public function DoUpdate():Void {
+	}
+
+	// MeeehrUI will work with only the VTIO interface,
+	// but explicit support will make solving unique issues easier
+	// Meeehr's should always trigger first if present, and can be checked during the callback.
+	public function RegisterWithTopbar():Void {
+		m_MeeehrUI = DistributedValue.Create("meeehrUI_IsLoaded");
+		m_ViperTIO = DistributedValue.Create("VTIO_IsLoaded");	
+		m_MeeehrUI.SignalChanged.Connect(DoRegistration, this);
+		m_ViperTIO.SignalChanged.Connect(DoRegistration, this);
+		DoRegistration(m_MeeehrUI);
+		DoRegistration(m_ViperTIO);
+	}
+
+	private function DoRegistration(dv:DistributedValue):Void {
+		if (dv.GetValue() && !m_IsRegistered) {
+			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
+			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);			
+			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ToggleVar + "|" + ""); // Final would be icon
+			m_IsRegistered = true;			
+		}
 	}
 
 	// Placeholder function for overriden behaviour
@@ -123,6 +148,11 @@ class com.LoreHound.lib.Mod {
 
 	private var m_ModName:String;
 	private var m_Version:String;
+	private var m_ToggleVar:String;
 	private var m_Config:ConfigWrapper;
 	private var m_DebugTrace:Boolean = false;
+	
+	private var m_MeeehrUI:DistributedValue; 
+	private var m_ViperTIO:DistributedValue;
+	private var m_IsRegistered:Boolean = false;
 }
