@@ -31,11 +31,12 @@ class com.LoreHound.LoreHound extends Mod {
 	private static var ef_Details_Location:Number = 1 << 1; // Playfield ID and coordinate vector
 	private static var ef_Details_StatDump:Number = 1 << 2; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 3) - 1;
-
-	// Number of stat IDs to test [0,N) when doing a StatDump (this can cause significant performance hitches, particularly with large ranges)
-	// This number is high enough to catch all of the values discovered with a test of various static lores (of the first million statIDs)
-	// Unfortunately none seem to be useful, would like to test further with drop lores
-	private var c_Details_StatCount:Number;
+	
+	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
+	// It will dump the Nth million stat ids, with the mode parameter provided
+	// Tradeoff between the length of time locked up, and the number of tests needed
+	private var m_Details_StatRange:Number;
+	private var m_Details_StatMode:Number;
 
 	// Debugging settings
 	private var m_DebugVerify:Boolean; // Don't immediately discard dynels which don't match the expected pattern, do further testing to try to protect against early discards
@@ -52,7 +53,8 @@ class com.LoreHound.LoreHound extends Mod {
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
-		c_Details_StatCount = 1110;
+		m_Details_StatRange = 1; // Start with the first million on mode 0
+		m_Details_StatMode = 0;
 		m_DebugVerify = true;
 
 		RegisterWithTopbar();
@@ -133,11 +135,14 @@ class com.LoreHound.LoreHound extends Mod {
 	//   GetDistanceToPlayer() - Proximity system triggers at ~20m when approaching a dynel, as well as detecting new dynels within that radius
 	//     Lore detected at shorter ranges is almost always spawned in some way. Once spawned, the only way to track its existence is to bounce back and forth across the boundary
 	//   IsRendered() - Seems to consider occlusion and clipping but not consistent on lore already claimed
-	//   GetStat() - Unknown if any of these are useful, the mode parameter does not seem to change the value/lack of one, a scan of the first million stats and five modes provided:
+	//   GetStat() - Excessive scanning has found one potentially useful value on some lore dynels
 	//     #12 - Unknown, consistently 7456524 across current data sample
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 	//     #1050 - Unknown, usually 6, though other numbers have been observed
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
+	//     #2000560 - Tag # matching lore labled "Lore#.Tag#", outside of my access but still very useful (Thanks Vomher)
+	//              - ID number for the lore entry in the journal
+	//              - Only exists on some lore? Further hunting required.
 	//     While the function definition suggests a relationship with the global Stat enum
 	//       the only matching value is 1050, mapping to "CarsGroup", whatever that is
 	//     Testing on alts of unclaimed lore did not demonstrate any notable differences in the reported stats
@@ -192,7 +197,7 @@ class com.LoreHound.LoreHound extends Mod {
 			case 7993128: // Shrouded Lore (End of Days)
 			case 9135398: // Two one-off lores found in MFB
 			case 9135406:
-				return ef_LoreType_Special;
+				return ef_LoreType_Special;			
 			default:
 				return ef_LoreType_Unknown;
 		}
@@ -277,9 +282,11 @@ class com.LoreHound.LoreHound extends Mod {
 		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
 			detailStrings.push("Stat Dump:"); // Fishing expedition, trying to find anything potentially useful
-			for (var statID:Number = 0; statID < c_Details_StatCount; ++statID) {
-				var val = dynel.GetStat(statID, 0);
-				if (val != undefined && val != 0) {
+			var start:Number = (m_Details_StatRange - 1) * 1000000;
+			var end:Number = m_Details_StatRange * 1000000;
+			for (var statID:Number = start; statID < end; ++statID) {
+				var val = dynel.GetStat(statID, m_Details_StatMode);
+				if (val != undefined && val != 0 && val != "") {
 					detailStrings.push("Stat: #" + statID + " Value: " + val);
 				}
 			}
