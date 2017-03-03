@@ -55,9 +55,6 @@ class com.LoreHound.LoreHound extends Mod {
 		c_Details_StatCount = 1110;
 		m_DebugVerify = true;
 
-		// Lore detection signal
-		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
-
 		RegisterWithTopbar();
 
 		ChatMsg("Is on the prowl.");
@@ -113,6 +110,18 @@ class com.LoreHound.LoreHound extends Mod {
 		return cleanedArray;
 	}
 
+	public function Activate() {				
+		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this); // Lore detection hook
+		m_AutoReport.IsEnabled = (Config.GetValue("MailLevel") != ef_LoreType_None);
+		super.Activate();
+	}
+	
+	public function Deactivate() {
+		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this); // Lore detection hook
+		m_AutoReport.IsEnabled = false;
+		super.Deactivate();
+	}
+
 	// Notes on Dynel API:
 	//   GetName() - Actually a remoteformat xml tag, for the LDB localization system
 	//   GetID() - The ID type seems to be constant for all lore, and is shared with a wide variety of other props
@@ -166,17 +175,17 @@ class com.LoreHound.LoreHound extends Mod {
 		switch (formatStrId) {
 			case 7128026: // Shared by all known fixed location lore
 				return ef_LoreType_Common;
-			case "7648084": // Pol (Hidden zombie, after #1)
+			case 7648084: // Pol (Hidden zombie, after #1)
 							// Pol (Drone spawn) is ??
-			case "7661215": // DW6 (Post boss lore spawn)
-			case "7648451": // Ankh (Orochi adds, after #1)
-			case "7648450": // Ankh (Mummy adds, after #3)
-			case "7648449": // Ankh (Pit dwellers)
-			case "7647988": // HF6 (Post boss lore spawn)
-			case "7647983": // Fac6 (Post boss lore spawn)
-			case "7647985": // Fac5 (Post boss lore spawn)
-			case "7647986": // Fac3 (Post boss lore spawn)
-			case "7573298": // HE6 (Post boss lore spawn)
+			case 7661215: // DW6 (Post boss lore spawn)
+			case 7648451: // Ankh (Orochi adds, after #1)
+			case 7648450: // Ankh (Mummy adds, after #3)
+			case 7648449: // Ankh (Pit dwellers)
+			case 7647988: // HF6 (Post boss lore spawn)
+			case 7647983: // Fac6 (Post boss lore spawn)
+			case 7647985: // Fac5 (Post boss lore spawn)
+			case 7647986: // Fac3 (Post boss lore spawn)
+			case 7573298: // HE6 (Post boss lore spawn)
 				return ef_LoreType_Triggered;
 			case 9240080:  // Shared by all known monster drop bestiary lore
 				return ef_LoreType_Drop;
