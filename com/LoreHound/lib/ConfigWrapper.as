@@ -29,7 +29,7 @@ class com.LoreHound.lib.ConfigWrapper {
 		if (m_DirtyFlag == true) { return true; }
 		for (var key:String in m_Settings) {
 			var setting = GetValue(key);
-			if (setting instanceof ConfigWrapper && setting.IsDirty()) { return true; }
+			if (setting instanceof ConfigWrapper && setting.IsDirty) { return true; }
 		}
 		return false;
 	}
@@ -149,7 +149,7 @@ class com.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function SaveConfig():Void {
-		if (m_ArchiveName != undefined && IsDirty()) {
+		if (m_ArchiveName != undefined && IsDirty) {
 			DistributedValue.SetDValue(m_ArchiveName, ToArchive());
 		}
 	}

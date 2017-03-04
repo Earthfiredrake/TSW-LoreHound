@@ -53,6 +53,7 @@ class com.LoreHound.lib.Mod {
 		if (!Config.GetValue("Installed")) {
 			DoInstall();
 			Config.SetValue("Installed", true);
+			ChatMsg("Has been installed.")
 			return; // No existing version to update
 		}
 		var versionChange:Number = CompareVersions(Config.GetDefault("Version"), Config.GetValue("Version"));
@@ -76,7 +77,7 @@ class com.LoreHound.lib.Mod {
 	// Meeehr's should always trigger first if present, and can be checked during the callback.
 	public function RegisterWithTopbar():Void {
 		m_MeeehrUI = DistributedValue.Create("meeehrUI_IsLoaded");
-		m_ViperTIO = DistributedValue.Create("VTIO_IsLoaded");	
+		m_ViperTIO = DistributedValue.Create("VTIO_IsLoaded");
 		m_MeeehrUI.SignalChanged.Connect(DoRegistration, this);
 		m_ViperTIO.SignalChanged.Connect(DoRegistration, this);
 		DoRegistration(m_MeeehrUI);
@@ -86,9 +87,9 @@ class com.LoreHound.lib.Mod {
 	private function DoRegistration(dv:DistributedValue):Void {
 		if (dv.GetValue() && !m_IsRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
-			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);			
+			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
 			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ToggleVar + "|" + ""); // Final would be icon
-			m_IsRegistered = true;			
+			m_IsRegistered = true;
 		}
 	}
 
@@ -151,8 +152,8 @@ class com.LoreHound.lib.Mod {
 	private var m_ToggleVar:String;
 	private var m_Config:ConfigWrapper;
 	private var m_DebugTrace:Boolean = false;
-	
-	private var m_MeeehrUI:DistributedValue; 
+
+	private var m_MeeehrUI:DistributedValue;
 	private var m_ViperTIO:DistributedValue;
 	private var m_IsRegistered:Boolean = false;
 }
