@@ -3,8 +3,12 @@
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
 import com.GameInterface.Chat;
+import com.GameInterface.Dynels;
+import com.GameInterface.Game.Character;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Log;
+import com.GameInterface.Lore;
+import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
 import com.GameInterface.Utils;
 import com.GameInterface.VicinitySystem;
@@ -12,18 +16,10 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
 import com.LoreHound.lib.AutoReport;
-import com.LoreHound.lib.Config;
+import com.LoreHound.lib.ConfigWrapper;
+import com.LoreHound.lib.Mod;
 
-class com.LoreHound.LoreHound {
-
-	// Mod info
-	private static var c_ModName:String = "LoreHound";
-	private static var c_Version:String = "v0.1.1.alpha";
-	private static var c_DevName:String = "Peloprata";
-
-	private static var c_ModEnabledVar:String = "ReleaseTheLoreHound";
-	private static var c_ConfigArchive:String = c_ModName + "Config";
-
+class com.LoreHound.LoreHound extends Mod {
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
 	private static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
@@ -34,75 +30,83 @@ class com.LoreHound.LoreHound {
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
-	private static var ef_Details_None:Number = 0 ;
-	private static var ef_Details_FormatString:Number = 1 << 0; // Trimmed contents of format string, to avoid automatic evaluation
-	private static var ef_Details_Location:Number = 1 << 1; // Playfield ID and coordinate vector
-	private static var ef_Details_StatDump:Number = 1 << 2; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
-	private static var ef_Details_All:Number = (1 << 3) - 1;
+	private static var ef_Details_None:Number = 0;
+	private static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
+	private static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	private static var ef_Details_DynelId:Number = 1 << 2;
+	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
+	private static var ef_Details_All:Number = (1 << 4) - 1;
 
-	// Number of stat IDs to test [0,N) when doing a StatDump (this can cause significant performance hitches, particularly with large ranges)
-	// This number is high enough to catch all of the values discovered with a test of various static lores (of the first million statIDs)
-	// Unfortunately none seem to be useful, would like to test further with drop lores
-	private var c_Details_StatCount:Number;
+	// Various constants found to be useful
+	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
+	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
 
-	private var m_Config:Config; // Persistent settings saved to user settings file
+	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
+	// It will dump the Nth million stat ids, with the mode parameter provided
+	// Tradeoff between the length of time locked up, and the number of tests needed
+	private var m_Details_StatRange:Number;
+	private var m_Details_StatMode:Number;
+
+	private var m_TrackedLore:Object;
 
 	// Debugging settings
 	private var m_DebugVerify:Boolean; // Don't immediately discard dynels which don't match the expected pattern, do further testing to try to protect against early discards
-	private var m_DebugTrace:Boolean; // Show additional messages to trace program flow and logic
+	private var m_DebugTestBox:Object; // A place to dump function returns so they can be viewed through debug menu
 
 	private var m_AutoReport:AutoReport; // Automated error report system
 
 	public function LoreHound() {
-		m_AutoReport = new AutoReport(c_ModName, c_Version, c_DevName); // Initialized first so that its Config is available to be nestsed
-		m_Config = CreateConfigWrapper(c_ConfigArchive);
+		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound");
+		DebugTrace = true;
+		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
+
+		LoadConfig();
+		UpdateInstall();
 
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
-		c_Details_StatCount = 1110;
+		m_Details_StatRange = 1; // Start with the first million
+		m_Details_StatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		m_DebugVerify = true;
-		m_DebugTrace = true;
+		m_DebugTestBox = new Object();
+		m_TrackedLore = new Object();
 
-		m_Config.LoadConfig();
-		UpdateInstall();
+		RegisterWithTopbar();
 
-		// Lore detection signal
-		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
+		// Character teleported also triggers on anima leaps and agartha teleports, while character destructed seems to only trigger when changing zones.
+		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
 
-		Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Is on the prowl.");
+		ChatMsg("Is on the prowl.");
 	}
 
-	private function TraceMsg(msg:String) : Void {
-		if (m_DebugTrace) {
-			Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Trace - " + msg);
-		}
+	private function ClearTracking():Void {
+		TraceMsg("Player changed zones, tracked lore has been cleared.");
+		m_TrackedLore = new Object();
 	}
 
-	private function CreateConfigWrapper(name:String) : Config {
-		var settings = new Config(name);
-		settings.NewSetting("Version", c_Version);
-		settings.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
-
+	private function InitializeConfig():Void {
 		// Notification types
-		settings.NewSetting("FifoLevel", ef_LoreType_None);
-		settings.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
-		settings.NewSetting("LogLevel", ef_LoreType_Unknown);
-		settings.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
+		Config.NewSetting("FifoLevel", ef_LoreType_None);
+		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
+		Config.NewSetting("LogLevel", ef_LoreType_Unknown);
+		Config.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
+
+		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
-		// - Is always included when detecting Unknown category lore (Location and ID only, to help with identification and categorization)
-		settings.NewSetting("Details", ef_Details_Location);
+		// - Some fields are always included when detecting Unknown category lore, to help identify it
+		Config.NewSetting("Details", ef_Details_Location);
 
-		settings.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
+		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
+		Config.GetValue("AutoReport").m_DebugTrace = DebugTrace;
 
 		// Hook to detect important setting changes
-		settings.SignalValueChanged.Connect(ConfigChanged, this);
-		return settings;
+		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
-	private function ConfigChanged(setting:String, newValue, oldValue) {
+	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
 			case "MailLevel":
 				m_AutoReport.IsEnabled = (newValue != ef_LoreType_None);
@@ -112,56 +116,18 @@ class com.LoreHound.LoreHound {
 		}
 	}
 
-	private function UpdateInstall() : Void {
-		if (!m_Config.GetValue("Installed")) {
-			// Placeholder install routine
-			m_Config.SetValue("Installed", true);
-			return; // No existing version to update
-		}
+	public function DoUpdate():Void {
+		TraceMsg("Update was detected.");
 
-		var versionChange:Number = CompareVersions(m_Config.GetDefault("Version"), m_Config.GetValue("Version"));
-		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) {
-				TraceMsg("Update was detected.");
+		// Minimize settings clutter by purging auto-report records of newly categorized IDs
+		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
+		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
+		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
 
-				// Minimize settings clutter by purging auto-report records of newly categorized IDs
-				var autoRepConfig:Config = m_Config.GetValue("AutoReport");
-				autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
-				autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
-
-				Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: Has been updated to " + m_Config.GetDefault("Version"));
-			}
-			// Reset the version number, as the change has occured
-			m_Config.SetValue("Version", m_Config.GetDefault("Version"));
-		}
+		ChatMsg("Has been updated to " + Config.GetDefault("Version"));
 	}
 
-	// Compares two version strings (format v#.#.#[.alpha|.beta])
-	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
-	// If positive, then the first version is higher, negative means first version was lower
-	// A return of 0 indicates that the versions were the same
-	private static function CompareVersions(firstVer:String, secondVer:String) : Number {
-		var first:Array = firstVer.substr(1).split(".");
-		var second:Array = secondVer.substr(1).split(".");
-		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
-			if (first[i] != second[i]) {
-				if (i < 3) {
-					return Number(first[i]) < Number(second[i]) ? -(i + 1) : i + 1;
-				} else {
-					// One's alpha and the other is beta, all other values the same
-					return first[i] == "alpha" ? -4 : 4;
-				}
-				break;
-			}
-		}
-		// Version number is the same, but one may still have a pre-release tag
-		if (first.length != second.length) {
-			return first.length > second.length ? -4 : 4;
-		}
-		return 0;
-	}
-
-	private function CleanReportArray(array:Array, extractor:Function) : Array {
+	private function CleanReportArray(array:Array, extractor:Function):Array {
 		var cleanedArray = new Array();
 		for (var i:Number = 0; i < array.length; i++) {
 			if (ClassifyID(Number(extractor(array[i]))) == ef_LoreType_Unknown) {
@@ -172,21 +138,23 @@ class com.LoreHound.LoreHound {
 		return cleanedArray;
 	}
 
-	public function Activate() {
-		// Placeholder function
-		TraceMsg("Activated");
+	public function Activate():Void {
+		m_AutoReport.IsEnabled = (Config.GetValue("MailLevel") != ef_LoreType_None);
+		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this); // Lore detection hook
+		Dynels.DynelGone.Connect(LoreDespawned, this);
+		super.Activate();
 	}
 
-	public function Deactivate() {
-		// Tradeoff:
-		//   Saving here will be more frequent but protect against crashes better
-		//   Most calls quick polls of Config dirty flag with no actual save request
-		m_Config.SaveConfig();
-		TraceMsg("Deactivated");
+	public function Deactivate():Void {
+		Dynels.DynelGone.Disconnect(LoreDespawned, this);
+		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this); // Lore detection hook
+		m_AutoReport.IsEnabled = false;
+		super.Deactivate();
 	}
 
 	// Notes on Dynel API:
 	//   GetName() - Actually a remoteformat xml tag, for the LDB localization system
+	//     Has a type attribute with a value usually 50200 and an id value which is used for categorization
 	//   GetID() - The ID type seems to be constant for all lore, and is shared with a wide variety of other props
 	//     Instance ids of fixed lore may vary slightly between sessions, seemingly depending on load orders or caching of map info.
 	//     Dropped lore seems to use whatever id happens to be available at the time, and demonstrates no consistency between drops.
@@ -196,23 +164,27 @@ class com.LoreHound.LoreHound {
 	//   GetDistanceToPlayer() - Proximity system triggers at ~20m when approaching a dynel, as well as detecting new dynels within that radius
 	//     Lore detected at shorter ranges is almost always spawned in some way. Once spawned, the only way to track its existence is to bounce back and forth across the boundary
 	//   IsRendered() - Seems to consider occlusion and clipping but not consistent on lore already claimed
-	//   GetStat() - Unknown if any of these are useful, the mode parameter does not seem to change the value/lack of one, a scan of the first million stats and five modes provided:
+	//   GetStat() - Excessive scanning has found one potentially useful value on some lore dynels
+	//     Have now tested the first 50 million indices, with mode 0
+	//     Have also tested the first 16 modes at the 2-3 million range with no observable difference between them
 	//     #12 - Unknown, consistently 7456524 across current data sample
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 	//     #1050 - Unknown, usually 6, though other numbers have been observed
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
+	//     #2000560 - Exists on a massive majority of the lore recently observed:
+	//                - Known to be missing on at least one lore in KD and one lore in Agartha
+	//                - Didn't load initially on a Happy Feet lore (Golems #8), but was found when it was approached for a second time
+	//                - Did load correctly on a Zombies #9 lore in KM
+	//              - Tag # matching lore labled "Lore#.Tag#", outside of api access but still very useful info (Thanks Vomher)
+	//              - ID number for the lore entry in the journal!
 	//     While the function definition suggests a relationship with the global Stat enum
-	//       the only matching value is 1050, mapping to "CarsGroup", whatever that is
+	//       the only matching value is 1050, mapping to "CarsGroup", whatever that is.
+	//       There are a number of other values in the 2 million range, though none matching 560
 	//     Testing on alts of unclaimed lore did not demonstrate any notable differences in the reported stats
-	//   Unfortunately, there does not seem to be any accessible connection between the Dynel data, and the unlocked Lore entries,
-	//     being able to reliably identify particular lore drops would require some hacky detective work.
-	//     For lore with fixed locations: Lookup table of coordinates -> lore descriptions?
-	//     For drop lore: Tracking monsters in the vicinity and compare when they die to the lore's arrival? (Not even close to ideal)
 
 	// Callback on dynel detection
 	private function LoreSniffer(dynelId:ID32):Void {
-		// All known lore shares this dynel type with a wide variety of other props
-		if (dynelId.m_Type != 51320 && !m_DebugVerify) { return; }
+		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
 		var dynelName:String = dynel.GetName();
@@ -220,40 +192,71 @@ class com.LoreHound.LoreHound {
 		// Extract the format string ID number from the xml tag
 		var formatStrId:String = dynelName.substring(dynelName.indexOf('id="') + 4);
 		formatStrId = formatStrId.substring(0, formatStrId.indexOf('"'));
-		var loreId:Number = Number(formatStrId);
+		var categorizationId:Number = Number(formatStrId);
 
 		// Categorize the detected item
-		var loreType:Number = ClassifyID(loreId);
-		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != 51320) {
+		var loreType:Number = ClassifyID(categorizationId);
+		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != e_DynelType_Object) {
 			loreType = CheckLocalizedName(dynelName) ? ef_LoreType_Unknown : ef_LoreType_None;
 		}
-
+		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
+		if (loreType == ef_LoreType_Drop) { // Track dropped lore so that notifications can be made on despawn
+			if (m_TrackedLore[dynelId.toString()] == undefined) {
+				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+			}
+			// Refresh this, in case it failed to identify at first
+			m_TrackedLore[dynelId.toString()] = loreId;
+			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, categorizationId, dynelName));
+		}
+		if (loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
+			loreType = ef_LoreType_None;
+			TraceMsg("Unclaimed lore ignored.");
+		}
 		if (loreType != ef_LoreType_None) {
-			SendLoreNotifications(loreType, loreId, dynel);
+			SendLoreNotifications(loreType, categorizationId, dynel);
 		}
 	}
 
-	private static function ClassifyID(formatStrId:Number):Number {
+	private function LoreDespawned(type:Number, instance:Number):Void {
+		var despawnedId:String = new ID32(type, instance).toString();
+		var loreId:Number = m_TrackedLore[despawnedId];
+		if (loreId != undefined) {
+			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
+				var loreName:String = AttemptIdentification(loreId); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
+				var messageStrings:Array = new Array(
+					loreName + "despawned.",
+					"Lore despawned (" + loreName + ")",
+					"Lore despawned (" + loreName + ")",
+					"Category: " + ef_LoreType_Drop + " despawned (" + loreName + ")"
+				);
+				DispatchMessages(ef_LoreType_Drop, -instance, messageStrings);
+			}
+			m_TrackedLore[despawnedId] = undefined;
+		}
+	}
+
+	private static function ClassifyID(categorizationId:Number):Number {
 		// Here be the magic numbers (probably planted by the Dragon)
-		switch (formatStrId) {
+		switch (categorizationId) {
 			case 7128026: // Shared by all known fixed location lore
 				return ef_LoreType_Common;
-			case "7648084": // Pol (Hidden zombie, after #1)
+			case 7648084: // Pol (Hidden zombie, after #1)
 							// Pol (Drone spawn) is ??
-			case "7661215": // DW6 (Post boss lore spawn)
-			case "7648451": // Ankh (Orochi adds, after #1)
-			case "7648450": // Ankh (Mummy adds, after #3)
-			case "7648449": // Ankh (Pit dwellers)
-			case "7647988": // HF6 (Post boss lore spawn)
-			case "7647983": // Fac6 (Post boss lore spawn)
-			case "7647985": // Fac5 (Post boss lore spawn)
-			case "7647986": // Fac3 (Post boss lore spawn)
-			case "7573298": // HE6 (Post boss lore spawn)
+			case 7661215: // DW6 (Post boss lore spawn)
+			case 7648451: // Ankh (Orochi adds, after #1)
+			case 7648450: // Ankh (Mummy adds, after #3)
+			case 7648449: // Ankh (Pit dwellers)
+			case 7647988: // HF6 (Post boss lore spawn)
+			case 7647983: // Fac6 (Post boss lore spawn)
+			case 7647985: // Fac5 (Post boss lore spawn)
+			case 7647986: // Fac3 (Post boss lore spawn)
+			case 7573298: // HE6 (Post boss lore spawn)
 				return ef_LoreType_Triggered;
-			case 9240080:  // Shared by all known monster drop bestiary lore
+			case 8508040:  // BS drop (The Wall #4) from Behemoth of the Devouring Plague in KD
+			case 9240080:  // Shared by all known monster drop or spawned bestiary lore
 				return ef_LoreType_Drop;
 			case 7993128: // Shrouded Lore (End of Days)
-			case 9135398: // Two one-off lores found in MFB
+			case 9135398: // Two one-off lores found in MFB (probably should be grouped as Triggered, want to go back in and verify which was which first)
 			case 9135406:
 				return ef_LoreType_Special;
 			default:
@@ -264,19 +267,14 @@ class com.LoreHound.LoreHound {
 	private static function CheckLocalizedName(formatStr:String):Boolean {
 		// Have the localization system provide a language dependent string to compare with
 		// In English this ends up being "Lore", hopefully it is similarly generic and likely to match in other languages
-		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // (Format string identifiers for commonly placed lore)
-
+		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
 		return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 	}
 
-	private function SendLoreNotifications(loreType:Number, loreID:Number, dynel:Dynel) {
-		var dynelID:ID32 = dynel.GetID();
-		var formatStr:String = dynel.GetName();
-
-		var messageStrings:Array = GetMessageStrings(loreType, formatStr, dynelID);
+	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
+		var messageStrings:Array = GetMessageStrings(loreType, categorizationId, dynel);
 		var detailStrings:Array = GetDetailStrings(loreType, dynel);
-
-		DispatchMessages(loreType, loreID, messageStrings, detailStrings);
+		DispatchMessages(loreType, categorizationId, messageStrings, detailStrings);
 	}
 
 	// Index:
@@ -284,33 +282,34 @@ class com.LoreHound.LoreHound {
 	// 1: System chat message
 	// 2: Log message
 	// 3: Mail report
-	private static function GetMessageStrings(loreType:Number, formatStr:String, dynelID:ID32):Array {
+	private static function GetMessageStrings(loreType:Number, categorizationId:Number, dynel:Dynel):Array {
+		var loreName = AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), categorizationId, dynel.GetName());
 		var messageStrings:Array = new Array();
 		switch (loreType) {
 			case ef_LoreType_Common:
-				messageStrings.push("Lore nearby.");
-				messageStrings.push("Common lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])");
-				messageStrings.push("Common lore (" + formatStr + " [" + dynelID + "])");
+				messageStrings.push( loreName + " nearby.");
+				messageStrings.push("Common lore nearby (" + loreName + ")");
+				messageStrings.push("Common lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Triggered:
-				messageStrings.push("A lore has appeared.");
-				messageStrings.push("Triggered lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])");
-				messageStrings.push("Triggered lore (" + formatStr + " [" + dynelID + "])");
+				messageStrings.push( loreName + " has appeared.");
+				messageStrings.push("Triggered lore nearby (" + loreName + ")");
+				messageStrings.push("Triggered lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Drop:
-				messageStrings.push("A lore dropped!");
-				messageStrings.push("Dropped lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])");
-				messageStrings.push("Dropped lore (" + formatStr + " [" + dynelID + "])");
+				messageStrings.push( loreName + " dropped.");
+				messageStrings.push("Dropped lore nearby (" + loreName + ")");
+				messageStrings.push("Dropped lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Special:
-				messageStrings.push("Unusual lore nearby.");
-				messageStrings.push("Unusual lore nearby (" + formatStr + " [" + dynelID.m_Instance + "])");
-				messageStrings.push("Unusual lore (" + formatStr + " [" + dynelID + "])");
+				messageStrings.push( loreName + " nearby.");
+				messageStrings.push("Unusual lore nearby (" + loreName + ")");
+				messageStrings.push("Unusual lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Unknown:
-				messageStrings.push("Unknown lore detected.");
-				messageStrings.push("Unknown lore detected (" + formatStr + " [" + dynelID + "])");
-				messageStrings.push("Unknown lore (" + formatStr + " [" + dynelID + "])");
+				messageStrings.push( loreName + " needs catologuing.");
+				messageStrings.push("Unknown lore detected (" + loreName + ")");
+				messageStrings.push("Unknown lore (" + loreName + ")");
 				break;
 			default:
 				messageStrings.push("Error, lore type defaulted: " + loreType);
@@ -318,61 +317,109 @@ class com.LoreHound.LoreHound {
 				messageStrings.push("Error, lore type defaulted: " + loreType);
 				break;
 		}
-		messageStrings.push("Category: " + loreType + " (" + LDBFormat.Translate(formatStr) + " [" + dynelID.m_Instance + "])");
+		messageStrings.push("Category: " + loreType + " (" + loreName + ")");
 		return messageStrings;
 	}
 
+	// Jackpot!! Connects dynels to LoreNode entries and the rest of the Lore interface:
+	// m_Name: Empty for our node, but the parent will contain the topic
+	// m_Type: LoreNodes aren't just lore, they also do achivements, mounts, teleports... (this will be 2, not so useful)
+	// m_Locked: Has this node been picked up yet?
+	// m_Parent/m_Children: Navigate the lore tree
+	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
+	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
+	private static function AttemptIdentification(loreId:Number, categorizationId:Number, dynelName:String):String {
+		if (loreId != undefined && loreId != 0) {
+			var loreNode:LoreNode = Lore.GetDataNodeById(loreId);
+			var loreSource:Number = Lore.GetTagViewpoint(loreId);
+			var catCode:String;
+			switch (loreSource) {
+				case 0: // Buzzing
+					catCode = " #";
+					break;
+				case 1: // Black Signal
+					catCode = " BS#";
+					break;
+				default: // Unknown source
+					catCode = " ?#";
+					break;
+			}
+			var parentNode:LoreNode = loreNode.m_Parent;
+			var priorSiblings:Number = 1; // Most people number based on type and from a base of 1
+			for (var i:Number = 0; i < parentNode.m_Children.length; ++i) {
+				var childId:Number = parentNode.m_Children[i].m_Id;
+				if (childId == loreId) {
+					return parentNode.m_Name + " " + catCode + priorSiblings;
+				}
+				if (Lore.GetTagViewpoint(childId) == loreSource) {
+					++priorSiblings;
+				}
+			}
+		}
+		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only one known to have an informative localized string.
+		if (categorizationId == 7993128) {
+			return dynelName;
+		}
+		return "Unable to identify";
+	}
+
 	// This info is ommitted from FIFO messages
-	// Unknown lore always requests format string and location for identification purposes
+	// Unknown lore always requests some info for identification purposes
 	private function GetDetailStrings(loreType:Number, dynel:Dynel):Array {
-		var details:Number = m_Config.GetValue("Details");
+		var details:Number = Config.GetValue("Details");
 		var detailStrings:Array = new Array();
 		var formatStr:String = dynel.GetName();
 
-		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
-			detailStrings.push("Identity details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 )); // Strips the format string so that it doesn't preprocess
-		}
 		if (loreType == ef_LoreType_Unknown || (details & ef_Details_Location) == ef_Details_Location) {
 			// Not entirely clear on what the "attractor" parameter is for, leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
 			// Y is being listed last because it's the vertical component, and most concern themselves with map coordinates (x,z)
 			var pos:Vector3 = dynel.GetPosition(0);
 			detailStrings.push("Playfield: " + dynel.GetPlayfieldID() + " Coordinates: [" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + "]");
 		}
+		if (loreType == ef_LoreType_Unknown || (details & ef_Details_DynelId) == ef_Details_DynelId) {
+			detailStrings.push("Dynel ID: " + dynel.GetID().toString());
+		}
+		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
+			detailStrings.push("Category info: " + formatStr.substring(14, formatStr.indexOf('>') - 1 )); // Strips the format string so that it doesn't preprocess
+		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
-			detailStrings.push("Stat Dump:"); // Fishing expedition, trying to find anything potentially useful
-			for (var statID:Number = 0; statID < c_Details_StatCount; ++statID) {
-				var val = dynel.GetStat(statID, 0);
-				if (val != undefined && val != 0) {
+			// Fishing expedition, trying to find anything potentially useful
+			detailStrings.push("Stat Dump: Mode " + m_Details_StatMode);
+			var start:Number = (m_Details_StatRange - 1) * 1000000;
+			var end:Number = m_Details_StatRange * 1000000;
+			for (var statID:Number = start; statID < end; ++statID) {
+				var val = dynel.GetStat(statID, m_Details_StatMode);
+				if (val != undefined && val != 0 && val != "") {
 					detailStrings.push("Stat: #" + statID + " Value: " + val);
 				}
 			}
 		}
-
 		return detailStrings;
 	}
 
-	private function DispatchMessages(loreType:Number, loreID:Number, messageStrings:Array, detailStrings:Array) : Void {
-		if ((m_Config.GetValue("FifoLevel") & loreType) == loreType) {
+	private function DispatchMessages(loreType:Number, categorizationId:Number, messageStrings:Array, detailStrings:Array):Void {
+		if ((Config.GetValue("FifoLevel") & loreType) == loreType) {
 			Chat.SignalShowFIFOMessage.Emit(messageStrings[0], 0);
 			}
-		if ((m_Config.GetValue("ChatLevel") & loreType) == loreType) {
-			Utils.PrintChatText("<font color='#00FFFF'>" + c_ModName + "</font>: " + messageStrings[1]);
+		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
+			ChatMsg(messageStrings[1]);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
+				// Direct access to avoid repeating header blob
 				Utils.PrintChatText(detailStrings[i]);
 			}
 		}
-		if ((m_Config.GetValue("LogLevel") & loreType) == loreType) {
-			Log.Error(c_ModName, messageStrings[2]);
+		if ((Config.GetValue("LogLevel") & loreType) == loreType) {
+			LogMsg(messageStrings[2]);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
-				Log.Error(c_ModName, detailStrings[i]);
+				LogMsg(detailStrings[i]);
 			}
 		}
-		if ((m_Config.GetValue("MailLevel") & loreType) == loreType) {
+		if ((Config.GetValue("MailLevel") & loreType) == loreType) {
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {
 				report += "\n" + detailStrings.join("\n");
 			}
-			m_AutoReport.AddReport({ id: loreID, text: report });
+			m_AutoReport.AddReport({ id: categorizationId, text: report });
 		}
 	}
 
