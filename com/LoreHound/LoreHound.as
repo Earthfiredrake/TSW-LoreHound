@@ -206,7 +206,7 @@ class com.LoreHound.LoreHound extends Mod {
 			}
 			// Refresh this, in case it failed to identify at first
 			m_TrackedLore[dynelId.toString()] = loreId;
-			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId));
+			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, categorizationId, dynelName));
 		}
 		if (loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
 			loreType = ef_LoreType_None;
@@ -222,7 +222,7 @@ class com.LoreHound.LoreHound extends Mod {
 		var loreId:Number = m_TrackedLore[despawnedId];
 		if (loreId != undefined) {
 			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
-				var loreName:String = AttemptIdentification(loreId);
+				var loreName:String = AttemptIdentification(loreId); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
 				var messageStrings:Array = new Array(
 					loreName + "despawned.",
 					"Lore despawned (" + loreName + ")",
@@ -272,7 +272,7 @@ class com.LoreHound.LoreHound extends Mod {
 	}
 
 	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
-		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(e_Stats_LoreId, 2));
+		var messageStrings:Array = GetMessageStrings(loreType, categorizationId, dynel);
 		var detailStrings:Array = GetDetailStrings(loreType, dynel);
 		DispatchMessages(loreType, categorizationId, messageStrings, detailStrings);
 	}
@@ -282,8 +282,8 @@ class com.LoreHound.LoreHound extends Mod {
 	// 1: System chat message
 	// 2: Log message
 	// 3: Mail report
-	private static function GetMessageStrings(loreType:Number, loreId:Number):Array {
-		var loreName = AttemptIdentification(loreId);
+	private static function GetMessageStrings(loreType:Number, categorizationId:Number, dynel:Dynel):Array {
+		var loreName = AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), categorizationId, dynel.GetName());
 		var messageStrings:Array = new Array();
 		switch (loreType) {
 			case ef_LoreType_Common:
@@ -328,7 +328,7 @@ class com.LoreHound.LoreHound extends Mod {
 	// m_Parent/m_Children: Navigate the lore tree
 	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
 	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
-	private static function AttemptIdentification(loreId:Number):String {
+	private static function AttemptIdentification(loreId:Number, categorizationId:Number, dynelName:String):String {
 		if (loreId != undefined && loreId != 0) {
 			var loreNode:LoreNode = Lore.GetDataNodeById(loreId);
 			var loreSource:Number = Lore.GetTagViewpoint(loreId);
@@ -355,6 +355,10 @@ class com.LoreHound.LoreHound extends Mod {
 					++priorSiblings;
 				}
 			}
+		}
+		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only one known to have an informative localized string.
+		if (categorizationId == 7993128) {
+			return dynelName;
 		}
 		return "Unable to identify";
 	}
