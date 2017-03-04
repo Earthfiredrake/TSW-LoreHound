@@ -25,6 +25,8 @@ class com.LoreHound.lib.ConfigWrapper {
 	private var m_Settings:Object;
 	private var m_DirtyFlag:Boolean = false;
 
+	private var m_Archived:Archive;
+
 	public var m_DebugTrace:Boolean = false;
 	private function TraceMsg(message:String):Void {
 		if (m_DebugTrace) {
@@ -44,7 +46,6 @@ class com.LoreHound.lib.ConfigWrapper {
 	// Allows for higher levels to suggest that config should be saved
 	// - Automated detection doesn't pick up on internal changes to objects/arrays, needs manual notification
 	public function set IsDirty(value:Boolean) {
-		TraceMsg("Setting dirty flag to: " + value);
 		m_DirtyFlag = value;
 	}
 
@@ -53,7 +54,6 @@ class com.LoreHound.lib.ConfigWrapper {
 		m_ArchiveName = archiveName;
 		m_Settings = new Object();
 		m_DebugTrace = trace;
-		TraceMsg("Wrapper created for archive: " + archiveName);
 	}
 
 	public function NewSetting(key:String, defaultValue):Void {
@@ -62,7 +62,6 @@ class com.LoreHound.lib.ConfigWrapper {
 			value: defaultValue,
 			defaultValue: defaultValue
 		};
-		TraceMsg("Setting added: " + key);
 		// Dirty flag not required
 		// Worst case: An unsaved default setting is changed by an upgrade
 	}
@@ -82,7 +81,6 @@ class com.LoreHound.lib.ConfigWrapper {
 		var equalityCheckTypes:Object = {boolean:true, number:true, string:true};
 		var oldVal = GetValue(key);
 		if (!equalityCheckTypes[typeof value] || oldVal != value) {
-			TraceMsg("Setting changed: " + key);
 			m_Settings[key].value = value;
 			IsDirty = true;
 			SignalValueChanged.Emit(key, value, oldVal);
@@ -91,14 +89,12 @@ class com.LoreHound.lib.ConfigWrapper {
 	}
 
 	private function ToArchive():Archive {
-		TraceMsg("Creating archive from config");
 		var archive:Archive = new Archive();
 		archive.AddEntry("ArchiveType", "Config");
 		for (var key:String in m_Settings) {
-			TraceMsg("Packaging setting: " + key);
 			archive.AddEntry(key, Package(GetValue(key)));
 		}
-		m_DirtyFlag = false;
+		IsDirty = false;
 		return archive;
 	}
 
@@ -126,13 +122,11 @@ class com.LoreHound.lib.ConfigWrapper {
 		for (var key:String in m_Settings) {
 			var element:Object = archive.FindEntry(key,null);
 			if ((element == null)) {
-				TraceMsg("Settting not found in existing archive: " + key);
 				continue;
 			}
-			TraceMsg("Unpacking setting from archive: " + key);
 			SetValue(key, Unpack(element, key));
 		}
-		m_DirtyFlag = false;
+		IsDirty = false;
 		return this;
 	}
 
@@ -169,7 +163,8 @@ class com.LoreHound.lib.ConfigWrapper {
 	public function SaveConfig():Void {
 		if (m_ArchiveName != undefined && IsDirty) {
 			TraceMsg("Saving archive: " + m_ArchiveName);
-			DistributedValue.SetDValue(m_ArchiveName, ToArchive());
+			m_Archived = ToArchive();
+			DistributedValue.SetDValue(m_ArchiveName, m_Archived);
 		}
 	}
 

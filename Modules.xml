@@ -7,6 +7,5 @@
     variable    = "ReleaseTheLoreHound"
     criteria    = "ReleaseTheLoreHound &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
 	flags       = "GMF_CFG_STORE_USER_CONFIG | GMF_DONT_UNLOAD"
-	config_name = "LoreHoundConfig"
   />
 </Root>
