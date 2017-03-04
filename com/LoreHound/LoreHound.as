@@ -30,11 +30,16 @@ class com.LoreHound.LoreHound extends Mod {
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
-	private static var ef_Details_None:Number = 0 ;
-	private static var ef_Details_FormatString:Number = 1 << 0; // Trimmed contents of format string, to avoid automatic evaluation
-	private static var ef_Details_Location:Number = 1 << 1; // Playfield ID and coordinate vector
-	private static var ef_Details_StatDump:Number = 1 << 2; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
-	private static var ef_Details_All:Number = (1 << 3) - 1;
+	private static var ef_Details_None:Number = 0;
+	private static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
+	private static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	private static var ef_Details_DynelId:Number = 1 << 2;
+	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
+	private static var ef_Details_All:Number = (1 << 4) - 1;
+
+	// Various constants found to be useful
+	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
+	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided
@@ -61,8 +66,8 @@ class com.LoreHound.LoreHound extends Mod {
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
-		m_Details_StatRange = 1; // Start with the first million on mode 0
-		m_Details_StatMode = 0;
+		m_Details_StatRange = 1; // Start with the first million
+		m_Details_StatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		m_DebugVerify = true;
 		m_DebugTestBox = new Object();
 		m_TrackedLore = new Object();
@@ -91,7 +96,7 @@ class com.LoreHound.LoreHound extends Mod {
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
-		// - Is always included when detecting Unknown category lore (Location and ID only, to help with identification and categorization)
+		// - Some fields are always included when detecting Unknown category lore, to help identify it
 		Config.NewSetting("Details", ef_Details_Location);
 
 		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
@@ -149,6 +154,7 @@ class com.LoreHound.LoreHound extends Mod {
 
 	// Notes on Dynel API:
 	//   GetName() - Actually a remoteformat xml tag, for the LDB localization system
+	//     Has a type attribute with a value usually 50200 and an id value which is used for categorization
 	//   GetID() - The ID type seems to be constant for all lore, and is shared with a wide variety of other props
 	//     Instance ids of fixed lore may vary slightly between sessions, seemingly depending on load orders or caching of map info.
 	//     Dropped lore seems to use whatever id happens to be available at the time, and demonstrates no consistency between drops.
@@ -178,8 +184,7 @@ class com.LoreHound.LoreHound extends Mod {
 
 	// Callback on dynel detection
 	private function LoreSniffer(dynelId:ID32):Void {
-		// All known lore shares this dynel type with a wide variety of other props
-		if (dynelId.m_Type != 51320 && !m_DebugVerify) { return; }
+		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
 		var dynelName:String = dynel.GetName();
@@ -191,10 +196,10 @@ class com.LoreHound.LoreHound extends Mod {
 
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
-		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != 51320) {
+		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != e_DynelType_Object) {
 			loreType = CheckLocalizedName(dynelName) ? ef_LoreType_Unknown : ef_LoreType_None;
 		}
-		var loreId:Number = dynel.GetStat(2000560, 0);
+		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
 		if (loreType == ef_LoreType_Drop) { // Track dropped lore so that notifications can be made on despawn
 			if (m_TrackedLore[dynelId.toString()] == undefined) {
 				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
@@ -262,12 +267,12 @@ class com.LoreHound.LoreHound extends Mod {
 	private static function CheckLocalizedName(formatStr:String):Boolean {
 		// Have the localization system provide a language dependent string to compare with
 		// In English this ends up being "Lore", hopefully it is similarly generic and likely to match in other languages
-		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // (Format string identifiers for commonly placed lore)
+		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
 		return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 	}
 
 	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
-		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(2000560, 0));
+		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(e_Stats_LoreId, 2));
 		var detailStrings:Array = GetDetailStrings(loreType, dynel);
 		DispatchMessages(loreType, categorizationId, messageStrings, detailStrings);
 	}
@@ -323,20 +328,19 @@ class com.LoreHound.LoreHound extends Mod {
 	// m_Parent/m_Children: Navigate the lore tree
 	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
 	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
-
 	private static function AttemptIdentification(loreId:Number):String {
 		if (loreId != undefined && loreId != 0) {
 			var loreNode:LoreNode = Lore.GetDataNodeById(loreId);
 			var loreSource:Number = Lore.GetTagViewpoint(loreId);
 			var catCode:String;
 			switch (loreSource) {
-				case 0:
+				case 0: // Buzzing
 					catCode = " #";
 					break;
-				case 1:
+				case 1: // Black Signal
 					catCode = " BS#";
 					break;
-				default:
+				default: // Unknown source
 					catCode = " ?#";
 					break;
 			}
@@ -356,23 +360,27 @@ class com.LoreHound.LoreHound extends Mod {
 	}
 
 	// This info is ommitted from FIFO messages
-	// Unknown lore always requests format string and location for identification purposes
+	// Unknown lore always requests some info for identification purposes
 	private function GetDetailStrings(loreType:Number, dynel:Dynel):Array {
 		var details:Number = Config.GetValue("Details");
 		var detailStrings:Array = new Array();
 		var formatStr:String = dynel.GetName();
 
-		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
-			detailStrings.push("Identity details: " + formatStr.substring(14, formatStr.indexOf('>') - 1 )); // Strips the format string so that it doesn't preprocess
-		}
 		if (loreType == ef_LoreType_Unknown || (details & ef_Details_Location) == ef_Details_Location) {
 			// Not entirely clear on what the "attractor" parameter is for, leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
 			// Y is being listed last because it's the vertical component, and most concern themselves with map coordinates (x,z)
 			var pos:Vector3 = dynel.GetPosition(0);
 			detailStrings.push("Playfield: " + dynel.GetPlayfieldID() + " Coordinates: [" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + "]");
 		}
+		if (loreType == ef_LoreType_Unknown || (details & ef_Details_DynelId) == ef_Details_DynelId) {
+			detailStrings.push("Dynel ID: " + dynel.GetID().toString());
+		}
+		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
+			detailStrings.push("Category info: " + formatStr.substring(14, formatStr.indexOf('>') - 1 )); // Strips the format string so that it doesn't preprocess
+		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
-			detailStrings.push("Stat Dump: Mode " + m_Details_StatMode); // Fishing expedition, trying to find anything potentially useful
+			// Fishing expedition, trying to find anything potentially useful
+			detailStrings.push("Stat Dump: Mode " + m_Details_StatMode);
 			var start:Number = (m_Details_StatRange - 1) * 1000000;
 			var end:Number = m_Details_StatRange * 1000000;
 			for (var statID:Number = start; statID < end; ++statID) {
