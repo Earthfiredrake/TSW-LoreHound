@@ -172,15 +172,15 @@ class com.LoreHound.LoreHound extends Mod {
 	//     #1050 - Unknown, usually 6, though other numbers have been observed
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
 	//     #2000560 - Exists on a massive majority of the lore recently observed:
-	//                - Known to be missing on at least one lore in KD and one lore in Agartha
-	//                - Didn't load initially on a Happy Feet lore (Golems #8), but was found when it was approached for a second time
-	//                - Did load correctly on a Zombies #9 lore in KM
-	//              - Tag # matching lore labled "Lore#.Tag#", outside of api access but still very useful info (Thanks Vomher)
+	//                - Known to be missing on some lores (at least one in each of KD, CF, and Agartha)
+	//                - Sometimes fails to load on initial detection of dropped lores, but this can be corrected on further detection
+	//                - Missing from all Shrouded Lore dynels
+	//              - Tag # matching db entries labled "Lore#.Tag#", outside of api access but still very useful info (Thanks Vomher)
 	//              - ID number for the lore entry in the journal!
-	//     While the function definition suggests a relationship with the global Stat enum
-	//       the only matching value is 1050, mapping to "CarsGroup", whatever that is.
-	//       There are a number of other values in the 2 million range, though none matching 560
-	//     Testing on alts of unclaimed lore did not demonstrate any notable differences in the reported stats
+	//     The function seems to be related to the enum _global.Stat, but most of the indices that actually come up are unspecified.
+	//       - The only matching value is 1050, mapping to "CarsGroup", whatever that is.
+	//       - There are a number of other values in the 2 million range, though none matching 560
+	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
 	// Callback on dynel detection
 	private function LoreSniffer(dynelId:ID32):Void {
@@ -217,6 +217,7 @@ class com.LoreHound.LoreHound extends Mod {
 		}
 	}
 
+	// Triggers when the lore dynel is removed from the client, either because it has despawned or the player has moved too far away
 	private function LoreDespawned(type:Number, instance:Number):Void {
 		var despawnedId:String = new ID32(type, instance).toString();
 		var loreId:Number = m_TrackedLore[despawnedId];
@@ -225,8 +226,8 @@ class com.LoreHound.LoreHound extends Mod {
 				var loreName:String = AttemptIdentification(loreId); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
 				var messageStrings:Array = new Array(
 					loreName + "despawned.",
-					"Lore despawned (" + loreName + ")",
-					"Lore despawned (" + loreName + ")",
+					"Lore despawned or out of range (" + loreName + ")",
+					"Lore despawned or out of range (" + loreName + ")",
 					"Category: " + ef_LoreType_Drop + " despawned (" + loreName + ")"
 				);
 				DispatchMessages(ef_LoreType_Drop, -instance, messageStrings);
