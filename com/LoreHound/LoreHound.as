@@ -52,6 +52,7 @@ class com.LoreHound.LoreHound extends Mod {
 
 	public function LoreHound() {
 		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound");
+		DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
 		LoadConfig();
@@ -94,6 +95,7 @@ class com.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("Details", ef_Details_Location);
 
 		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
+		Config.GetValue("AutoReport").m_DebugTrace = DebugTrace;
 
 		// Hook to detect important setting changes
 		Config.SignalValueChanged.Connect(ConfigChanged, this);

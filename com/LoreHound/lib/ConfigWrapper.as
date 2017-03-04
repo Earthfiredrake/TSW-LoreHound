@@ -7,6 +7,7 @@
 //   Usage under the terms of the MIT License
 
 import com.GameInterface.DistributedValue;
+import com.GameInterface.Utils;
 import com.Utils.Archive;
 import com.Utils.Signal;
 
@@ -24,6 +25,13 @@ class com.LoreHound.lib.ConfigWrapper {
 	private var m_Settings:Object;
 	private var m_DirtyFlag:Boolean = false;
 
+	public var m_DebugTrace:Boolean = false;
+	private function TraceMsg(message:String):Void {
+		if (m_DebugTrace) {
+			Utils.PrintChatText("<font color='#00FFFF'>ConfigWrapper</font>: Trace - " + message);
+		}
+	}
+
 	// Checks if this, or any nested Config settings object, is dirty
 	public function get IsDirty():Boolean {
 		if (m_DirtyFlag == true) { return true; }
@@ -36,13 +44,16 @@ class com.LoreHound.lib.ConfigWrapper {
 	// Allows for higher levels to suggest that config should be saved
 	// - Automated detection doesn't pick up on internal changes to objects/arrays, needs manual notification
 	public function set IsDirty(value:Boolean) {
+		TraceMsg("Setting dirty flag to: " + value);
 		m_DirtyFlag = value;
 	}
 
-	public function ConfigWrapper(archiveName:String) {
+	public function ConfigWrapper(archiveName:String, trace:Boolean) {
 		SignalValueChanged = new Signal();
 		m_ArchiveName = archiveName;
 		m_Settings = new Object();
+		m_DebugTrace = trace;
+		TraceMsg("Wrapper created for archive: " + archiveName);
 	}
 
 	public function NewSetting(key:String, defaultValue):Void {
@@ -51,6 +62,7 @@ class com.LoreHound.lib.ConfigWrapper {
 			value: defaultValue,
 			defaultValue: defaultValue
 		};
+		TraceMsg("Setting added: " + key);
 		// Dirty flag not required
 		// Worst case: An unsaved default setting is changed by an upgrade
 	}
@@ -70,17 +82,20 @@ class com.LoreHound.lib.ConfigWrapper {
 		var equalityCheckTypes:Object = {boolean:true, number:true, string:true};
 		var oldVal = GetValue(key);
 		if (!equalityCheckTypes[typeof value] || oldVal != value) {
+			TraceMsg("Setting changed: " + key);
 			m_Settings[key].value = value;
-			m_DirtyFlag = true;
+			IsDirty = true;
 			SignalValueChanged.Emit(key, value, oldVal);
 		}
 		return value;
 	}
 
 	private function ToArchive():Archive {
+		TraceMsg("Creating archive from config");
 		var archive:Archive = new Archive();
 		archive.AddEntry("ArchiveType", "Config");
 		for (var key:String in m_Settings) {
+			TraceMsg("Packaging setting: " + key);
 			archive.AddEntry(key, Package(GetValue(key)));
 		}
 		m_DirtyFlag = false;
@@ -111,8 +126,10 @@ class com.LoreHound.lib.ConfigWrapper {
 		for (var key:String in m_Settings) {
 			var element:Object = archive.FindEntry(key,null);
 			if ((element == null)) {
+				TraceMsg("Settting not found in existing archive: " + key);
 				continue;
 			}
+			TraceMsg("Unpacking setting from archive: " + key);
 			SetValue(key, Unpack(element, key));
 		}
 		m_DirtyFlag = false;
@@ -144,12 +161,14 @@ class com.LoreHound.lib.ConfigWrapper {
 
 	public function LoadConfig():Void {
 		if (m_ArchiveName != undefined) {
+			TraceMsg("Loading archive: " + m_ArchiveName);
 			FromArchive(DistributedValue.GetDValue(m_ArchiveName));
 		}
 	}
 
 	public function SaveConfig():Void {
 		if (m_ArchiveName != undefined && IsDirty) {
+			TraceMsg("Saving archive: " + m_ArchiveName);
 			DistributedValue.SetDValue(m_ArchiveName, ToArchive());
 		}
 	}

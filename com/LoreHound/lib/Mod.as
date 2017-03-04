@@ -28,7 +28,6 @@ class com.LoreHound.lib.Mod {
 
 	// Minimal constructor, as derived class cannot defer construction
 	public function Mod(modName:String, version:String, toggleVar:String) {
-		m_DebugTrace = true;
 		m_ModName = modName;
 		m_Version = version;
 		m_ToggleVar = toggleVar;
@@ -36,7 +35,7 @@ class com.LoreHound.lib.Mod {
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
 	public function LoadConfig():Void {
-		m_Config = new ConfigWrapper(ConfigArchiveName);
+		m_Config = new ConfigWrapper(ConfigArchiveName, DebugTrace);
 		Config.NewSetting("Version", Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		InitializeConfig();
