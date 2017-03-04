@@ -52,14 +52,25 @@ class com.LoreHound.lib.Mod {
 		if (!Config.GetValue("Installed")) {
 			DoInstall();
 			Config.SetValue("Installed", true);
-			ChatMsg("Has been installed.")
+			ChatMsg("Has been installed.");
+			Utils.PrintChatText("Please take a moment to review the options.");
 			return; // No existing version to update
 		}
-		var versionChange:Number = CompareVersions(Config.GetDefault("Version"), Config.GetValue("Version"));
+		var oldVersion:String = Config.GetValue("Version");
+		var newVersion:String = Config.GetDefault("Version");
+		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) { DoUpdate(); }
+			var changeType:String;
+			if (versionChange > 0) {
+				changeType = "updated";
+				DoUpdate(newVersion, oldVersion);
+			} else {
+				changeType = "reverted";
+				DoRollback(newVersion, oldVersion);
+			}
 			// Reset the version number, as the change has occured
-			Config.SetValue("Version", Config.GetDefault("Version"));
+			Config.ResetValue("Version");
+			ChatMsg("Has been " + changeType + " to " + newVersion);
 		}
 	}
 
@@ -68,7 +79,12 @@ class com.LoreHound.lib.Mod {
 	}
 
 	// Placeholder function for overriden behaviour
-	public function DoUpdate():Void {
+	public function DoUpdate(newVersion:String, oldVersion:String):Void {
+	}
+
+	// Placeholder function for overriden behaviour
+	// Unlikely to be needed, but the hook's here if desired
+	public function DoRollback(newVersion:String, oldVersion:String):Void {
 	}
 
 	// MeeehrUI will work with only the VTIO interface,

@@ -116,15 +116,13 @@ class com.LoreHound.LoreHound extends Mod {
 		}
 	}
 
-	public function DoUpdate():Void {
+	public function DoUpdate(newVersion:String, oldVersion:String):Void {
 		TraceMsg("Update was detected.");
 
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
 		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
 		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
 		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
-
-		ChatMsg("Has been updated to " + Config.GetDefault("Version"));
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function):Array {
