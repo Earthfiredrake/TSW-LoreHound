@@ -55,8 +55,10 @@ class com.LoreHound.LoreHound extends Mod {
 
 	private var m_AutoReport:AutoReport; // Automated error report system
 
-	public function LoreHound() {
-		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound");
+	/// General mod overrides
+
+	public function LoreHound(hostMovie:MovieClip) {
+		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound", hostMovie);
 		DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
@@ -71,6 +73,8 @@ class com.LoreHound.LoreHound extends Mod {
 		m_DebugVerify = true;
 		m_DebugTestBox = new Object();
 		m_TrackedLore = new Object();
+
+		LoadIcon();
 
 		RegisterWithTopbar();
 
@@ -101,9 +105,6 @@ class com.LoreHound.LoreHound extends Mod {
 
 		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
 		Config.GetValue("AutoReport").m_DebugTrace = DebugTrace;
-
-		// Hook to detect important setting changes
-		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
@@ -112,7 +113,9 @@ class com.LoreHound.LoreHound extends Mod {
 				m_AutoReport.IsEnabled = (newValue != ef_LoreType_None);
 				break;
 			default:
-			// Setting does not push changes (is checked on demand)
+			// Defer to parent
+				super.ConfigChanged(setting, newValue, oldValue);
+				break;
 		}
 	}
 
@@ -180,7 +183,7 @@ class com.LoreHound.LoreHound extends Mod {
 	//       - There are a number of other values in the 2 million range, though none matching 560
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
-	// Callback on dynel detection
+	/// Lore detection (callback for dynel detection)
 	private function LoreSniffer(dynelId:ID32):Void {
 		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
 
@@ -214,6 +217,8 @@ class com.LoreHound.LoreHound extends Mod {
 			SendLoreNotifications(loreType, categorizationId, dynel);
 		}
 	}
+
+	/// Dropped lore despawn tracking
 
 	// Triggers when the lore dynel is removed from the client, either because it has despawned or the player has moved too far away
 	private function LoreDespawned(type:Number, instance:Number):Void {
@@ -269,6 +274,8 @@ class com.LoreHound.LoreHound extends Mod {
 		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
 		return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 	}
+
+	/// Notification and message formatting
 
 	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
 		var messageStrings:Array = GetMessageStrings(loreType, categorizationId, dynel);
@@ -355,7 +362,7 @@ class com.LoreHound.LoreHound extends Mod {
 				}
 			}
 		}
-		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only one known to have an informative localized string.
+		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only type known to have an informative localized string.
 		if (categorizationId == 7993128) {
 			return dynelName;
 		}

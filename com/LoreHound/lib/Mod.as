@@ -4,6 +4,9 @@
 
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Log;
+import com.GameInterface.Tooltip.TooltipData;
+import com.GameInterface.Tooltip.TooltipInterface;
+import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
 import com.Utils.Signal;
 
@@ -18,19 +21,41 @@ class com.LoreHound.lib.Mod {
 	public function get DevName():String { return "Peloprata"; } // Others should replace
 	public function get ToggleVar():String { return m_ToggleVar; } // Name of DistributedValue toggle for mod (as in .xml)
 
+	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
 	public function get ConfigArchiveName():String { return ModName + "Config"; }
 	public function get Config():ConfigWrapper { return m_Config; }
+
+	public function get HostMovie():MovieClip { return m_HostMovie; }
+	public function get ModIcon():MovieClip { return m_ModIcon; }
 
 	public function get DebugTrace():Boolean { return m_DebugTrace; }
 	public function set DebugTrace(value:Boolean):Void { m_DebugTrace = value; }
 
+	public function get Enabled():Boolean { return m_Enabled; }
+	public function set Enabled(value:Boolean):Void {
+		value = m_EnabledByGame && Config.GetValue("Enabled");
+		if (value != Enabled) { // State changed
+			m_Enabled = value;
+			if (ModIcon.m_Tooltip != undefined) {
+				ModIcon.m_Tooltip.Close();
+				ModIcon.m_Tooltip = CreateIconTooltip();
+			}
+			if (value) { Activate(); }
+			else { Deactivate(); }
+		}
+	}
+
 	private static var ChatLeadColor:String = "#00FFFF";
 
 	// Minimal constructor, as derived class cannot defer construction
-	public function Mod(modName:String, version:String, toggleVar:String) {
+	public function Mod(modName:String, version:String, toggleVar:String, hostMovie:MovieClip) {
 		m_ModName = modName;
 		m_Version = version;
 		m_ToggleVar = toggleVar;
+		m_HostMovie = hostMovie;
+		m_ShowConfig = DistributedValue.Create(ConfigWindowVar);
+		m_ShowConfig.SetValue(false);
+		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
 	}
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
@@ -38,13 +63,34 @@ class com.LoreHound.lib.Mod {
 		m_Config = new ConfigWrapper(ConfigArchiveName, DebugTrace);
 		Config.NewSetting("Version", Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
-		InitializeConfig();
+		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
+
+		InitializeConfig(); // Hook for decendent class to customize config options
+
+		// Callback to detect important setting changes
+		Config.SignalValueChanged.Connect(ConfigChanged, this);
+
 		Config.LoadConfig();
 	}
 
 	// Placeholder function for overriden behaviour
 	// Config will be initialized at this point, and can just have settings added
 	public function InitializeConfig():Void {
+	}
+
+	private function ConfigChanged(setting:String, newValue, oldValue):Void {
+		switch(setting) {
+			case "Enabled":
+				Enabled = newValue;
+				break;
+			default:
+			// Setting does not push changes (is checked on demand)
+		}
+	}
+
+	private function ShowConfigWindow(dv:DistributedValue):Void {
+		// Yeah, do that
+		TraceMsg("Config window requested");
 	}
 
 	// Should be called in derived class constructor, after config has been loaded
@@ -54,6 +100,8 @@ class com.LoreHound.lib.Mod {
 			Config.SetValue("Installed", true);
 			ChatMsg("Has been installed.");
 			Utils.PrintChatText("Please take a moment to review the options.");
+			// Thought about having the options menu auto open here, but decided that was a bad idea
+			// Users might not realize that it's a one off event, and worry that it will always open when they start up
 			return; // No existing version to update
 		}
 		var oldVersion:String = Config.GetValue("Version");
@@ -62,15 +110,15 @@ class com.LoreHound.lib.Mod {
 		if (versionChange != 0) { // The version changed, either updated or reverted
 			var changeType:String;
 			if (versionChange > 0) {
-				changeType = "updated";
+				changeType = "Updated";
 				DoUpdate(newVersion, oldVersion);
 			} else {
-				changeType = "reverted";
+				changeType = "Reverted";
 				DoRollback(newVersion, oldVersion);
 			}
 			// Reset the version number, as the change has occured
 			Config.ResetValue("Version");
-			ChatMsg("Has been " + changeType + " to " + newVersion);
+			ChatMsg(changeType + " to " + newVersion);
 		}
 	}
 
@@ -87,7 +135,56 @@ class com.LoreHound.lib.Mod {
 	public function DoRollback(newVersion:String, oldVersion:String):Void {
 	}
 
-	// MeeehrUI will work with only the VTIO interface,
+	public function LoadIcon(iconName:String):Void {
+		if (iconName == undefined) { iconName = "EFDModIcon"; }
+		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
+		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
+		m_ModIcon.onMousePress = function(buttonID:Number) {
+			switch(buttonID) {
+				case 1: // Left mouse button
+					capture.m_ShowConfig.SetValue(!capture.m_ShowConfig.GetValue());
+					break;
+				case 2: // Right mouse button
+					capture.Config.SetValue("Enabled", !capture.Config.GetValue("Enabled"));
+					break;
+				default:
+					capture.TraceMsg("Unexpected mouse button press: " + buttonID);
+			}
+		};
+		m_ModIcon.onRollOver = function() {
+			// Note: "this" inside of the event handlers actually ends up being the mod icon movieclip
+			if (this.m_Tooltip != undefined) { return; } // Already exists, why recreate it?
+			// TODO: This ought to initialize a timeout based on the value of the DValue HoverInfoShowDelayShortcutBar
+			// To conform to proper behaviour with the rest of the tooltips out there.
+			// It's a bit messy (requires using at least settimeout/cleartimeout and a callback) so will do it later
+			this.m_Tooltip = capture.CreateIconTooltip();
+		}
+		m_ModIcon.onRollOut = function() {
+			if (this.m_Tooltip != undefined) {
+				this.m_Tooltip.Close();
+				this.m_Tooltip = undefined;
+			}
+		}
+	}
+
+	// Default tooltip, data can be overriden or expanded by child classes
+	public function GetIconTooltipData():TooltipData {
+		var toggle:String = Enabled ? "Disable" : "Enable";
+		var data:TooltipData = new TooltipData();
+		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
+		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\'>" + Version + " by " + DevName + "</font>");
+        data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Left click: Show Options</font>");
+        data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Right click: " + toggle + " Mod</font>");
+        data.m_Padding = 4;
+        data.m_MaxWidth = 200;
+		return data;
+	}
+
+	private function CreateIconTooltip():TooltipInterface {
+		return TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, 0, GetIconTooltipData());
+	}
+
+	// MeeehrUI is legacy compatible with the VTIO interface,
 	// but explicit support will make solving unique issues easier
 	// Meeehr's should always trigger first if present, and can be checked during the callback.
 	public function RegisterWithTopbar():Void {
@@ -100,25 +197,39 @@ class com.LoreHound.lib.Mod {
 	}
 
 	private function DoRegistration(dv:DistributedValue):Void {
-		if (dv.GetValue() && !m_IsRegistered) {
+		if (dv.GetValue() && !m_IsTopbarRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
 			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
-			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ToggleVar + "|" + ""); // Final would be icon
-			m_IsRegistered = true;
+			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
+			// Topbar creates its own icon, use it as our target for changes instead
+			// Can't actually remove ours though, as the mechanism used to copy it requires ours be available to hook up the events properly
+			m_ModIcon = HostMovie.Icon;
+			// The copy will default to frame 1 (inactive), and may not be properly updated if the topbar loaded after this mod
+			m_ModIcon.gotoAndStop(Enabled ? 2 : 1);
+			m_IsTopbarRegistered = true;
+			TraceMsg("Topbar registration complete.");
 		}
 	}
 
-	// Placeholder function for overriden behaviour
-	public function Activate() {
+	// The game itself toggles the mod's activation state (based on modules.xml criteria)
+	public function GameToggleModEnabled(state:Boolean):Void {
+		m_EnabledByGame = state;
+		Enabled = state;
+	}
+
+	// Mod is activated
+	public function Activate():Void {
+		ModIcon.gotoAndStop(2); // Use the Enabled icon
 		TraceMsg("Activated");
 	}
 
-	// Override for additional processing, but call inherited version.
-	public function Deactivate() {
+	// Mod is deactivated
+	public function Deactivate():Void {
 		// Tradeoff:
 		//   Saving here will be more frequent but protect against crashes better
 		//   Most calls quick polls of Config dirty flag with no actual save request
 		Config.SaveConfig();
+		ModIcon.gotoAndStop(1); // Use the Disabled icon
 		TraceMsg("Deactivated");
 	}
 
@@ -164,11 +275,22 @@ class com.LoreHound.lib.Mod {
 
 	private var m_ModName:String;
 	private var m_Version:String;
+
 	private var m_ToggleVar:String;
+	private var m_Enabled:Boolean = false;
+	private var m_EnabledByGame:Boolean = false;
+	// Enabled by player is a persistant config setting
+
 	private var m_Config:ConfigWrapper;
-	private var m_DebugTrace:Boolean = false;
+	private var m_ShowConfig:DistributedValue;
+
+	private var m_HostMovie:MovieClip;
+	private var m_ModIcon:MovieClip;
+	private var m_TooltipData:TooltipData;
 
 	private var m_MeeehrUI:DistributedValue;
 	private var m_ViperTIO:DistributedValue;
-	private var m_IsRegistered:Boolean = false;
+	private var m_IsTopbarRegistered:Boolean = false;
+
+	private var m_DebugTrace:Boolean = false;
 }
