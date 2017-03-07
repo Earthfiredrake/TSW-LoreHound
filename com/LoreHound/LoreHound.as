@@ -22,18 +22,18 @@ import com.LoreHound.lib.Mod;
 class com.LoreHound.LoreHound extends Mod {
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
-	private static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
-	private static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
-	private static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
-	private static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
-	private static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
+	public static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
+	public static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
+	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
+	public static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
+	public static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
 	private static var ef_Details_None:Number = 0;
-	private static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
-	private static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
-	private static var ef_Details_DynelId:Number = 1 << 2;
+	public static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
+	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	public static var ef_Details_DynelId:Number = 1 << 2;
 	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 4) - 1;
 

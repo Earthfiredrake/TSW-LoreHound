@@ -10,10 +10,16 @@ import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
 import com.Utils.Signal;
 
+import com.LoreHound.gui.ConfigWindowContent;
 import com.LoreHound.lib.ConfigWrapper;
 
 // Base class with general mod utility functions
-// The Mod framework reserves the Config setting names "Version" and "Installed" for internal use
+// The Mod framework reserves the following Config setting names for internal use:
+// "Installed": Used to trigger first run events
+// "Version": Used to detect upgrades and rollbacks
+// "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart
+// "IconPosition": Used if a topbar is not installed to position the icon container
+// "ConfigWindowPosition":
 class com.LoreHound.lib.Mod {
 
 	public function get ModName():String { return m_ModName; }
@@ -64,6 +70,7 @@ class com.LoreHound.lib.Mod {
 		Config.NewSetting("Version", Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
+		Config.NewSetting("ConfigWindowPosition", {x: 20, y: 20} );
 
 		InitializeConfig(); // Hook for decendent class to customize config options
 
@@ -89,8 +96,49 @@ class com.LoreHound.lib.Mod {
 	}
 
 	private function ShowConfigWindow(dv:DistributedValue):Void {
-		// Yeah, do that
-		TraceMsg("Config window requested");
+		if (dv.GetValue()) {
+			TraceMsg("Config window requested.");
+			if (m_ConfigWindow == null) {
+				m_ConfigWindow = m_HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", m_HostMovie.getNextHighestDepth());
+				m_ConfigWindow.SetTitle(ModName + " Settings", "left");
+				m_ConfigWindow.SetPadding(10);
+				m_ConfigWindow.SetContent("ConfigWindowContent");
+
+				m_ConfigWindow.ShowCloseButton(true);
+				m_ConfigWindow.ShowStroke(false);
+				m_ConfigWindow.ShowResizeButton(false);
+				m_ConfigWindow.ShowFooter(false);
+
+				var position:Object = Config.GetValue("ConfigWindowPosition");
+				KeepInVisibleBounds(position, Config.GetDefault("ConfigWindowPosition"));
+				m_ConfigWindow._x = position.x;
+				m_ConfigWindow._y = position.y;
+
+				m_ConfigWindow.SignalClose.Connect(ConfigWindowClosed , this);
+			}
+		} else {
+			TraceMsg("Config window closed.");
+			if (m_ConfigWindow != null) {
+				Config.SetValue("ConfigWindowPosition", { x: m_ConfigWindow._x, y: m_ConfigWindow._y });
+				m_ConfigWindow.removeMovieClip();
+				m_ConfigWindow = null;
+			}
+		}
+	}
+
+	// TODO: This only works on top and left of screen, need to account for Window size on other sides
+	private function KeepInVisibleBounds(position:Object, defaults:Object):Void{
+		var visibleBounds = Stage.visibleRect;
+		if (position.x > visibleBounds.width || position.x < 0) {
+			position.x = defaults.x;
+		}
+		if (position.y > visibleBounds.height || position.y < 0) {
+			position.y = defaults.y;
+		}
+	}
+
+	private function ConfigWindowClosed():Void {
+		m_ShowConfig.SetValue(false);
 	}
 
 	// Should be called in derived class constructor, after config has been loaded
@@ -136,7 +184,7 @@ class com.LoreHound.lib.Mod {
 	}
 
 	public function LoadIcon(iconName:String):Void {
-		if (iconName == undefined) { iconName = "EFDModIcon"; }
+		if (iconName == undefined) { iconName = "ModIcon"; }
 		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
 		m_ModIcon.onMousePress = function(buttonID:Number) {
@@ -154,9 +202,6 @@ class com.LoreHound.lib.Mod {
 		m_ModIcon.onRollOver = function() {
 			// Note: "this" inside of the event handlers actually ends up being the mod icon movieclip
 			if (this.m_Tooltip != undefined) { return; } // Already exists, why recreate it?
-			// TODO: This ought to initialize a timeout based on the value of the DValue HoverInfoShowDelayShortcutBar
-			// To conform to proper behaviour with the rest of the tooltips out there.
-			// It's a bit messy (requires using at least settimeout/cleartimeout and a callback) so will do it later
 			this.m_Tooltip = capture.CreateIconTooltip();
 		}
 		m_ModIcon.onRollOut = function() {
@@ -172,7 +217,8 @@ class com.LoreHound.lib.Mod {
 		var toggle:String = Enabled ? "Disable" : "Enable";
 		var data:TooltipData = new TooltipData();
 		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
-		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\'>" + Version + " by " + DevName + "</font>");
+		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\'>By " + DevName + ", " + Version + "</font>");
+		// Descriptions are always listed at the bottom, after a divider line from any attributes
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Left click: Show Options</font>");
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Right click: " + toggle + " Mod</font>");
         data.m_Padding = 4;
@@ -181,7 +227,8 @@ class com.LoreHound.lib.Mod {
 	}
 
 	private function CreateIconTooltip():TooltipInterface {
-		return TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, 0, GetIconTooltipData());
+		// The negative delay causes the manager itself to manage the delay based on the player's setting
+		return TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, -1, GetIconTooltipData());
 	}
 
 	// MeeehrUI is legacy compatible with the VTIO interface,
@@ -215,6 +262,9 @@ class com.LoreHound.lib.Mod {
 	public function GameToggleModEnabled(state:Boolean):Void {
 		m_EnabledByGame = state;
 		Enabled = state;
+		if (!state) {
+			m_ShowConfig.SetValue(false);
+		}
 	}
 
 	// Mod is activated
@@ -283,10 +333,10 @@ class com.LoreHound.lib.Mod {
 
 	private var m_Config:ConfigWrapper;
 	private var m_ShowConfig:DistributedValue;
+	private var m_ConfigWindow:MovieClip = null;
 
 	private var m_HostMovie:MovieClip;
 	private var m_ModIcon:MovieClip;
-	private var m_TooltipData:TooltipData;
 
 	private var m_MeeehrUI:DistributedValue;
 	private var m_ViperTIO:DistributedValue;
