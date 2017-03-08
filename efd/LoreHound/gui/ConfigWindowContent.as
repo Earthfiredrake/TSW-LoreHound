@@ -5,10 +5,10 @@
 import com.Components.WindowComponentContent;
 import gfx.controls.CheckBox;
 
-import com.LoreHound.lib.ConfigWrapper;
-import com.LoreHound.LoreHound;
+import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.LoreHound;
 
-class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
+class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	// Checkboxes
 	private var m_CBModEnabled:CheckBox;

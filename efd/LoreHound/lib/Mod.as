@@ -11,8 +11,8 @@ import com.GameInterface.Utils;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
 
-import com.LoreHound.gui.ConfigWindowContent;
-import com.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.gui.ConfigWindowContent;
+import efd.LoreHound.lib.ConfigWrapper;
 
 // Base class with general mod utility functions
 // The Mod framework reserves the following Config setting names for internal use:
@@ -21,7 +21,7 @@ import com.LoreHound.lib.ConfigWrapper;
 // "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart
 // "IconPosition": Used if a topbar is not installed to position the icon container
 // "ConfigWindowPosition":
-class com.LoreHound.lib.Mod {
+class efd.LoreHound.lib.Mod {
 
 	public function get ModName():String { return m_ModName; }
 	public function get Version():String { return m_Version; }
