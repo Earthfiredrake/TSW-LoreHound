@@ -94,9 +94,9 @@ class com.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
 		Config.NewSetting("LogLevel", ef_LoreType_Unknown);
-		Config.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
+		Config.NewSetting("SendReports", false);
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
@@ -109,8 +109,8 @@ class com.LoreHound.LoreHound extends Mod {
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
-			case "MailLevel":
-				m_AutoReport.IsEnabled = (newValue != ef_LoreType_None);
+			case "SendReports":
+				m_AutoReport.IsEnabled = newValue;
 				break;
 			default:
 			// Defer to parent
@@ -140,15 +140,15 @@ class com.LoreHound.LoreHound extends Mod {
 	}
 
 	public function Activate():Void {
-		m_AutoReport.IsEnabled = (Config.GetValue("MailLevel") != ef_LoreType_None);
-		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this); // Lore detection hook
+		m_AutoReport.IsEnabled = Config.GetValue("SendReports");
+		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 		super.Activate();
 	}
 
 	public function Deactivate():Void {
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
-		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this); // Lore detection hook
+		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		m_AutoReport.IsEnabled = false;
 		super.Deactivate();
 	}
@@ -420,7 +420,7 @@ class com.LoreHound.LoreHound extends Mod {
 				LogMsg(detailStrings[i]);
 			}
 		}
-		if ((Config.GetValue("MailLevel") & loreType) == loreType) {
+		if (Config.GetValue("SendReports") && loreType == ef_LoreType_Unknown) {
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {
 				report += "\n" + detailStrings.join("\n");

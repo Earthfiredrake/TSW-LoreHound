@@ -100,6 +100,9 @@ class com.LoreHound.lib.Mod {
 			TraceMsg("Config window requested.");
 			if (m_ConfigWindow == null) {
 				m_ConfigWindow = m_HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", m_HostMovie.getNextHighestDepth());
+				// Defer the actual binding to config until things are set up
+				m_ConfigWindow.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
+
 				m_ConfigWindow.SetTitle(ModName + " Settings", "left");
 				m_ConfigWindow.SetPadding(10);
 				m_ConfigWindow.SetContent("ConfigWindowContent");
@@ -124,6 +127,11 @@ class com.LoreHound.lib.Mod {
 				m_ConfigWindow = null;
 			}
 		}
+	}
+
+	private function ConfigWindowLoaded():Void {
+		TraceMsg("Load Complete");
+		m_ConfigWindow.m_Content.AttachConfig(Config);
 	}
 
 	// TODO: This only works on top and left of screen, need to account for Window size on other sides
@@ -217,7 +225,7 @@ class com.LoreHound.lib.Mod {
 		var toggle:String = Enabled ? "Disable" : "Enable";
 		var data:TooltipData = new TooltipData();
 		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
-		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'12\'>By " + DevName + ", " + Version + "</font>");
+		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'10\'>By " + DevName + " " + Version + "</font>");
 		// Descriptions are always listed at the bottom, after a divider line from any attributes
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Left click: Show Options</font>");
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Right click: " + toggle + " Mod</font>");

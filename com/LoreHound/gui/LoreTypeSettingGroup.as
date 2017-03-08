@@ -1,14 +1,17 @@
-﻿import gfx.core.UIComponent;
+﻿import gfx.controls.CheckBox;
+import gfx.core.UIComponent;
 
+import com.LoreHound.lib.ConfigWrapper;
 import com.LoreHound.LoreHound;
 
 class com.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
 
 	private var m_GroupTitle:TextField;
-	private var m_CBFifoEnabled:MovieClip;
-	private var m_CBChatEnabled:MovieClip;
+	private var m_CBFifoEnabled:CheckBox;
+	private var m_CBChatEnabled:CheckBox;
 
 	private var m_Type:Number;
+	private var m_Config:ConfigWrapper;
 
 	private function LoreTypeSettingGroup() {
 		super();
@@ -16,6 +19,7 @@ class com.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
 
 	private function configUI():Void {
 		super.configUI();
+		// Disable focus to prevent selections from locking user input until the window closes
 		m_CBFifoEnabled.disableFocus = true;
 		m_CBChatEnabled.disableFocus = true;
 	}
@@ -41,4 +45,41 @@ class com.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
 		}
 	}
 
+	public function AttachConfig(config:ConfigWrapper):Void {
+		m_Config = config;
+		ConfigUpdated("All");
+		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
+
+		m_CBFifoEnabled.addEventListener("select", this, "CBFifo_Select");
+		m_CBChatEnabled.addEventListener("select", this, "CBChat_Select");
+	}
+
+	private function ConfigUpdated(setting:String, newValue, oldValue) {
+		if (setting == "FifoLevel" || setting == "All") {
+			m_CBFifoEnabled.selected = ((m_Config.GetValue("FifoLevel") & m_Type) == m_Type);
+		}
+		if (setting == "ChatLevel" || setting == "All") {
+			m_CBChatEnabled.selected = ((m_Config.GetValue("ChatLevel") & m_Type) == m_Type);
+		}
+	}
+
+	private function CBFifo_Select(event:Object):Void {
+		var level = m_Config.GetValue("FifoLevel");
+		if (event.selected) {
+			level |= m_Type;
+		} else {
+			level &= ~m_Type;
+		}
+		m_Config.SetValue("FifoLevel", level);
+	}
+
+	private function CBChat_Select(event:Object):Void {
+		var level = m_Config.GetValue("ChatLevel");
+		if (event.selected) {
+			level |= m_Type;
+		} else {
+			level &= ~m_Type;
+		}
+		m_Config.SetValue("ChatLevel", level);
+	}
 }
