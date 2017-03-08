@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Root>
-  <Module  name = "LoreHound"
+  <Module name  = "LoreHound"
     movie       = "LoreHound\LoreHound.swf"
-    depth_layer = "Back"
-    sub_depth   = "0"
+    depth_layer = "Middle"
+    sub_depth   = "10"
     variable    = "ReleaseTheLoreHound"
-    criteria    = "ReleaseTheLoreHound"
+    criteria    = "ReleaseTheLoreHound &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
+	flags       = "GMF_CFG_STORE_USER_CONFIG | GMF_DONT_UNLOAD"
   />
 </Root>
