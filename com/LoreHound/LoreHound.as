@@ -58,8 +58,8 @@ class com.LoreHound.LoreHound extends Mod {
 	/// General mod overrides
 
 	public function LoreHound(hostMovie:MovieClip) {
-		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound", hostMovie);
-		DebugTrace = true;
+		super("LoreHound", "v0.4.0.beta", "ReleaseTheLoreHound", hostMovie);
+		// DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
 		LoadConfig();
@@ -87,8 +87,8 @@ class com.LoreHound.LoreHound extends Mod {
 	private function InitializeConfig():Void {
 		// Notification types
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
-		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
-		Config.NewSetting("LogLevel", ef_LoreType_Unknown);
+		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Unknown);
+		Config.NewSetting("LogLevel", ef_LoreType_None);
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("SendReports", false);
