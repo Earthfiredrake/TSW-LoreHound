@@ -13,7 +13,7 @@ import com.Utils.Signal;
 
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
-// The setting name "ArchiveType" is reserved for internal use
+// The setting names "ArchiveType" and "All" are reserved for internal use
 // Supports basic types and limited composite types (nested ConfigWrapper, Array, and generic Objects)
 
 class com.LoreHound.lib.ConfigWrapper {
@@ -70,7 +70,7 @@ class com.LoreHound.lib.ConfigWrapper {
 	//   - Provide a subconfig wrapper, if the settings are specific to the mod
 	//   - Provide its own archive, if it's a static module that can share the settings between uses
 	public function NewSetting(key:String, defaultValue):Void {
-		if (key == "ArchiveType") { TraceMsg("ArchiveType is a reserved setting name."); return; } // Reserved
+		if (key == "ArchiveType" || key == "All") { TraceMsg(key + " is a reserved setting name."); return; } // Reserved
 		if (m_IsLoaded) { TraceMsg("Settings added after loading saved values (requires reload)."); }
 		m_Settings[key] = {
 			value: CloneValue(defaultValue),

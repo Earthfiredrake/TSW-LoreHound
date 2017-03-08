@@ -22,18 +22,18 @@ import com.LoreHound.lib.Mod;
 class com.LoreHound.LoreHound extends Mod {
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
-	private static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
-	private static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
-	private static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
-	private static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
-	private static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
+	public static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
+	public static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
+	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
+	public static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
+	public static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
 	private static var ef_Details_None:Number = 0;
-	private static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
-	private static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
-	private static var ef_Details_DynelId:Number = 1 << 2;
+	public static var ef_Details_Location:Number = 1 << 0; // Playfield ID and coordinate vector
+	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	public static var ef_Details_DynelId:Number = 1 << 2;
 	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 4) - 1;
 
@@ -55,8 +55,10 @@ class com.LoreHound.LoreHound extends Mod {
 
 	private var m_AutoReport:AutoReport; // Automated error report system
 
-	public function LoreHound() {
-		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound");
+	/// General mod overrides
+
+	public function LoreHound(hostMovie:MovieClip) {
+		super("LoreHound", "v0.1.1.alpha", "ReleaseTheLoreHound", hostMovie);
 		DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
@@ -71,6 +73,8 @@ class com.LoreHound.LoreHound extends Mod {
 		m_DebugVerify = true;
 		m_DebugTestBox = new Object();
 		m_TrackedLore = new Object();
+
+		LoadIcon();
 
 		RegisterWithTopbar();
 
@@ -90,9 +94,9 @@ class com.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Special | ef_LoreType_Unknown);
 		Config.NewSetting("LogLevel", ef_LoreType_Unknown);
-		Config.NewSetting("MailLevel", ef_LoreType_Unknown); // This is a flag for testing purposes only, release states should be enabled (for unkown lore only) or disabled
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
+		Config.NewSetting("SendReports", false);
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
@@ -101,18 +105,17 @@ class com.LoreHound.LoreHound extends Mod {
 
 		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
 		Config.GetValue("AutoReport").m_DebugTrace = DebugTrace;
-
-		// Hook to detect important setting changes
-		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
-			case "MailLevel":
-				m_AutoReport.IsEnabled = (newValue != ef_LoreType_None);
+			case "SendReports":
+				m_AutoReport.IsEnabled = newValue;
 				break;
 			default:
-			// Setting does not push changes (is checked on demand)
+			// Defer to parent
+				super.ConfigChanged(setting, newValue, oldValue);
+				break;
 		}
 	}
 
@@ -137,15 +140,15 @@ class com.LoreHound.LoreHound extends Mod {
 	}
 
 	public function Activate():Void {
-		m_AutoReport.IsEnabled = (Config.GetValue("MailLevel") != ef_LoreType_None);
-		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this); // Lore detection hook
+		m_AutoReport.IsEnabled = Config.GetValue("SendReports");
+		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 		super.Activate();
 	}
 
 	public function Deactivate():Void {
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
-		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this); // Lore detection hook
+		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		m_AutoReport.IsEnabled = false;
 		super.Deactivate();
 	}
@@ -180,7 +183,7 @@ class com.LoreHound.LoreHound extends Mod {
 	//       - There are a number of other values in the 2 million range, though none matching 560
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
-	// Callback on dynel detection
+	/// Lore detection (callback for dynel detection)
 	private function LoreSniffer(dynelId:ID32):Void {
 		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
 
@@ -214,6 +217,8 @@ class com.LoreHound.LoreHound extends Mod {
 			SendLoreNotifications(loreType, categorizationId, dynel);
 		}
 	}
+
+	/// Dropped lore despawn tracking
 
 	// Triggers when the lore dynel is removed from the client, either because it has despawned or the player has moved too far away
 	private function LoreDespawned(type:Number, instance:Number):Void {
@@ -269,6 +274,8 @@ class com.LoreHound.LoreHound extends Mod {
 		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
 		return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 	}
+
+	/// Notification and message formatting
 
 	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
 		var messageStrings:Array = GetMessageStrings(loreType, categorizationId, dynel);
@@ -355,7 +362,7 @@ class com.LoreHound.LoreHound extends Mod {
 				}
 			}
 		}
-		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only one known to have an informative localized string.
+		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only type known to have an informative localized string.
 		if (categorizationId == 7993128) {
 			return dynelName;
 		}
@@ -413,7 +420,7 @@ class com.LoreHound.LoreHound extends Mod {
 				LogMsg(detailStrings[i]);
 			}
 		}
-		if ((Config.GetValue("MailLevel") & loreType) == loreType) {
+		if (Config.GetValue("SendReports") && loreType == ef_LoreType_Unknown) {
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {
 				report += "\n" + detailStrings.join("\n");

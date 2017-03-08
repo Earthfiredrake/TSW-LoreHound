@@ -11,8 +11,9 @@ var efd_LoreHound:LoreHound;
 
 // Called when the clip is first loaded
 // - When the player logs in a character, including on relogs
+// - If the mod activation distributed value is false, it may skip loading entirely
 function onLoad():Void {
-	efd_LoreHound = new LoreHound();
+	efd_LoreHound = new LoreHound(this);
 }
 
 // Often called in pairs, deactivating and reactivating the mod as the criteria evaluation changes
@@ -20,12 +21,13 @@ function onLoad():Void {
 // Activate is called once immediately after onLoad
 // Paired calls are made when: Changing zones, cutscenes play, the player anima leaps or is otherwise teleported
 // Deactivate is called once immediately prior to OnUnload
+// Toggling the distributed value will force toggle these
 function OnModuleActivated():Void {
-	efd_LoreHound.Activate();
+	efd_LoreHound.GameToggleModEnabled(true);
 }
 
 function OnModuleDeactivated():Void {
-	efd_LoreHound.Deactivate();
+	efd_LoreHound.GameToggleModEnabled(false);
 }
 
 // Called just before the game unloads the clip
