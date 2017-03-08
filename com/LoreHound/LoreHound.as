@@ -205,7 +205,7 @@ class com.LoreHound.LoreHound extends Mod {
 			m_TrackedLore[dynelId.toString()] = loreId;
 			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, categorizationId, dynelName));
 		}
-		if (loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
+		if (loreType != ef_LoreType_Unknown && loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
 			loreType = ef_LoreType_None;
 			TraceMsg("Unclaimed lore ignored.");
 		}
