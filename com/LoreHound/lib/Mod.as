@@ -9,6 +9,7 @@ import com.GameInterface.Tooltip.TooltipInterface;
 import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
 import com.Utils.Signal;
+import GUIFramework.SFClipLoader;
 
 import com.LoreHound.gui.ConfigWindowContent;
 import com.LoreHound.lib.ConfigWrapper;
@@ -71,6 +72,7 @@ class com.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 		Config.NewSetting("ConfigWindowPosition", {x: 20, y: 20} );
+		Config.NewSetting("IconPosition", {x: 20, y: 40} ); // Used when topbar is unavailable
 
 		InitializeConfig(); // Hook for decendent class to customize config options
 
@@ -195,6 +197,9 @@ class com.LoreHound.lib.Mod {
 		if (iconName == undefined) { iconName = "ModIcon"; }
 		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
+		var position:Object = Config.GetValue("IconPosition");
+		m_ModIcon._x = position.x;
+		m_ModIcon._y = position.y;
 		m_ModIcon.onMousePress = function(buttonID:Number) {
 			switch(buttonID) {
 				case 1: // Left mouse button
@@ -255,6 +260,10 @@ class com.LoreHound.lib.Mod {
 		if (dv.GetValue() && !m_IsTopbarRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
 			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
+			// Tweak positions to be where the topbar is expecting things to be
+			SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+			m_ModIcon._x = 0;
+			m_ModIcon._y = 0;
 			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, as the mechanism used to copy it requires ours be available to hook up the events properly

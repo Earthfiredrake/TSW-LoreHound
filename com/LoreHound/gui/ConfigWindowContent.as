@@ -1,4 +1,8 @@
-﻿import com.Components.WindowComponentContent;
+﻿// Copyright 2017, Earthfiredrake (Peloprata)
+// Released under the terms of the MIT License
+// https://github.com/Earthfiredrake/TSW-LoreHound
+
+import com.Components.WindowComponentContent;
 import gfx.controls.CheckBox;
 
 import com.LoreHound.lib.ConfigWrapper;

@@ -1,4 +1,8 @@
-﻿import gfx.controls.CheckBox;
+﻿// Copyright 2017, Earthfiredrake (Peloprata)
+// Released under the terms of the MIT License
+// https://github.com/Earthfiredrake/TSW-LoreHound
+
+import gfx.controls.CheckBox;
 import gfx.core.UIComponent;
 
 import com.LoreHound.lib.ConfigWrapper;
