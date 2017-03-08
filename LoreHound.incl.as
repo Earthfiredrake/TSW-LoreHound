@@ -23,10 +23,14 @@ function onLoad():Void {
 // Deactivate is called once immediately prior to OnUnload
 // Toggling the distributed value will force toggle these
 function OnModuleActivated():Void {
+	// This could take an Archive parameter
+	// Does this have to do with that "config" attribute I was having problems with?
 	efd_LoreHound.GameToggleModEnabled(true);
 }
 
 function OnModuleDeactivated():Void {
+	// This could return an Archive value
+	// Does this have to do with that "config" attribute I was having problems with?
 	efd_LoreHound.GameToggleModEnabled(false);
 }
 

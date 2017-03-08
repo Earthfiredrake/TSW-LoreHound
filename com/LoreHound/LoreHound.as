@@ -23,8 +23,8 @@ class com.LoreHound.LoreHound extends Mod {
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
 	public static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
-	public static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions (often after dungeon bosses)
-	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters
+	public static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions, seems to stay spawned once triggered (often after dungeon bosses)
+	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
 	public static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
 	public static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
@@ -82,11 +82,6 @@ class com.LoreHound.LoreHound extends Mod {
 		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
 
 		ChatMsg("Is on the prowl.");
-	}
-
-	private function ClearTracking():Void {
-		TraceMsg("Player changed zones, tracked lore has been cleared.");
-		m_TrackedLore = new Object();
 	}
 
 	private function InitializeConfig():Void {
@@ -160,7 +155,7 @@ class com.LoreHound.LoreHound extends Mod {
 	//     Instance ids of fixed lore may vary slightly between sessions, seemingly depending on load orders or caching of map info.
 	//     Dropped lore seems to use whatever id happens to be available at the time, and demonstrates no consistency between drops.
 	//     While unsuited as a unique identifier, instance ids do help differentiate unique hits in a high density area, as they are unique and remain constant for the lifetime of the object.
-	//   GetPlayfieldID() - Unsure how to convert this to a playfield name through API; No way to generate Playfield data objects? Currently using lookup table on forum.
+	//   GetPlayfieldID() - Can be converted to a localized string using the LDBFormat uitlity, with the category "Playfieldnames" (Discovered in Meeehr's topbar)
 	//   GetPosition() - World coordinates (Y is vertical)
 	//   GetDistanceToPlayer() - Proximity system triggers at ~20m when approaching a dynel, as well as detecting new dynels within that radius
 	//     Lore detected at shorter ranges is almost always spawned in some way. Once spawned, the only way to track its existence is to bounce back and forth across the boundary
@@ -203,6 +198,7 @@ class com.LoreHound.LoreHound extends Mod {
 		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
 		if (loreType == ef_LoreType_Drop) { // Track dropped lore so that notifications can be made on despawn
 			if (m_TrackedLore[dynelId.toString()] == undefined) {
+				// Don't care about the value, but the request enables DynelGone triggers
 				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
 			}
 			// Refresh this, in case it failed to identify at first
@@ -228,7 +224,7 @@ class com.LoreHound.LoreHound extends Mod {
 			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
 				var loreName:String = AttemptIdentification(loreId); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
 				var messageStrings:Array = new Array(
-					loreName + "despawned.",
+					"Lore (" + loreName + ") despawned",
 					"Lore despawned or out of range (" + loreName + ")",
 					"Lore despawned or out of range (" + loreName + ")",
 					"Category: " + ef_LoreType_Drop + " despawned (" + loreName + ")"
@@ -238,6 +234,17 @@ class com.LoreHound.LoreHound extends Mod {
 			m_TrackedLore[despawnedId] = undefined;
 		}
 	}
+
+	private function ClearTracking():Void {
+		for (var key:String in m_TrackedLore) {
+			var id:Array = key.split(":");
+			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
+		}
+		m_TrackedLore = new Object();
+		TraceMsg("Player changed zones, tracked lore has been cleared.");
+	}
+
+	/// Lore identification
 
 	private static function ClassifyID(categorizationId:Number):Number {
 		// Here be the magic numbers (probably planted by the Dragon)
@@ -293,27 +300,27 @@ class com.LoreHound.LoreHound extends Mod {
 		var messageStrings:Array = new Array();
 		switch (loreType) {
 			case ef_LoreType_Common:
-				messageStrings.push( loreName + " nearby.");
+				messageStrings.push("Lore (" + loreName + ") nearby");
 				messageStrings.push("Common lore nearby (" + loreName + ")");
 				messageStrings.push("Common lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Triggered:
-				messageStrings.push( loreName + " has appeared.");
+				messageStrings.push("Lore (" + loreName + ") has appeared");
 				messageStrings.push("Triggered lore nearby (" + loreName + ")");
 				messageStrings.push("Triggered lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Drop:
-				messageStrings.push( loreName + " dropped.");
+				messageStrings.push("Lore (" + loreName + ") dropped");
 				messageStrings.push("Dropped lore nearby (" + loreName + ")");
 				messageStrings.push("Dropped lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Special:
-				messageStrings.push( loreName + " nearby.");
+				messageStrings.push("Lore (" + loreName + ") nearby");
 				messageStrings.push("Unusual lore nearby (" + loreName + ")");
 				messageStrings.push("Unusual lore (" + loreName + ")");
 				break;
 			case ef_LoreType_Unknown:
-				messageStrings.push( loreName + " needs catologuing.");
+				messageStrings.push("Lore (" + loreName + ") needs cataloguing");
 				messageStrings.push("Unknown lore detected (" + loreName + ")");
 				messageStrings.push("Unknown lore (" + loreName + ")");
 				break;
@@ -380,7 +387,7 @@ class com.LoreHound.LoreHound extends Mod {
 			// Not entirely clear on what the "attractor" parameter is for, leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
 			// Y is being listed last because it's the vertical component, and most concern themselves with map coordinates (x,z)
 			var pos:Vector3 = dynel.GetPosition(0);
-			detailStrings.push("Playfield: " + dynel.GetPlayfieldID() + " Coordinates: [" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + "]");
+			detailStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + ")");
 		}
 		if (loreType == ef_LoreType_Unknown || (details & ef_Details_DynelId) == ef_Details_DynelId) {
 			detailStrings.push("Dynel ID: " + dynel.GetID().toString());
