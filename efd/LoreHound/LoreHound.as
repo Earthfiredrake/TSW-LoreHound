@@ -40,6 +40,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Various constants found to be useful
 	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
+	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided
@@ -78,7 +79,8 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		RegisterWithTopbar();
 
-		// Character teleported also triggers on anima leaps and agartha teleports, while character destructed seems to only trigger when changing zones.
+		// Character teleported also triggers on anima leaps and agartha teleports, while character destructed seems to only trigger when changing zones
+		// (of course teleports often trigger out of range destructions.)
 		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
 
 		ChatMsg("Is on the prowl.");
@@ -91,6 +93,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("LogLevel", ef_LoreType_None);
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
+		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when the event is running)
 		Config.NewSetting("SendReports", false);
 
 		// Extended information, regardless of this setting:
@@ -203,7 +206,11 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			// Refresh this, in case it failed to identify at first
 			m_TrackedLore[dynelId.toString()] = loreId;
-			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, categorizationId, dynelName));
+			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
+		}
+		if ((loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && (loreId == undefined || loreId == 0) && Config.GetValue("IgnoreOffSeasonLore")) {
+			loreType = ef_LoreType_None;
+			TraceMsg("Off season lore ignored.")
 		}
 		if (loreType != ef_LoreType_Unknown && loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
 			loreType = ef_LoreType_None;
@@ -222,7 +229,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		var loreId:Number = m_TrackedLore[despawnedId];
 		if (loreId != undefined) {
 			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
-				var loreName:String = AttemptIdentification(loreId); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
+				var loreName:String = AttemptIdentification(loreId, ef_LoreType_Drop); // Only applies to dropped lore, so it can't be the Shrouded Lore, remaining params permitted to be undefined
 				var messageStrings:Array = new Array(
 					"Lore (" + loreName + ") despawned",
 					"Lore despawned or out of range (" + loreName + ")",
@@ -250,6 +257,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Here be the magic numbers (probably planted by the Dragon)
 		switch (categorizationId) {
 			case 7128026: // Shared by all known fixed location lore
+				// Also includes: (rejected candidates for suspected unknown IDs)
+				// - Lore from end of Brotherly Loathe (drops from boss)
+				// - Lore on docks in One Kill Ahead (appears after cutscene)
+				// - Lore at pachinko machine in Pachinko Model (appears after use)
+				// - Lore in boardroom inaccessible (does not appear?) until after penthouse fight
+				// - Lore on penthouse balcony (spawns after fight)
 				return ef_LoreType_Common;
 			case 7648084: // Pol (Hidden zombie, after #1)
 							// Pol (Drone spawn) is ??
@@ -262,22 +275,45 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 7647985: // Fac5 (Post boss lore spawn)
 			case 7647986: // Fac3 (Post boss lore spawn)
 			case 7573298: // HE6 (Post boss lore spawn)
+			case 8507997: // CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor
+			case 8508000: // CK carpark (HiE BS #2) spawns after picking up the evidence
 				return ef_LoreType_Triggered;
-			case 8508040:  // BS drop (The Wall #4) from Behemoth of the Devouring Plague in KD
-			case 9240080:  // Shared by all known monster drop or spawned bestiary lore
+			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), very short timeout
+			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS#4) in KD, very short timeout
+			case 9240080:  // Shared by all known monster drop or spawned bestiary lore, ~5m timeouts on these
 				return ef_LoreType_Drop;
 			case 7993128: // Shrouded Lore (End of Days)
 			case 9135398: // Two one-off lores found in MFB (probably should be grouped as Triggered, want to go back in and verify which was which first)
 			case 9135406:
 				return ef_LoreType_Special;
 			default:
+			//Suspect IDs (from string dumps):
+			//7648452
+			//7653135
+			//8437788
+			//8437793
+			//8508014
+			//8508217
+			//8587691
+			//9125445
+			//9125570
+			//9241297
+			// Am reasonably confident these two are Christmas event ones
+			// Probably the two in Niflheim (tree and boss death)
+			//8397678
+			//8397708
+			// Potential candidates to investigate:
+			// The Jinn and the First Age 1 (Faust Omega, "Knowledge" room)
+			// One or more IDs might be related to the full sets of event lore missing entirely
 				return ef_LoreType_Unknown;
 		}
 	}
 
 	private static function CheckLocalizedName(formatStr:String):Boolean {
 		// Have the localization system provide a language dependent string to compare with
-		// In English this ends up being "Lore", hopefully it is similarly generic and likely to match in other languages
+		// In English this ends up being "Lore", which only seems to clash with the teleport objects
+		// The French term (Compendium) appears to be similarly uniquely used
+		// The German term (Wissen) unfortunately also pops up on every scientist around... including many corpses
 		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
 		return LDBFormat.Translate(formatStr).indexOf(testStr) != -1;
 	}
@@ -296,7 +332,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	// 2: Log message
 	// 3: Mail report
 	private static function GetMessageStrings(loreType:Number, categorizationId:Number, dynel:Dynel):Array {
-		var loreName = AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), categorizationId, dynel.GetName());
+		var loreName = AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), loreType, categorizationId, dynel.GetName());
 		var messageStrings:Array = new Array();
 		switch (loreType) {
 			case ef_LoreType_Common:
@@ -341,7 +377,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	// m_Parent/m_Children: Navigate the lore tree
 	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
 	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
-	private static function AttemptIdentification(loreId:Number, categorizationId:Number, dynelName:String):String {
+	private static function AttemptIdentification(loreId:Number, loreType:Number, categorizationId:Number, dynelName:String):String {
 		if (loreId != undefined && loreId != 0) {
 			var loreNode:LoreNode = Lore.GetDataNodeById(loreId);
 			var loreSource:Number = Lore.GetTagViewpoint(loreId);
@@ -362,18 +398,34 @@ class efd.LoreHound.LoreHound extends Mod {
 			for (var i:Number = 0; i < parentNode.m_Children.length; ++i) {
 				var childId:Number = parentNode.m_Children[i].m_Id;
 				if (childId == loreId) {
-					return parentNode.m_Name + " " + catCode + priorSiblings;
+					return parentNode.m_Name + catCode + priorSiblings;
 				}
 				if (Lore.GetTagViewpoint(childId) == loreSource) {
 					++priorSiblings;
 				}
 			}
 		}
-		// Shrouded Lore, amusingly, uniformly lacks the loreId field and is the only type known to have an informative localized string.
-		if (categorizationId == 7993128) {
+		// Shrouded Lore, amusingly, uniformly lacks the loreId field (due to being out of season?) and is the only type known to have an informative localized string.
+		if (categorizationId == c_ShroudedLoreCategory) {
 			return dynelName;
 		}
-		return "Unable to identify";
+		// Deal with the rest of the missing data
+		switch (loreType) {
+			case ef_LoreType_Common:
+				// All the unidentified common lore I ran into matched up with event/seasonal lore
+				// Though not all the event/seasonal lore exists in this disabled state
+				// For lore in accessible locations (ie, not event instances):
+				// - Samhain lores seem to be mostly absent
+				// - Other event lores seem to be mostly present
+				// (There are, of course, exceptions)
+				return "Inactive event lore";
+			case ef_LoreType_Drop:
+				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
+				return "Incomplete data, redetect";
+			default:
+				// Just in case
+				return "Unable to identify, unknown reason.";
+		}
 	}
 
 	// This info is ommitted from FIFO messages
