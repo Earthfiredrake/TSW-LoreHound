@@ -9,7 +9,7 @@ Can detect and attempt to identify lore pickups when they enter a ~20m radius ar
 + Unusual Lore: Particularly odd lore detections, currently has the Shrouded Lore from End of Days in it (and a couple of other ones that need a bit more work done on them).
 + Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
 
-Notifications for each group can be output to either the System Chat, or as FIFO alerts. By default it will ignore categorized and identified lore which the character has not yet picked up. There is also an option to send in reports of uncategorized lore semi-automatically (sends the next time the bank is opened).
+Notifications for each group can be output to either the System Chat, or as FIFO alerts. By default it will ignore categorized and identified lore which the character has not yet picked up. It will also ignore lore believed to be linked to an inactive event. There is also an option to send in reports of uncategorized lore semi-automatically (sends the next time the bank is opened).
 
 ## Installation
 Any packaged releases can be installed by copying the contents into [Game Directory]\Data\Gui\Flash\Customized, and restarting the client.
@@ -19,8 +19,10 @@ If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the exi
 + If not using a topbar replacement, the icon cannot be moved or hidden
   + In the player account settings file, the IconPosition record in the LoreHoundConfig archive can be manually changed while the game is not running to change this location.
   + Setting both x and y values to -32 should position the icon completely off the screen
-+ Lore topic and entry # may not be reported for all lore.
-  + Stepping away (more than 20m) and reapproaching the lore may cause it to be properly identified (sometimes successful with dropped lores that fail when first spawned, has not worked with normal placed lores that fail)
++ Drop lores may not have the topic and entry # immediately available.
+  + Stepping away (more than 20m) and reapproaching the lore should cause it to be properly identified
++ German users may see a number of false positive detections, due to wide use of "Wissen" in names
+  + Disabling the unknown lore category will remove the spam (as well as any accurate detections)
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.
