@@ -6,6 +6,7 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
 import com.GameInterface.Utils;
+import gfx.utils.Delegate;
 
 import efd.LoreHound.lib.ConfigWrapper;
 
@@ -114,7 +115,7 @@ class efd.LoreHound.lib.AutoReport {
 				// Failed to send, will delay and retry up to max attempts
 				m_ReportsSent = 0;
 				if (attempt < c_MaxRetries) {
-					setTimeout(SendReport, c_RetryDelay, attempt + 1);
+					setTimeout(Delegate.create(this, SendReport), c_RetryDelay, attempt + 1);
 				} else {
 					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: One or more automated reports failed to send and will remain queued.");
 				}
@@ -138,7 +139,7 @@ class efd.LoreHound.lib.AutoReport {
 				// Continue sending reports as needed
 				if (queue.length > 0) {
 					// Delay to avoid triggering flow restrictions
-					setTimeout(SendReport, c_RetryDelay, 0);
+					setTimeout(Delegate.create(this, SendReport), c_RetryDelay, 0);
 				} else {
 					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: All queued reports have been sent. Thank you for your assistance.");
 				}

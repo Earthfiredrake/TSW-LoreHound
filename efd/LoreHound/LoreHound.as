@@ -14,6 +14,7 @@ import com.GameInterface.Utils;
 import com.GameInterface.VicinitySystem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
+import gfx.utils.Delegate;
 
 import efd.LoreHound.lib.AutoReport;
 import efd.LoreHound.lib.ConfigWrapper;
@@ -182,8 +183,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
 	/// Lore detection (callback for dynel detection)
-	private function LoreSniffer(dynelId:ID32):Void {
+	private function LoreSniffer(dynelId:ID32, repeat:Number):Void {
 		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
+		if (repeat == undefined) { repeat = 0; }
+		else { TraceMsg("In repeat: " + repeat + " Dynel: " + dynelId); }
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
 		var dynelName:String = dynel.GetName();
@@ -198,25 +201,34 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != e_DynelType_Object) {
 			loreType = CheckLocalizedName(dynelName) ? ef_LoreType_Unknown : ef_LoreType_None;
 		}
-		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
-		if (loreType == ef_LoreType_Drop) { // Track dropped lore so that notifications can be made on despawn
-			if (m_TrackedLore[dynelId.toString()] == undefined) {
-				// Don't care about the value, but the request enables DynelGone triggers
-				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-			}
-			// Refresh this, in case it failed to identify at first
-			m_TrackedLore[dynelId.toString()] = loreId;
-			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
-		}
-		if ((loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && (loreId == undefined || loreId == 0) && Config.GetValue("IgnoreOffSeasonLore")) {
-			loreType = ef_LoreType_None;
-			TraceMsg("Off season lore ignored.")
-		}
-		if (loreType != ef_LoreType_Unknown && loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
-			loreType = ef_LoreType_None;
-			TraceMsg("Unclaimed lore ignored.");
-		}
 		if (loreType != ef_LoreType_None) {
+			var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
+			if (loreId == 0) {
+				TraceMsg("ID == 0");
+			}
+			if (loreType == ef_LoreType_Drop) {
+				// Drops without a valid loreId should correct themselves quickly, retest after a short delay
+				if (repeat < 5 && loreId == 0) {
+					TraceMsg("Repeat for dynel: " + dynelId);
+					setTimeout(Delegate.create(this, LoreSniffer), 1, dynelId, repeat + 1);
+					return;
+				}
+				// Track dropped lore so that notifications can be made on despawn
+				if (m_TrackedLore[dynelId.toString()] == undefined) {
+					// Don't care about the value, but the request is required to get DynelGone events
+					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+					m_TrackedLore[dynelId.toString()] = loreId;
+					TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
+				}
+			}
+			if ((loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && loreId == 0 && Config.GetValue("IgnoreOffSeasonLore")) {
+				TraceMsg("Off season lore ignored.");
+				return;
+			}
+			if (loreType != ef_LoreType_Unknown && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
+				TraceMsg("Unclaimed lore ignored.");
+				return;
+			}
 			SendLoreNotifications(loreType, categorizationId, dynel);
 		}
 	}
@@ -264,11 +276,11 @@ class efd.LoreHound.LoreHound extends Mod {
 				// - Lore in boardroom inaccessible (does not appear?) until after penthouse fight
 				// - Lore on penthouse balcony (spawns after fight)
 				return ef_LoreType_Common;
-			case 7648084: // Pol (Hidden zombie, after #1)
+			case 7648084: // Pol (Hidden zombie after #1)
 							// Pol (Drone spawn) is ??
 			case 7661215: // DW6 (Post boss lore spawn)
-			case 7648451: // Ankh (Orochi adds, after #1)
-			case 7648450: // Ankh (Mummy adds, after #3)
+			case 7648451: // Ankh (Orochi agent after #1)
+			case 7648450: // Ankh (Mummy adds after #3) (was this Ankh #5 or #8?)
 			case 7648449: // Ankh (Pit dwellers)
 			case 7647988: // HF6 (Post boss lore spawn)
 			case 7647983: // Fac6 (Post boss lore spawn)
@@ -277,6 +289,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 7573298: // HE6 (Post boss lore spawn)
 			case 8507997: // CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor
 			case 8508000: // CK carpark (HiE BS #2) spawns after picking up the evidence
+			case 9125445: // MFA (Smiler mech after #5)
+			case 9125570: // MFA6 (Post boss lore spawn)
 				return ef_LoreType_Triggered;
 			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), very short timeout
 			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS#4) in KD, very short timeout
@@ -288,22 +302,21 @@ class efd.LoreHound.LoreHound extends Mod {
 				return ef_LoreType_Special;
 			default:
 			//Suspect IDs (from string dumps):
-			//7648452
-			//7653135
-			//8437788
-			//8437793
-			//8508014
-			//8508217
-			//8587691
-			//9125445
-			//9125570
-			//9241297
+			//7648452 // Likely Ankh #5 or #8
+			//7653135 // HR after machine tyrant?
+			//8437788 // Tokyo somewhere?
+			//8437793 // Tokyo somewhere?
+			//8508014 // Tokyo somewhere?
+			//8508217 // Tokyo somewhere?
+			//8587691 // Scrappy's deathspawn lore?
+			//9241297 // Somehow museum related?
 			// Am reasonably confident these two are Christmas event ones
 			// Probably the two in Niflheim (tree and boss death)
 			//8397678
 			//8397708
 			// Potential candidates to investigate:
 			// The Jinn and the First Age 1 (Faust Omega, "Knowledge" room)
+			// Ankh (5|8) and HR
 			// One or more IDs might be related to the full sets of event lore missing entirely
 				return ef_LoreType_Unknown;
 		}
@@ -421,6 +434,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				return "Inactive event lore";
 			case ef_LoreType_Drop:
 				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
+				// The only reason to see this now is if the automatic redetection system failed
 				return "Incomplete data, redetect";
 			default:
 				// Just in case

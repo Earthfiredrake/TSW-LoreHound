@@ -19,8 +19,6 @@ If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the exi
 + If not using a topbar replacement, the icon cannot be moved or hidden
   + In the player account settings file, the IconPosition record in the LoreHoundConfig archive can be manually changed while the game is not running to change this location.
   + Setting both x and y values to -32 should position the icon completely off the screen
-+ Drop lores may not have the topic and entry # immediately available.
-  + Stepping away (more than 20m) and reapproaching the lore should cause it to be properly identified
 + German users may see a number of false positive detections, due to wide use of "Wissen" in names
   + Disabling the unknown lore category will remove the spam (as well as any accurate detections)
 

@@ -63,6 +63,7 @@ class efd.LoreHound.lib.Mod {
 		m_ShowConfig = DistributedValue.Create(ConfigWindowVar);
 		m_ShowConfig.SetValue(false);
 		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
+		m_DebugTrace = false;
 	}
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
@@ -359,5 +360,5 @@ class efd.LoreHound.lib.Mod {
 	private var m_ViperTIO:DistributedValue;
 	private var m_IsTopbarRegistered:Boolean = false;
 
-	private var m_DebugTrace:Boolean = false;
+	private var m_DebugTrace:Boolean;
 }
