@@ -5,10 +5,10 @@
 import gfx.controls.CheckBox;
 import gfx.core.UIComponent;
 
-import com.LoreHound.lib.ConfigWrapper;
-import com.LoreHound.LoreHound;
+import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.LoreHound;
 
-class com.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
+class efd.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
 
 	private var m_GroupTitle:TextField;
 	private var m_CBFifoEnabled:CheckBox;

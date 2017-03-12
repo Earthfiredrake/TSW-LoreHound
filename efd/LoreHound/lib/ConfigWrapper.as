@@ -16,7 +16,7 @@ import com.Utils.Signal;
 // The setting names "ArchiveType" and "All" are reserved for internal use
 // Supports basic types and limited composite types (nested ConfigWrapper, Array, and generic Objects)
 
-class com.LoreHound.lib.ConfigWrapper {
+class efd.LoreHound.lib.ConfigWrapper {
 
 	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void
 

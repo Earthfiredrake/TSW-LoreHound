@@ -5,19 +5,20 @@
 import com.Components.WindowComponentContent;
 import gfx.controls.CheckBox;
 
-import com.LoreHound.lib.ConfigWrapper;
-import com.LoreHound.LoreHound;
+import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.LoreHound;
 
-class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
+class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	// Checkboxes
 	private var m_CBModEnabled:CheckBox;
-	private var m_CBIgnoreLore:MovieClip;
-	private var m_CBErrorReports:MovieClip;
+	private var m_CBIgnoreUnclaimedLore:CheckBox;
+	private var m_CBIgnoreOffSeasonLore:CheckBox;
+	private var m_CBErrorReports:CheckBox;
 
-	private var m_CBDetailLocation:MovieClip;
-	private var m_CBDetailCategory:MovieClip;
-	private var m_CBDetailInstance:MovieClip;
+	private var m_CBDetailLocation:CheckBox;
+	private var m_CBDetailCategory:CheckBox;
+	private var m_CBDetailInstance:CheckBox;
 
 	// Lore Groups
 	private var m_CommonLoreGroup:MovieClip;
@@ -37,7 +38,8 @@ class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		super.configUI();
 		// Disable focus to prevent selections from locking user input until the window closes
 		m_CBModEnabled.disableFocus = true;
-		m_CBIgnoreLore.disableFocus = true;
+		m_CBIgnoreUnclaimedLore.disableFocus = true;
+		m_CBIgnoreOffSeasonLore.disableFocus = true;
 		m_CBErrorReports.disableFocus = true;
 		m_CBDetailLocation.disableFocus = true;
 		m_CBDetailCategory.disableFocus = true;
@@ -50,7 +52,8 @@ class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
 
 		m_CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
-		m_CBIgnoreLore.addEventListener("select", this, "CBIgnoreLore_Select");
+		m_CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
+		m_CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
 		m_CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
 		m_CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
 		m_CBDetailCategory.addEventListener("select", this, "CBDetailCategory_Select");
@@ -75,7 +78,10 @@ class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 			m_CBModEnabled.selected = m_Config.GetValue("Enabled");
 		}
 		if (setting == "IgnoreUnclaimedLore" || setting == "All") {
-			m_CBIgnoreLore.selected = m_Config.GetValue("IgnoreUnclaimedLore");
+			m_CBIgnoreUnclaimedLore.selected = m_Config.GetValue("IgnoreUnclaimedLore");
+		}
+		if (setting == "IgnoreOffSeasonLore" || setting == "All") {
+			m_CBIgnoreOffSeasonLore.selected = m_Config.GetValue("IgnoreOffSeasonLore");
 		}
 		if (setting == "SendReports" || setting == "All") {
 			m_CBErrorReports.selected = m_Config.GetValue("SendReports");
@@ -93,8 +99,12 @@ class com.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		m_Config.SetValue("Enabled", event.selected);
 	}
 
-	private function CBIgnoreLore_Select(event:Object):Void {
+	private function CBIgnoreUnclaimedLore_Select(event:Object):Void {
 		m_Config.SetValue("IgnoreUnclaimedLore", event.selected);
+	}
+
+	private function CBIgnoreOffSeasonLore_Select(event:Object):Void {
+		m_Config.SetValue("IgnoreOffSeasonLore", event.selected);
 	}
 
 	private function CBErrorReports_Select(event:Object):Void {
