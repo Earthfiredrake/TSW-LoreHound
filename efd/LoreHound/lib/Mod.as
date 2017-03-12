@@ -2,6 +2,7 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.filters.DropShadowFilter;
 import flash.geom.Point;
 
 import com.GameInterface.DistributedValue;
@@ -10,8 +11,11 @@ import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
 import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
+import com.Utils.GlobalSignal;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
+
+import efd.LoreHound.lib.etModUtils.GemController;
 
 import efd.LoreHound.gui.ConfigWindowContent;
 import efd.LoreHound.lib.ConfigWrapper;
@@ -67,6 +71,7 @@ class efd.LoreHound.lib.Mod {
 		m_ShowConfig.SetValue(false);
 		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
 		m_DebugTrace = false;
+		m_ScreenResolutionScale = DistributedValue.Create("GUIResolutionScale");
 	}
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
@@ -77,6 +82,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
 		Config.NewSetting("IconPosition", new Point(20, 40)); // Used when topbar is unavailable
+		Config.NewSetting("IconScale", 100);
 
 		InitializeConfig(); // Hook for decendent class to customize config options
 
@@ -94,6 +100,13 @@ class efd.LoreHound.lib.Mod {
 		switch(setting) {
 			case "Enabled":
 				Enabled = newValue;
+				break;
+			case "IconPosition":
+				m_ModIcon._x = newValue.x;
+				m_ModIcon._y = newValue.y;
+				break;
+			case "IconScale":
+				UpdateIconScale();
 				break;
 			default:
 			// Setting does not push changes (is checked on demand)
@@ -192,9 +205,16 @@ class efd.LoreHound.lib.Mod {
 		if (iconName == undefined) { iconName = "ModIcon"; }
 		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
+		// These settings are for when not using topbar integration
+		// They will need to be reset prior to use with the topbar
 		var position:Point = Config.GetValue("IconPosition");
 		m_ModIcon._x = position.x;
 		m_ModIcon._y = position.y;
+		m_ModIcon.filters = [new DropShadowFilter(50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false)];
+		GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
+		m_ScreenResolutionScale.SignalChanged.Connect(UpdateIconScale, this);
+		UpdateIconScale();
+		// Events need to be retained for topbar
 		m_ModIcon.onMousePress = function(buttonID:Number) {
 			switch(buttonID) {
 				case 1: // Left mouse button
@@ -235,8 +255,38 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function CreateIconTooltip():TooltipInterface {
-		// The negative delay causes the manager itself to manage the delay based on the player's setting
+		// Negative delay parameter causes the manager to insert a delay based on the player's settings
 		return TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, -1, GetIconTooltipData());
+	}
+
+	private function ManageGEM(unlocked:Boolean):Void {
+		if (unlocked && !m_GemManager) {
+			m_GemManager = GemController.create("GuiEditModeInterface", m_HostMovie, m_HostMovie.getNextHighestDepth(), m_ModIcon);
+			m_GemManager.addEventListener( "scrollWheel", this, "ChangeIconScale" );
+			m_GemManager.addEventListener( "endDrag", this, "ChangeIconPosition" );
+		}
+		if (!unlocked) {
+			m_GemManager.removeMovieClip();
+			m_GemManager = null;
+		}
+	}
+
+	private function ChangeIconScale(event:Object): Void {
+		var newScale:Number = Config.GetValue("IconScale") + event.delta * 5;
+		newScale = Math.min(200, Math.max(30, newScale));
+		Config.SetValue("IconScale", newScale);
+		m_GemManager.invalidate();
+	}
+
+	private function ChangeIconPosition(event:Object):Void {
+		Config.SetValue("IconPosition", new Point(m_ModIcon._x, m_ModIcon._y));
+	}
+
+	private function UpdateIconScale(dv:DistributedValue):Void {
+		var guiScale:Number = m_ScreenResolutionScale.GetValue();
+		if ( guiScale == undefined) { guiScale = 1; }
+		m_ModIcon._xscale = guiScale * Config.GetValue("IconScale");
+		m_ModIcon._yscale = guiScale * Config.GetValue("IconScale");
 	}
 
 	// MeeehrUI is legacy compatible with the VTIO interface,
@@ -255,10 +305,14 @@ class efd.LoreHound.lib.Mod {
 		if (dv.GetValue() && !m_IsTopbarRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
 			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
-			// Tweak positions to be where the topbar is expecting things to be
+			// Adjust our default icon to be better suited for topbar integration
 			SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
 			m_ModIcon._x = 0;
 			m_ModIcon._y = 0;
+			m_ModIcon.filters = [];
+			GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+			m_ScreenResolutionScale.SignalChanged.Disconnect(UpdateIconScale, this);
+
 			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, as the mechanism used to copy it requires ours be available to hook up the events properly
@@ -353,6 +407,8 @@ class efd.LoreHound.lib.Mod {
 
 	private var m_HostMovie:MovieClip;
 	private var m_ModIcon:MovieClip;
+	private var m_GemManager:GemController;
+	private var m_ScreenResolutionScale:DistributedValue;
 
 	private var m_MeeehrUI:DistributedValue;
 	private var m_ViperTIO:DistributedValue;

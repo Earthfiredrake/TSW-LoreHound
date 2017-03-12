@@ -15,10 +15,29 @@ Notifications for each group can be output to either the System Chat, or as FIFO
 Any packaged releases can be installed by copying the contents into [Game Directory]\Data\Gui\Flash\Customized, and restarting the client.
 If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
+## Changelog
+Version 0.4.1-beta
++ New responses to lore pickups that don't connect to anything (formerly "Unable to identify")
+  + Partially intialized drops will be poked until they shape up
+  + Disabled event lore flagged as such
++ Told to ignore inactive event lore (new option: default ignores)
++ Icon no longer superglued to screen without topbar mod, works with GUI edit mode
+  + Refuses to hide, but can be made into a very small puppy
++ Unknown lore id count: 10
+
+Version 0.4.0-beta
++ First open beta release
++ Learned a new trick, now identifies lore with topic and entry #
++ Suborned the postal service into serving as an automated bug report system (opt-in)
++ Settings GUI added w/ Topbar integration, disillusioning debug menu of its supposed popularity
++ Unknown lore id count: 15
+
+Version 0.1.1-alpha
++ Proof of concept
++ Grumpy dog has unfriendly info format and no GUI access to settings
++ Unknown lore id count:  26
+
 ## Known Issues
-+ If not using a topbar replacement, the icon cannot be moved or hidden
-  + In the player account settings file, the IconPosition record in the LoreHoundConfig archive can be manually changed while the game is not running to change this location.
-  + Setting both x and y values to -32 should position the icon completely off the screen
 + German users may see a number of false positive detections, due to wide use of "Wissen" in names
   + Disabling the unknown lore category will remove the spam (as well as any accurate detections)
 
@@ -39,7 +58,16 @@ Copyright (c) 2017 Earthfiredrake
 
 Software and source released under the MIT License
 
+Uses the TSW-AddonUtils library and graphical elements from the UI_Tweaks mod
+
+Both Copyright (c) 2015 eltorqiro and used under the terms of the MIT License
+
+https://github.com/eltorqiro/TSW-Utils
+
+https://github.com/eltorqiro/TSW-UITweaks
+
 TSW, the related API, and most graphics elements are products of Funcom
-LoreHound icon developed from game graphics (sourced from TSWDB) and http://www.iconninja.com/basset-hound-dog-head-icon-843075
+
+LoreHound icon developed from game graphics (sourced from TSWDB) and  http://www.iconninja.com/basset-hound-dog-head-icon-843075
 
 Special Thanks to Vomher for help identifying some magic numbers
