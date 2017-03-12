@@ -2,6 +2,8 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.geom.Point;
+
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Log;
 import com.GameInterface.Tooltip.TooltipData;
@@ -19,7 +21,8 @@ import efd.LoreHound.lib.ConfigWrapper;
 // "Installed": Used to trigger first run events
 // "Version": Used to detect upgrades and rollbacks
 // "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart
-// "IconPosition": Used if a topbar is not installed to position the icon container
+// "IconPosition": Only used if topbar is not handling icon layout
+// "IconScale": Only used if topbar is not handling icon layout
 // "ConfigWindowPosition":
 class efd.LoreHound.lib.Mod {
 
@@ -72,13 +75,12 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Version", Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
-		Config.NewSetting("ConfigWindowPosition", {x: 20, y: 20} );
-		Config.NewSetting("IconPosition", {x: 20, y: 40} ); // Used when topbar is unavailable
+		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
+		Config.NewSetting("IconPosition", new Point(20, 40)); // Used when topbar is unavailable
 
 		InitializeConfig(); // Hook for decendent class to customize config options
 
-		// Callback to detect important setting changes
-		Config.SignalValueChanged.Connect(ConfigChanged, this);
+		Config.SignalValueChanged.Connect(ConfigChanged, this); // Callback to detect important setting changes
 
 		Config.LoadConfig();
 	}
@@ -115,7 +117,7 @@ class efd.LoreHound.lib.Mod {
 				m_ConfigWindow.ShowResizeButton(false);
 				m_ConfigWindow.ShowFooter(false);
 
-				var position:Object = Config.GetValue("ConfigWindowPosition");
+				var position:Point = Config.GetValue("ConfigWindowPosition");
 				KeepInVisibleBounds(position, Config.GetDefault("ConfigWindowPosition"));
 				m_ConfigWindow._x = position.x;
 				m_ConfigWindow._y = position.y;
@@ -125,7 +127,7 @@ class efd.LoreHound.lib.Mod {
 		} else {
 			TraceMsg("Config window closed.");
 			if (m_ConfigWindow != null) {
-				Config.SetValue("ConfigWindowPosition", { x: m_ConfigWindow._x, y: m_ConfigWindow._y });
+				Config.SetValue("ConfigWindowPosition", new Point(m_ConfigWindow._x, m_ConfigWindow._y));
 				m_ConfigWindow.removeMovieClip();
 				m_ConfigWindow = null;
 			}
@@ -138,7 +140,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	// TODO: This only works on top and left of screen, need to account for Window size on other sides
-	private function KeepInVisibleBounds(position:Object, defaults:Object):Void{
+	private static function KeepInVisibleBounds(position:Point, defaults:Point):Void{
 		var visibleBounds = Stage.visibleRect;
 		if (position.x > visibleBounds.width || position.x < 0) {
 			position.x = defaults.x;
@@ -167,17 +169,14 @@ class efd.LoreHound.lib.Mod {
 		var newVersion:String = Config.GetDefault("Version");
 		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			var changeType:String;
+			var changeType:String = "Reverted";
 			if (versionChange > 0) {
 				changeType = "Updated";
 				DoUpdate(newVersion, oldVersion);
-			} else {
-				changeType = "Reverted";
-				DoRollback(newVersion, oldVersion);
 			}
 			// Reset the version number, as the change has occured
 			Config.ResetValue("Version");
-			ChatMsg(changeType + " to " + newVersion);
+			ChatMsg(changeType + " to v" + newVersion);
 		}
 	}
 
@@ -189,16 +188,11 @@ class efd.LoreHound.lib.Mod {
 	public function DoUpdate(newVersion:String, oldVersion:String):Void {
 	}
 
-	// Placeholder function for overriden behaviour
-	// Unlikely to be needed, but the hook's here if desired
-	public function DoRollback(newVersion:String, oldVersion:String):Void {
-	}
-
 	public function LoadIcon(iconName:String):Void {
 		if (iconName == undefined) { iconName = "ModIcon"; }
 		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
-		var position:Object = Config.GetValue("IconPosition");
+		var position:Point = Config.GetValue("IconPosition");
 		m_ModIcon._x = position.x;
 		m_ModIcon._y = position.y;
 		m_ModIcon.onMousePress = function(buttonID:Number) {
@@ -231,7 +225,7 @@ class efd.LoreHound.lib.Mod {
 		var toggle:String = Enabled ? "Disable" : "Enable";
 		var data:TooltipData = new TooltipData();
 		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
-		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'10\'>By " + DevName + " " + Version + "</font>");
+		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'10\'>By " + DevName + " v" + Version + "</font>");
 		// Descriptions are always listed at the bottom, after a divider line from any attributes
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Left click: Show Options</font>");
         data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Right click: " + toggle + " Mod</font>");
@@ -316,13 +310,17 @@ class efd.LoreHound.lib.Mod {
 		Log.Error(ModName, message);
 	}
 
-	// Compares two version strings (format v#.#.#[.alpha|.beta])
+	// Compares two version strings (format "#.#.#[.alpha|.beta]")
 	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
 	// If positive, then the first version is higher, negative means first version was lower
 	// A return of 0 indicates that the versions were the same
 	private static function CompareVersions(firstVer:String, secondVer:String) : Number {
-		var first:Array = firstVer.substr(1).split(".");
-		var second:Array = secondVer.substr(1).split(".");
+		// Support depreciated "v" prefix on version strings
+		if (firstVer.charAt(0) == "v") { firstVer = firstVer.substr(1); }
+		if (secondVer.charAt(0) == "v") { secondVer = secondVer.substr(1); }
+
+		var first:Array = firstVer.split(".");
+		var second:Array = secondVer.split(".");
 		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
 			if (first[i] != second[i]) {
 				if (i < 3) {

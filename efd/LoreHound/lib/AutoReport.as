@@ -2,11 +2,12 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import gfx.utils.Delegate;
+
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
 import com.GameInterface.Utils;
-import gfx.utils.Delegate;
 
 import efd.LoreHound.lib.ConfigWrapper;
 

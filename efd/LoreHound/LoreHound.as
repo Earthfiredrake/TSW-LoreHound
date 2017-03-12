@@ -2,6 +2,10 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.geom.Point;
+
+import gfx.utils.Delegate;
+
 import com.GameInterface.Chat;
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Character;
@@ -14,7 +18,6 @@ import com.GameInterface.Utils;
 import com.GameInterface.VicinitySystem;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
-import gfx.utils.Delegate;
 
 import efd.LoreHound.lib.AutoReport;
 import efd.LoreHound.lib.ConfigWrapper;
@@ -60,7 +63,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// General mod overrides
 
 	public function LoreHound(hostMovie:MovieClip) {
-		super("LoreHound", "v0.4.0.beta", "ReleaseTheLoreHound", hostMovie);
+		super("LoreHound", "0.4.1.beta", "ReleaseTheLoreHound", hostMovie);
 		// DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 
@@ -125,6 +128,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
 		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
 		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
+
+		// Version specific updates
+		if (oldVersion == "v0.4.0.beta") {
+			// Point support added to ConfigWrapper, and position settings were updated accordingly
+			// Also the last version to have the "v" embedded in the version string
+			var oldPoint = Config.GetValue("ConfigWindowPosition");
+			Config.SetValue("ConfigWindowPosition", new Point(oldPoint.x, oldPoint.y));
+			oldPoint = Config.GetValue("IconPosition");
+			Config.SetValue("IconPosition", new Point(oldPoint.x, oldPoint.y));
+		}
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function):Array {
