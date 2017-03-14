@@ -63,7 +63,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// General mod overrides
 
 	public function LoreHound(hostMovie:MovieClip) {
-		super("LoreHound", "0.4.1.beta", "ReleaseTheLoreHound", hostMovie);
+		super("LoreHound", "0.5.0.beta", "ReleaseTheLoreHound", hostMovie);
 		// DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
@@ -87,8 +87,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Character teleported also triggers on anima leaps and agartha teleports, while character destructed seems to only trigger when changing zones
 		// (of course teleports often trigger out of range destructions.)
 		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
-
-		ChatMsg("Is on the prowl.");
 	}
 
 	private function InitializeConfig():Void {
@@ -452,7 +450,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		// Shrouded Lore, amusingly, uniformly lacks the loreId field (due to being out of season?) and is the only type known to have an informative localized string.
 		if (categorizationId == c_ShroudedLoreCategory) {
-			return dynelName;
+			return "Inactive " + dynelName;
 		}
 		// Deal with the rest of the missing data
 		switch (loreType) {
