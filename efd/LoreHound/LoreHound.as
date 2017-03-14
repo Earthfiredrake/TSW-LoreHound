@@ -66,6 +66,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		super("LoreHound", "0.4.1.beta", "ReleaseTheLoreHound", hostMovie);
 		// DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
+		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
 
 		LoadConfig();
 		UpdateInstall();
@@ -165,6 +166,21 @@ class efd.LoreHound.LoreHound extends Mod {
 		super.Deactivate();
 	}
 
+	private function UpdateIcon():Void {
+		if (Enabled) {
+			for (var key:String in m_TrackedLore) {
+				// Only need to know if there are one or more items being tracked
+				ModIcon.gotoAndStop("alerted");
+				return;
+			}
+			if (m_AutoReport.IsEnabled() && m_AutoReport.HasReportsPending()) {
+				ModIcon.gotoAndStop("reporting");
+				return;
+			}
+		}
+		super.UpdateIcon();
+	}
+
 	// Notes on Dynel API:
 	//   GetName() - Actually a remoteformat xml tag, for the LDB localization system
 	//     Has a type attribute with a value usually 50200 and an id value which is used for categorization
@@ -231,6 +247,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Don't care about the value, but the request is required to get DynelGone events
 					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
 					m_TrackedLore[dynelId.toString()] = loreId;
+					UpdateIcon();
 					TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
 				}
 			}
@@ -263,7 +280,8 @@ class efd.LoreHound.LoreHound extends Mod {
 				);
 				DispatchMessages(ef_LoreType_Drop, -instance, messageStrings);
 			}
-			m_TrackedLore[despawnedId] = undefined;
+			delete m_TrackedLore[despawnedId];
+			UpdateIcon();
 		}
 	}
 
@@ -273,6 +291,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
 		}
 		m_TrackedLore = new Object();
+		UpdateIcon();
 		TraceMsg("Player changed zones, tracked lore has been cleared.");
 	}
 
@@ -512,6 +531,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				report += "\n" + detailStrings.join("\n");
 			}
 			m_AutoReport.AddReport({ id: categorizationId, text: report });
+			UpdateIcon();
 		}
 	}
 

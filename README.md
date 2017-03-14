@@ -23,6 +23,8 @@ Version 0.4.1-beta
 + Told to ignore inactive event lore (new option: default ignores)
 + Icon no longer superglued to screen without topbar mod, works with GUI edit mode
   + Refuses to hide, but can be made into a very small puppy
++ Now more vocal, notification on icon when tracking lore drops or when a debug report is ready
+  + Topbars cause shrinkage, but it's still there
 + Unknown lore id count: 10
 
 Version 0.4.0-beta
@@ -70,4 +72,6 @@ TSW, the related API, and most graphics elements are products of Funcom
 
 LoreHound icon developed from game graphics (sourced from TSWDB) and  http://www.iconninja.com/basset-hound-dog-head-icon-843075
 
-Special Thanks to Vomher for help identifying some magic numbers
+Special Thanks to:
+The TSW modder community for neglecting to secure various tutorials, code and other commentary in their faction vault
+Vomher for help identifying some magic numbers

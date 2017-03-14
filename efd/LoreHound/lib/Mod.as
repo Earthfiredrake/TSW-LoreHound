@@ -5,6 +5,8 @@
 import flash.filters.DropShadowFilter;
 import flash.geom.Point;
 
+import gfx.utils.Delegate;
+
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Log;
 import com.GameInterface.Tooltip.TooltipData;
@@ -50,9 +52,8 @@ class efd.LoreHound.lib.Mod {
 		value = m_EnabledByGame && Config.GetValue("Enabled");
 		if (value != Enabled) { // State changed
 			m_Enabled = value;
-			if (ModIcon.m_Tooltip != undefined) {
-				ModIcon.m_Tooltip.Close();
-				ModIcon.m_Tooltip = CreateIconTooltip();
+			if (m_IconTooltip != undefined) {
+				CreateIconTooltip();
 			}
 			if (value) { Activate(); }
 			else { Deactivate(); }
@@ -203,7 +204,6 @@ class efd.LoreHound.lib.Mod {
 
 	public function LoadIcon(iconName:String):Void {
 		if (iconName == undefined) { iconName = "ModIcon"; }
-		var capture = this; // Have to explicitly capture the local object, or it tries to implicitly find things in the mod icon movieclip
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
 		// These settings are for when not using topbar integration
 		// They will need to be reset prior to use with the topbar
@@ -215,33 +215,32 @@ class efd.LoreHound.lib.Mod {
 		m_ScreenResolutionScale.SignalChanged.Connect(UpdateIconScale, this);
 		UpdateIconScale();
 		// Events need to be retained for topbar
-		m_ModIcon.onMousePress = function(buttonID:Number) {
-			switch(buttonID) {
-				case 1: // Left mouse button
-					capture.m_ShowConfig.SetValue(!capture.m_ShowConfig.GetValue());
-					break;
-				case 2: // Right mouse button
-					capture.Config.SetValue("Enabled", !capture.Config.GetValue("Enabled"));
-					break;
-				default:
-					capture.TraceMsg("Unexpected mouse button press: " + buttonID);
-			}
-		};
-		m_ModIcon.onRollOver = function() {
-			// Note: "this" inside of the event handlers actually ends up being the mod icon movieclip
-			if (this.m_Tooltip != undefined) { return; } // Already exists, why recreate it?
-			this.m_Tooltip = capture.CreateIconTooltip();
-		}
-		m_ModIcon.onRollOut = function() {
-			if (this.m_Tooltip != undefined) {
-				this.m_Tooltip.Close();
-				this.m_Tooltip = undefined;
-			}
+		m_ModIcon.onMousePress = Delegate.create(this, IconMouseClick);
+		m_ModIcon.onRollOver = Delegate.create(this, CreateIconTooltip);
+		var closeTooltip:Function = Delegate.create(this, CloseIconTooltip);
+		// If the mouse button is down when moving off the icon, it won't trigger onRollOut
+		// Compensate by closing the tooltip when the mouse is released
+		// Meeehr's topbar doesn't copy the aux event over properly
+		m_ModIcon.onRollOut = closeTooltip;
+		m_ModIcon.onReleaseOutside = closeTooltip; // Left click only
+		m_ModIcon.onReleaseOutsideAux = closeTooltip; // Other mouse buttons (Scaleform extension)
+	}
+
+	private function IconMouseClick(buttonID:Number) {
+		switch(buttonID) {
+			case 1: // Left mouse button
+				m_ShowConfig.SetValue(!m_ShowConfig.GetValue());
+				break;
+			case 2: // Right mouse button
+				Config.SetValue("Enabled", !Config.GetValue("Enabled"));
+				break;
+			default:
+				TraceMsg("Unexpected mouse button press: " + buttonID);
 		}
 	}
 
 	// Default tooltip, data can be overriden or expanded by child classes
-	public function GetIconTooltipData():TooltipData {
+	private function GetIconTooltipData():TooltipData {
 		var toggle:String = Enabled ? "Disable" : "Enable";
 		var data:TooltipData = new TooltipData();
 		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
@@ -254,9 +253,20 @@ class efd.LoreHound.lib.Mod {
 		return data;
 	}
 
-	private function CreateIconTooltip():TooltipInterface {
+	private function CreateIconTooltip():Void {
 		// Negative delay parameter causes the manager to insert a delay based on the player's settings
-		return TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, -1, GetIconTooltipData());
+		var delay:Number = -1;
+		if (m_IconTooltip != undefined) {
+			// Replacing an existing tooltip, no delay
+			CloseIconTooltip();
+			delay = 0;
+		}
+		m_IconTooltip = TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, delay, GetIconTooltipData());
+	}
+
+	private function CloseIconTooltip():Void {
+		m_IconTooltip.Close();
+		m_IconTooltip = undefined;
 	}
 
 	private function ManageGEM(unlocked:Boolean):Void {
@@ -315,10 +325,11 @@ class efd.LoreHound.lib.Mod {
 
 			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
 			// Topbar creates its own icon, use it as our target for changes instead
-			// Can't actually remove ours though, as the mechanism used to copy it requires ours be available to hook up the events properly
+			// Can't actually remove ours though, it breaks the event handling
+			// TODO: Look into that more, see if something can be done about it to avoid the duplication
 			m_ModIcon = HostMovie.Icon;
 			// The copy will default to frame 1 (inactive), and may not be properly updated if the topbar loaded after this mod
-			m_ModIcon.gotoAndStop(Enabled ? 2 : 1);
+			UpdateIcon();
 			m_IsTopbarRegistered = true;
 			TraceMsg("Topbar registration complete.");
 		}
@@ -335,7 +346,7 @@ class efd.LoreHound.lib.Mod {
 
 	// Mod is activated
 	public function Activate():Void {
-		ModIcon.gotoAndStop(2); // Use the Enabled icon
+		UpdateIcon();
 		TraceMsg("Activated");
 	}
 
@@ -345,8 +356,12 @@ class efd.LoreHound.lib.Mod {
 		//   Saving here will be more frequent but protect against crashes better
 		//   Most calls quick polls of Config dirty flag with no actual save request
 		Config.SaveConfig();
-		ModIcon.gotoAndStop(1); // Use the Disabled icon
+		UpdateIcon();
 		TraceMsg("Deactivated");
+	}
+
+	private function UpdateIcon():Void {
+		ModIcon.gotoAndStop(Enabled ? "active" : "inactive");
 	}
 
 	// Text output utilities
@@ -407,6 +422,7 @@ class efd.LoreHound.lib.Mod {
 
 	private var m_HostMovie:MovieClip;
 	private var m_ModIcon:MovieClip;
+	private var m_IconTooltip:TooltipInterface;
 	private var m_GemManager:GemController;
 	private var m_ScreenResolutionScale:DistributedValue;
 
