@@ -5,6 +5,7 @@
 import com.Components.WindowComponentContent;
 import gfx.controls.CheckBox;
 
+import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.LoreHound;
 
@@ -21,11 +22,11 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var m_CBDetailInstance:CheckBox;
 
 	// Lore Groups
-	private var m_CommonLoreGroup:MovieClip;
-	private var m_TriggeredLoreGroup:MovieClip;
-	private var m_DropLoreGroup:MovieClip;
-	private var m_SpecialLoreGroup:MovieClip;
-	private var m_UnknownLoreGroup:MovieClip;
+	private var m_CommonLoreGroup:LoreCategorySettingGroup;
+	private var m_TriggeredLoreGroup:LoreCategorySettingGroup;
+	private var m_DropLoreGroup:LoreCategorySettingGroup;
+	private var m_SpecialLoreGroup:LoreCategorySettingGroup;
+	private var m_UnknownLoreGroup:LoreCategorySettingGroup;
 
 	// Configuration setting name "All" is reserved as a special event trigger
 	private var m_Config:ConfigWrapper;

@@ -8,7 +8,7 @@ import gfx.core.UIComponent;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.LoreHound;
 
-class efd.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
+class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	private var m_GroupTitle:TextField;
 	private var m_CBFifoEnabled:CheckBox;
@@ -17,7 +17,7 @@ class efd.LoreHound.gui.LoreTypeSettingGroup extends UIComponent {
 	private var m_Type:Number;
 	private var m_Config:ConfigWrapper;
 
-	private function LoreTypeSettingGroup() {
+	private function LoreCategorySettingGroup() {
 		super();
 	}
 

@@ -129,6 +129,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
 
 		// Version specific updates
+		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
 		if (oldVersion == "v0.4.0.beta") {
 			// Point support added to ConfigWrapper, and position settings were updated accordingly
 			// Also the last version to have the "v" embedded in the version string

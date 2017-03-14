@@ -124,7 +124,7 @@ class efd.LoreHound.lib.Mod {
 
 				m_ConfigWindow.SetTitle(ModName + " Settings", "left");
 				m_ConfigWindow.SetPadding(10);
-				m_ConfigWindow.SetContent("ConfigWindowContent");
+				m_ConfigWindow.SetContent(ModName+ "ConfigWindowContent");
 
 				m_ConfigWindow.ShowCloseButton(true);
 				m_ConfigWindow.ShowStroke(false);
@@ -203,7 +203,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	public function LoadIcon(iconName:String):Void {
-		if (iconName == undefined) { iconName = "ModIcon"; }
+		if (iconName == undefined) { iconName = ModName + "Icon"; }
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
 		// These settings are for when not using topbar integration
 		// They will need to be reset prior to use with the topbar
