@@ -2,6 +2,10 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.geom.Point;
+
+import gfx.utils.Delegate;
+
 import com.GameInterface.Chat;
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Character;
@@ -59,9 +63,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// General mod overrides
 
 	public function LoreHound(hostMovie:MovieClip) {
-		super("LoreHound", "v0.4.0.beta", "ReleaseTheLoreHound", hostMovie);
+		super("LoreHound", "0.5.0.beta", "ReleaseTheLoreHound", hostMovie);
 		// DebugTrace = true;
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
+		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
 
 		LoadConfig();
 		UpdateInstall();
@@ -82,8 +87,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Character teleported also triggers on anima leaps and agartha teleports, while character destructed seems to only trigger when changing zones
 		// (of course teleports often trigger out of range destructions.)
 		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
-
-		ChatMsg("Is on the prowl.");
 	}
 
 	private function InitializeConfig():Void {
@@ -124,6 +127,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
 		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
 		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
+
+		// Version specific updates
+		if (oldVersion == "v0.4.0.beta") {
+			// Point support added to ConfigWrapper, and position settings were updated accordingly
+			// Also the last version to have the "v" embedded in the version string
+			var oldPoint = Config.GetValue("ConfigWindowPosition");
+			Config.SetValue("ConfigWindowPosition", new Point(oldPoint.x, oldPoint.y));
+			oldPoint = Config.GetValue("IconPosition");
+			Config.SetValue("IconPosition", new Point(oldPoint.x, oldPoint.y));
+		}
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function):Array {
@@ -149,6 +162,21 @@ class efd.LoreHound.LoreHound extends Mod {
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		m_AutoReport.IsEnabled = false;
 		super.Deactivate();
+	}
+
+	private function UpdateIcon():Void {
+		if (Enabled) {
+			for (var key:String in m_TrackedLore) {
+				// Only need to know if there are one or more items being tracked
+				ModIcon.gotoAndStop("alerted");
+				return;
+			}
+			if (m_AutoReport.IsEnabled() && m_AutoReport.HasReportsPending()) {
+				ModIcon.gotoAndStop("reporting");
+				return;
+			}
+		}
+		super.UpdateIcon();
 	}
 
 	// Notes on Dynel API:
@@ -182,8 +210,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
 	/// Lore detection (callback for dynel detection)
-	private function LoreSniffer(dynelId:ID32):Void {
+	private function LoreSniffer(dynelId:ID32, repeat:Number):Void {
 		if (dynelId.m_Type != e_DynelType_Object && !m_DebugVerify) { return; }
+		if (repeat == undefined) { repeat = 0; }
+		else { TraceMsg("In repeat: " + repeat + " Dynel: " + dynelId); }
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
 		var dynelName:String = dynel.GetName();
@@ -198,25 +228,35 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (loreType == ef_LoreType_Unknown || dynelId.m_Type != e_DynelType_Object) {
 			loreType = CheckLocalizedName(dynelName) ? ef_LoreType_Unknown : ef_LoreType_None;
 		}
-		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
-		if (loreType == ef_LoreType_Drop) { // Track dropped lore so that notifications can be made on despawn
-			if (m_TrackedLore[dynelId.toString()] == undefined) {
-				// Don't care about the value, but the request enables DynelGone triggers
-				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-			}
-			// Refresh this, in case it failed to identify at first
-			m_TrackedLore[dynelId.toString()] = loreId;
-			TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
-		}
-		if ((loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && (loreId == undefined || loreId == 0) && Config.GetValue("IgnoreOffSeasonLore")) {
-			loreType = ef_LoreType_None;
-			TraceMsg("Off season lore ignored.")
-		}
-		if (loreType != ef_LoreType_Unknown && loreId != undefined && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
-			loreType = ef_LoreType_None;
-			TraceMsg("Unclaimed lore ignored.");
-		}
 		if (loreType != ef_LoreType_None) {
+			var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
+			if (loreId == 0) {
+				TraceMsg("ID == 0");
+			}
+			if (loreType == ef_LoreType_Drop) {
+				// Drops without a valid loreId should correct themselves quickly, retest after a short delay
+				if (repeat < 5 && loreId == 0) {
+					TraceMsg("Repeat for dynel: " + dynelId);
+					setTimeout(Delegate.create(this, LoreSniffer), 1, dynelId, repeat + 1);
+					return;
+				}
+				// Track dropped lore so that notifications can be made on despawn
+				if (m_TrackedLore[dynelId.toString()] == undefined) {
+					// Don't care about the value, but the request is required to get DynelGone events
+					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+					m_TrackedLore[dynelId.toString()] = loreId;
+					UpdateIcon();
+					TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
+				}
+			}
+			if ((loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && loreId == 0 && Config.GetValue("IgnoreOffSeasonLore")) {
+				TraceMsg("Off season lore ignored.");
+				return;
+			}
+			if (loreType != ef_LoreType_Unknown && loreId != 0 && Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore")) {
+				TraceMsg("Unclaimed lore ignored.");
+				return;
+			}
 			SendLoreNotifications(loreType, categorizationId, dynel);
 		}
 	}
@@ -238,7 +278,8 @@ class efd.LoreHound.LoreHound extends Mod {
 				);
 				DispatchMessages(ef_LoreType_Drop, -instance, messageStrings);
 			}
-			m_TrackedLore[despawnedId] = undefined;
+			delete m_TrackedLore[despawnedId];
+			UpdateIcon();
 		}
 	}
 
@@ -248,6 +289,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
 		}
 		m_TrackedLore = new Object();
+		UpdateIcon();
 		TraceMsg("Player changed zones, tracked lore has been cleared.");
 	}
 
@@ -264,11 +306,11 @@ class efd.LoreHound.LoreHound extends Mod {
 				// - Lore in boardroom inaccessible (does not appear?) until after penthouse fight
 				// - Lore on penthouse balcony (spawns after fight)
 				return ef_LoreType_Common;
-			case 7648084: // Pol (Hidden zombie, after #1)
+			case 7648084: // Pol (Hidden zombie after #1)
 							// Pol (Drone spawn) is ??
 			case 7661215: // DW6 (Post boss lore spawn)
-			case 7648451: // Ankh (Orochi adds, after #1)
-			case 7648450: // Ankh (Mummy adds, after #3)
+			case 7648451: // Ankh (Orochi agent after #1)
+			case 7648450: // Ankh (Mummy adds after #3) (was this Ankh #5 or #8?)
 			case 7648449: // Ankh (Pit dwellers)
 			case 7647988: // HF6 (Post boss lore spawn)
 			case 7647983: // Fac6 (Post boss lore spawn)
@@ -277,6 +319,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 7573298: // HE6 (Post boss lore spawn)
 			case 8507997: // CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor
 			case 8508000: // CK carpark (HiE BS #2) spawns after picking up the evidence
+			case 9125445: // MFA (Smiler mech after #5)
+			case 9125570: // MFA6 (Post boss lore spawn)
 				return ef_LoreType_Triggered;
 			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), very short timeout
 			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS#4) in KD, very short timeout
@@ -288,22 +332,21 @@ class efd.LoreHound.LoreHound extends Mod {
 				return ef_LoreType_Special;
 			default:
 			//Suspect IDs (from string dumps):
-			//7648452
-			//7653135
-			//8437788
-			//8437793
-			//8508014
-			//8508217
-			//8587691
-			//9125445
-			//9125570
-			//9241297
+			//7648452 // Likely Ankh #5 or #8
+			//7653135 // HR after machine tyrant?
+			//8437788 // Tokyo somewhere?
+			//8437793 // Tokyo somewhere?
+			//8508014 // Tokyo somewhere?
+			//8508217 // Tokyo somewhere?
+			//8587691 // Scrappy's deathspawn lore?
+			//9241297 // Somehow museum related?
 			// Am reasonably confident these two are Christmas event ones
 			// Probably the two in Niflheim (tree and boss death)
 			//8397678
 			//8397708
 			// Potential candidates to investigate:
 			// The Jinn and the First Age 1 (Faust Omega, "Knowledge" room)
+			// Ankh (5|8) and HR
 			// One or more IDs might be related to the full sets of event lore missing entirely
 				return ef_LoreType_Unknown;
 		}
@@ -407,7 +450,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		// Shrouded Lore, amusingly, uniformly lacks the loreId field (due to being out of season?) and is the only type known to have an informative localized string.
 		if (categorizationId == c_ShroudedLoreCategory) {
-			return dynelName;
+			return "Inactive " + dynelName;
 		}
 		// Deal with the rest of the missing data
 		switch (loreType) {
@@ -421,6 +464,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				return "Inactive event lore";
 			case ef_LoreType_Drop:
 				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
+				// The only reason to see this now is if the automatic redetection system failed
 				return "Incomplete data, redetect";
 			default:
 				// Just in case
@@ -485,6 +529,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				report += "\n" + detailStrings.join("\n");
 			}
 			m_AutoReport.AddReport({ id: categorizationId, text: report });
+			UpdateIcon();
 		}
 	}
 
