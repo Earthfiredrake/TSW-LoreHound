@@ -6,6 +6,8 @@
 //   Copyright 2015, eltorqiro
 //   Usage under the terms of the MIT License
 
+import flash.geom.Point;
+
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Utils;
 import com.Utils.Archive;
@@ -14,7 +16,7 @@ import com.Utils.Signal;
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
 // The setting names "ArchiveType" and "All" are reserved for internal use
-// Supports basic types and limited composite types (nested ConfigWrapper, Array, and generic Objects)
+// Supports basic types and limited composite types (nested ConfigWrapper, Array, Point, and generic Objects)
 
 class efd.LoreHound.lib.ConfigWrapper {
 
@@ -114,6 +116,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	// Allows defaults to be distinct from values for reference types
+	// TODO: Very uncertain if Archives can be cloned at all, consider removing support for them below
 	private function CloneValue(value) {
 		if (value instanceof ConfigWrapper) {
 			var clone = new ConfigWrapper(value.m_ArchiveName, value.m_DebugTrace);
@@ -121,6 +124,9 @@ class efd.LoreHound.lib.ConfigWrapper {
 				clone.NewSetting(key, CloneValue(value.GetDefault(key)));
 			}
 			return clone;
+		}
+		if (value instanceof Point) {
+			return value.clone();
 		}
 		if (value instanceof Array) {
 			var clone = new Array();
@@ -156,6 +162,13 @@ class efd.LoreHound.lib.ConfigWrapper {
 	private static function Package(value:Object) {
 		if (value instanceof ConfigWrapper) { return value.m_ArchiveName != undefined ? value.SaveConfig() : value.ToArchive(); }
 		if (value instanceof Archive) { return value; }
+		if (value instanceof Point) {
+			var wrapper:Archive = new Archive();
+			wrapper.AddEntry("ArchiveType", "Point");
+			wrapper.AddEntry("X", value.x);
+			wrapper.AddEntry("Y", value.y);
+			return wrapper;
+		}
 		if (value instanceof Array || value instanceof Object) {
 			var wrapper:Archive = new Archive();
 			var values:Archive = new Archive();
@@ -177,7 +190,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		}
 		for (var key:String in m_Settings) {
 			var element:Object = archive.FindEntry(key,null);
-			if ((element == null)) {
+			if (element == null) {
 				var value = GetValue(key);
 				if (value instanceof ConfigWrapper && value.m_ArchiveName != undefined) {
 					// Nested config saved as independent archive
@@ -187,7 +200,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 				}
 				continue;
 			}
-			SetValue(key, Unpack(element, key));
+			var savedValue = Unpack(element, key);
+			if (savedValue != null) {
+				SetValue(key, savedValue);
+			}
 		}
 		m_IsLoaded = true;
 		IsDirty = false;
@@ -197,10 +213,16 @@ class efd.LoreHound.lib.ConfigWrapper {
 	private function Unpack(element:Object, key:String) {
 		if (element instanceof Archive) {
 			var type:String = element.FindEntry("ArchiveType");
+			if (type == undefined) {
+				// Basic archive
+				return element;
+			}
 			switch (type) {
 				case "Config":
-					// Have to use the existing config, as it has the defined fields
+					// Have to use the existing config, as it has the field names defined
 					return m_Settings[key].value.FromArchive(element);
+				case "Point":
+					return new Point(element.FindEntry("X"), element.FindEntry("Y"));
 				case "Array":
 				case "Object": // Serialized unspecified type
 					var value = type == "Array" ? new Array() : new Object();
@@ -210,8 +232,11 @@ class efd.LoreHound.lib.ConfigWrapper {
 						value[keys[i]] = Unpack(values.FindEntry(keys[i]));
 					}
 					return value;
-				default: // Unaddorned archive
-					return element;
+				default: 
+				// Archive type is not supported
+				// (Caused by reversion when a setting has had its type changed
+				//  A bit late to be working this out though)
+					return null;
 			}
 		}
 		return element; // Basic type

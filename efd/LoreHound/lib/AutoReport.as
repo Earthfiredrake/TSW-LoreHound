@@ -2,11 +2,13 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import gfx.utils.Delegate;
+
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
 import com.GameInterface.Utils;
-import gfx.utils.Delegate;
+import com.Utils.Signal;
 
 import efd.LoreHound.lib.ConfigWrapper;
 
@@ -41,6 +43,9 @@ class efd.LoreHound.lib.AutoReport {
 		}
 	}
 
+	public function get HasReportsPending():Boolean { return m_Config.GetValue("QueuedReports").length > 0; }
+	public var SignalReportsSent:Signal;
+
 	// Mailing information
     private var m_ModName:String;
 	private var m_ModVersion:String;
@@ -62,6 +67,7 @@ class efd.LoreHound.lib.AutoReport {
 	 	m_Config.NewSetting("QueuedReports", new Array());
 		m_Config.NewSetting("PriorReports", new Array());
 
+		SignalReportsSent = new Signal();
 		m_MailTrigger = DistributedValue.Create("tradepost_window");
 		IsEnabled = true;
 	}
@@ -142,6 +148,7 @@ class efd.LoreHound.lib.AutoReport {
 					setTimeout(Delegate.create(this, SendReport), c_RetryDelay, 0);
 				} else {
 					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: All queued reports have been sent. Thank you for your assistance.");
+					SignalReportsSent.Emit();
 				}
 			} else {
 				// Reset index, and keep remaining reports to retry later
