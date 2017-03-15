@@ -13,6 +13,7 @@ import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
 import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
+import com.Utils.Archive;
 import com.Utils.GlobalSignal;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
@@ -76,8 +77,8 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	// Should be called in derived class constructor, after it has set up requirements of its own Init function
-	public function LoadConfig():Void {
-		m_Config = new ConfigWrapper(ConfigArchiveName, DebugTrace);
+	public function LoadConfig(archiveName:String):Void {
+		m_Config = new ConfigWrapper(archiveName);
 		Config.NewSetting("Version", Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
@@ -87,14 +88,17 @@ class efd.LoreHound.lib.Mod {
 
 		InitializeConfig(); // Hook for decendent class to customize config options
 
-		Config.SignalValueChanged.Connect(ConfigChanged, this); // Callback to detect important setting changes
-
-		Config.LoadConfig();
+		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
+		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
 	// Placeholder function for overriden behaviour
 	// Config will be initialized at this point, and can just have settings added
 	public function InitializeConfig():Void {
+	}
+
+	private function ConfigLoaded(initialLoad:Boolean):Void {
+		if (initialLoad) { UpdateInstall(); }
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
@@ -336,26 +340,25 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
-	public function GameToggleModEnabled(state:Boolean):Void {
+	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
 		m_EnabledByGame = state;
 		Enabled = state;
 		if (!state) {
 			m_ShowConfig.SetValue(false);
+			return Config.SaveConfig();
+		} else {
+			if (!Config.IsLoaded) {
+				Config.LoadConfig(archive);
+			}
 		}
 	}
 
-	// Mod is activated
-	public function Activate():Void {
+	private function Activate():Void {
 		UpdateIcon();
 		TraceMsg("Activated");
 	}
 
-	// Mod is deactivated
-	public function Deactivate():Void {
-		// Tradeoff:
-		//   Saving here will be more frequent but protect against crashes better
-		//   Most calls quick polls of Config dirty flag with no actual save request
-		Config.SaveConfig();
+	private function Deactivate():Void {
 		UpdateIcon();
 		TraceMsg("Deactivated");
 	}

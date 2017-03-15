@@ -28,7 +28,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var m_SpecialLoreGroup:LoreCategorySettingGroup;
 	private var m_UnknownLoreGroup:LoreCategorySettingGroup;
 
-	// Configuration setting name "All" is reserved as a special event trigger
 	private var m_Config:ConfigWrapper;
 
 	public function ConfigWindowContent() {
@@ -49,7 +48,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	public function AttachConfig(config:ConfigWrapper) {
 		m_Config = config;
-		ConfigUpdated("All");
+		ConfigUpdated();
 		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
 
 		m_CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
@@ -75,19 +74,19 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue):Void {
-		if (setting == "Enabled" || setting == "All") {
+		if (setting == "Enabled" || setting == undefined) {
 			m_CBModEnabled.selected = m_Config.GetValue("Enabled");
 		}
-		if (setting == "IgnoreUnclaimedLore" || setting == "All") {
+		if (setting == "IgnoreUnclaimedLore" || setting == undefined) {
 			m_CBIgnoreUnclaimedLore.selected = m_Config.GetValue("IgnoreUnclaimedLore");
 		}
-		if (setting == "IgnoreOffSeasonLore" || setting == "All") {
+		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			m_CBIgnoreOffSeasonLore.selected = m_Config.GetValue("IgnoreOffSeasonLore");
 		}
-		if (setting == "SendReports" || setting == "All") {
+		if (setting == "SendReports" || setting == undefined) {
 			m_CBErrorReports.selected = m_Config.GetValue("SendReports");
 		}
-		if (setting == "Details" || setting == "All") {
+		if (setting == "Details" || setting == undefined) {
 			var details = m_Config.GetValue("Details");
 			m_CBDetailLocation.selected = (details & LoreHound.ef_Details_Location) == LoreHound.ef_Details_Location;
 			m_CBDetailCategory.selected = (details & LoreHound.ef_Details_FormatString) == LoreHound.ef_Details_FormatString;
@@ -113,33 +112,15 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	private function CBDetailLocation_Select(event:Object):Void {
-		var details = m_Config.GetValue("Details");
-		if (event.selected) {
-			details |= LoreHound.ef_Details_Location;
-		} else {
-			details &= ~LoreHound.ef_Details_Location;
-		}
-		m_Config.SetValue("Details", details);
+		m_Config.SetFlagValue("Details", LoreHound.ef_Details_Location, event.selected);
 	}
 
 	private function CBDetailCategory_Select(event:Object):Void {
-		var details = m_Config.GetValue("Details");
-		if (event.selected) {
-			details |= LoreHound.ef_Details_FormatString;
-		} else {
-			details &= ~LoreHound.ef_Details_FormatString;
-		}
-		m_Config.SetValue("Details", details);
+		m_Config.SetFlagValue("Details", LoreHound.ef_Details_FormatString, event.selected);
 	}
 
 	private function CBDetailInstance_Select(event:Object):Void {
-		var details = m_Config.GetValue("Details");
-		if (event.selected) {
-			details |= LoreHound.ef_Details_DynelId;
-		} else {
-			details &= ~LoreHound.ef_Details_DynelId;
-		}
-		m_Config.SetValue("Details", details);
+		m_Config.SetFlagValue("Details", LoreHound.ef_Details_DynelId, event.selected);
 	}
 
 }

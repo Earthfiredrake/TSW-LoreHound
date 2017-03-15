@@ -5,6 +5,7 @@
     depth_layer = "Middle"
     sub_depth   = "10"
     variable    = "ReleaseTheLoreHound"
+	config_name = "LoreHoundConfig"
     criteria    = "ReleaseTheLoreHound &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
 	flags       = "GMF_CFG_STORE_USER_CONFIG | GMF_DONT_UNLOAD"
   />

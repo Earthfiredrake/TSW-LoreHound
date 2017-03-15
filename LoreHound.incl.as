@@ -2,6 +2,8 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import com.Utils.Archive;
+
 import efd.LoreHound.LoreHound;
 
 var efdLoreHound:LoreHound;
@@ -22,16 +24,16 @@ function onLoad():Void {
 // Paired calls are made when: Changing zones, cutscenes play, the player anima leaps or is otherwise teleported
 // Deactivate is called once immediately prior to OnUnload
 // Toggling the distributed value will force toggle these
-function OnModuleActivated():Void {
+function OnModuleActivated(archive:Archive):Void {
 	// This could take an Archive parameter
 	// Does this have to do with that "config" attribute I was having problems with?
-	efdLoreHound.GameToggleModEnabled(true);
+	efdLoreHound.GameToggleModEnabled(true, archive);
 }
 
-function OnModuleDeactivated():Void {
+function OnModuleDeactivated():Archive {
 	// This could return an Archive value
 	// Does this have to do with that "config" attribute I was having problems with?
-	efdLoreHound.GameToggleModEnabled(false);
+	return efdLoreHound.GameToggleModEnabled(false);
 }
 
 // Called just before the game unloads the clip

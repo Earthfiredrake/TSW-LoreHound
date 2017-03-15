@@ -51,7 +51,7 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	public function AttachConfig(config:ConfigWrapper):Void {
 		m_Config = config;
-		ConfigUpdated("All");
+		ConfigUpdated();
 		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
 
 		m_CBFifoEnabled.addEventListener("select", this, "CBFifo_Select");
@@ -59,31 +59,19 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue) {
-		if (setting == "FifoLevel" || setting == "All") {
+		if (setting == "FifoLevel" || setting == undefined) {
 			m_CBFifoEnabled.selected = ((m_Config.GetValue("FifoLevel") & m_Type) == m_Type);
 		}
-		if (setting == "ChatLevel" || setting == "All") {
+		if (setting == "ChatLevel" || setting == undefined) {
 			m_CBChatEnabled.selected = ((m_Config.GetValue("ChatLevel") & m_Type) == m_Type);
 		}
 	}
 
 	private function CBFifo_Select(event:Object):Void {
-		var level = m_Config.GetValue("FifoLevel");
-		if (event.selected) {
-			level |= m_Type;
-		} else {
-			level &= ~m_Type;
-		}
-		m_Config.SetValue("FifoLevel", level);
+		m_Config.SetFlagValue("FifoLevel", m_Type, event.selected);
 	}
 
 	private function CBChat_Select(event:Object):Void {
-		var level = m_Config.GetValue("ChatLevel");
-		if (event.selected) {
-			level |= m_Type;
-		} else {
-			level &= ~m_Type;
-		}
-		m_Config.SetValue("ChatLevel", level);
+		m_Config.SetFlagValue("ChatLevel", m_Type, event.selected);
 	}
 }

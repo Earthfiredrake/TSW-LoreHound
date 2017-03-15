@@ -69,7 +69,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
 
 		LoadConfig();
-		UpdateInstall();
 
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
@@ -311,7 +310,7 @@ class efd.LoreHound.LoreHound extends Mod {
 							// Pol (Drone spawn) is ??
 			case 7661215: // DW6 (Post boss lore spawn)
 			case 7648451: // Ankh (Orochi agent after #1)
-			case 7648450: // Ankh (Mummy adds after #3) (was this Ankh #5 or #8?)
+			case 7648450: // Ankh (Mummy adds after #3? Was this Ankh #5 or #8?)
 			case 7648449: // Ankh (Pit dwellers)
 			case 7647988: // HF6 (Post boss lore spawn)
 			case 7647983: // Fac6 (Post boss lore spawn)
@@ -323,9 +322,10 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 9125445: // MFA (Smiler mech after #5)
 			case 9125570: // MFA6 (Post boss lore spawn)
 				return ef_LoreType_Triggered;
-			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), very short timeout
-			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS#4) in KD, very short timeout
-			case 9240080:  // Shared by all known monster drop or spawned bestiary lore, ~5m timeouts on these
+			// These two both have timeouts of ~1 min
+			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while
+			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS #4) in KD
+			case 9240080:  // Shared by all known monster drop or spawned bestiary lore, 5m timeout
 				return ef_LoreType_Drop;
 			case 7993128: // Shrouded Lore (End of Days)
 			case 9135398: // Two one-off lores found in MFB (probably should be grouped as Triggered, want to go back in and verify which was which first)
