@@ -24,6 +24,12 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.LoreHound extends Mod {
+	private static var ModInfo:Object = {
+		// Trace : true, // At top so commenting out doesn't leave a hanging ','
+		Name : "LoreHound",
+		Version : "0.5.0.beta"
+	}
+
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
 	public static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
@@ -41,39 +47,14 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 4) - 1;
 
-	// Various constants found to be useful
-	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
-	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
-	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
-
-	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
-	// It will dump the Nth million stat ids, with the mode parameter provided
-	// Tradeoff between the length of time locked up, and the number of tests needed
-	private var m_Details_StatRange:Number;
-	private var m_Details_StatMode:Number;
-
-	private var m_TrackedLore:Object;
-
-	// Debugging settings
-	private var m_DebugVerify:Boolean; // Don't immediately discard dynels which don't match the expected pattern, do further testing to try to protect against early discards
-	private var m_DebugTestBox:Object; // A place to dump function returns so they can be viewed through debug menu
-
-	// When compiling reports for the automated report system consider the following options for IDs
-	// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
-	// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
-	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
-	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
-	private var m_AutoReport:AutoReport;
-
-	/// General mod overrides
+	/// Initialization
 
 	public function LoreHound(hostMovie:MovieClip) {
-		super("LoreHound", "0.5.0.beta", "ReleaseTheLoreHound", hostMovie);
-		// DebugTrace = true;
+		super(ModInfo, hostMovie);
 		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
 		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
 
-		LoadConfig();
+		InitializeConfig();
 
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
@@ -81,29 +62,24 @@ class efd.LoreHound.LoreHound extends Mod {
 		m_Details_StatRange = 1; // Start with the first million
 		m_Details_StatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		m_DebugVerify = true;
-		m_DebugTestBox = new Object();
 		m_TrackedLore = new Object();
-
-		LoadIcon();
-
-		RegisterWithTopbar();
 
 		// Character teleported also triggers on anima leaps and agartha teleports
 		// While character destructed seems to only trigger when changing zones
 		// There's also a SignalPlayfieldChanged option in the waypoint interface
 		// Regardless I suspect this is redundant, as the dynel destroyed function should clear things fairly effectively
 		Character.GetClientCharacter().SignalCharacterDestructed.Connect(ClearTracking, this);
-		TraceMsg("LoreHound initialized");
+		TraceMsg("Initialized");
 	}
 
 	private function InitializeConfig():Void {
 		// Notification types
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Unknown);
-		Config.NewSetting("LogLevel", ef_LoreType_None);
+		Config.NewSetting("LogLevel", ef_LoreType_None); // Not exposed to users, but am keeping it in anyway as it offers a data dump method
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
-		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when the event is running)
+		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
 		Config.NewSetting("SendReports", false);
 
 		// Extended information, regardless of this setting:
@@ -112,8 +88,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("Details", ef_Details_Location);
 
 		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
-		Config.GetValue("AutoReport").m_DebugTrace = DebugTrace;
 	}
+
+	/// Mod framework extensions and overrides
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
@@ -127,13 +104,11 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 	}
 
-	public function DoUpdate(newVersion:String, oldVersion:String):Void {
-		TraceMsg("Update was detected.");
-
+	private function DoUpdate(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
 		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
-		autoRepConfig.SetValue("ReportsSent", CleanReportArray(autoRepConfig.GetValue("ReportsSent"), function(id) { return id; }));
-		autoRepConfig.SetValue("ReportQueue", CleanReportArray(autoRepConfig.GetValue("ReportQueue"), function(report) { return report.id; }));
+		autoRepConfig.SetValue("PriorReports", CleanReportArray(autoRepConfig.GetValue("PriorReports"), function(id) { return id; }));
+		autoRepConfig.SetValue("QueuedReports", CleanReportArray(autoRepConfig.GetValue("QueuedReports"), function(report) { return report.id; }));
 
 		// Version specific updates
 		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
@@ -145,6 +120,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			oldPoint = Config.GetValue("IconPosition");
 			Config.SetValue("IconPosition", new Point(oldPoint.x, oldPoint.y));
 		}
+		// After v0.5.0-beta: Points now saved using built in support from Archive
+		//   Should not require additional update code
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function):Array {
@@ -158,14 +135,14 @@ class efd.LoreHound.LoreHound extends Mod {
 		return cleanedArray;
 	}
 
-	public function Activate():Void {
+	private function Activate():Void {
 		m_AutoReport.IsEnabled = Config.GetValue("SendReports");
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 		super.Activate();
 	}
 
-	public function Deactivate():Void {
+	private function Deactivate():Void {
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		m_AutoReport.IsEnabled = false;
@@ -547,8 +524,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
 			ChatMsg(messageStrings[1]);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
-				// Direct access to avoid repeating header blob
-				Utils.PrintChatText(detailStrings[i]);
+				ChatMsg(detailStrings[i], true);
 			}
 		}
 		if ((Config.GetValue("LogLevel") & loreType) == loreType) {
@@ -559,12 +535,33 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		if (Config.GetValue("SendReports") && loreType == ef_LoreType_Unknown) {
 			var report:String = messageStrings[3];
-			if (detailStrings.length > 0) {
-				report += "\n" + detailStrings.join("\n");
-			}
+			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
 			m_AutoReport.AddReport({ id: categorizationId, text: report });
 			UpdateIcon();
 		}
 	}
+
+	// Various constants found to be useful
+	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
+	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
+	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
+
+	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
+	// It will dump the Nth million stat ids, with the mode parameter provided
+	// Tradeoff between the length of time locked up, and the number of tests needed
+	private var m_Details_StatRange:Number;
+	private var m_Details_StatMode:Number;
+
+	private var m_TrackedLore:Object;
+
+	// Debugging settings
+	private var m_DebugVerify:Boolean; // Don't immediately discard dynels which don't match the expected pattern, do further testing to try to protect against early discards
+
+	// When compiling reports for the automated report system consider the following options for IDs
+	// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
+	// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
+	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
+	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
+	private var m_AutoReport:AutoReport;
 
 }

@@ -16,6 +16,11 @@ Any packaged releases can be installed by copying the contents into [Game Direct
 If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Changelog
+Version next
++ Mostly code cleanup and other backend stuff
++ May have slight efficiency gains, but the hound was already lazy and tries to do as little work as possible
++ Unknown lore id count: 9
+
 Version 0.5.0-beta
 + New responses to lore pickups that don't connect to anything (formerly "Unable to identify")
   + Partially intialized drops will be poked until they shape up

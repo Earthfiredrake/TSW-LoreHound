@@ -13,6 +13,8 @@ import com.GameInterface.Utils;
 import com.Utils.Archive;
 import com.Utils.Signal;
 
+import efd.LoreHound.lib.Mod;
+
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
 // The setting name "ArchiveType" is reserved for internal use
@@ -40,13 +42,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 	// TODO: IsLoaded will be false if nothing was loaded, which may result in multiple ConfigLoaded(true) signals
 	public function get IsLoaded():Boolean { return m_CurrentArchive != undefined; }
 
-	public var m_DebugTrace:Boolean = false;
-	private function TraceMsg(message:String):Void {
-		if (m_DebugTrace) {
-			Utils.PrintChatText("<font color='#00FFFF'>ConfigWrapper</font>: Trace - " + message);
-		}
-	}
-
 	// Checks if this, or any nested Config settings object, is dirty
 	public function get IsDirty():Boolean {
 		if (m_DirtyFlag == true) { return true; }
@@ -67,10 +62,9 @@ class efd.LoreHound.lib.ConfigWrapper {
 
 	// ArchiveName is distributed value to be saved to for top level config wrappers
 	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
-	public function ConfigWrapper(archiveName:String, trace:Boolean) {
+	public function ConfigWrapper(archiveName:String) {
 		m_ArchiveName = archiveName;
 		m_Settings = new Object();
-		m_DebugTrace = trace;
 		SignalValueChanged = new Signal();
 		SignalConfigLoaded = new Signal();
 	}
@@ -81,8 +75,9 @@ class efd.LoreHound.lib.ConfigWrapper {
 	//   - Provide a subconfig wrapper, if the settings are specific to the mod
 	//   - Provide its own archive, if it's a static module that can share the settings between uses
 	public function NewSetting(key:String, defaultValue):Void {
-		if (key == "ArchiveType") { TraceMsg(key + " is a reserved setting name."); return; } // Reserved
-		if (IsLoaded) { TraceMsg("Settings added after loading archive will have default values."); }
+		if (key == "ArchiveType") { TraceMsg("'" + key + "' is a reserved setting name."); return; } // Reserved
+		if (m_Settings[key] != undefined) { TraceMsg("Setting '" + key + "' redefined, existing definition will be overwritten."); }
+		if (IsLoaded) { TraceMsg("Setting '" + key + "' added after loading archive will have default values."); }
 		m_Settings[key] = {
 			value: CloneValue(defaultValue),
 			defaultValue: defaultValue
@@ -91,21 +86,22 @@ class efd.LoreHound.lib.ConfigWrapper {
 		// Worst case: An unsaved default setting is changed by an upgrade
 	}
 
-	// If changes are made to a returned reference the caller is responsible for setting the dirty flag and firing the value changed signal
-	public function GetValue(key:String) {
+	// Get a reference to the setting (value, defaultValue) tuple object
+	// Useful if a subcomponent needs to track a small number of settings and doesn't need the whole config
+	// Note: Unless it's a pull system only, it may need the config long enough to hook up to the ValueChanged signal
+	public function GetSetting(key:String) {
 		if (m_Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
-		return m_Settings[key].value;
+		return m_Settings[key];
 	}
+
+	// If changes are made to a returned reference the caller is responsible for setting the dirty flag and firing the value changed signal
+	public function GetValue(key:String) { return GetSetting(key).value; }
 
 	// Not a clone, allows direct edits to default object
 	// Use ResetValue in preference when resetting values
-	public function GetDefault(key:String) {
-		if (m_Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
-		return m_Settings[key].defaultValue;
-	}
+	public function GetDefault(key:String) { return GetSetting(key).defaultValue; }
 
 	public function SetValue(key:String, value) {
-		if (m_Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
 		var oldVal = GetValue(key);
 		if (oldVal != value) {
 			// Points cause frequent redundant saves and are easy enough to compare
@@ -183,6 +179,12 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return m_CurrentArchive;
 	}
 
+	// Reloads from cached archive, resets to last saved values, rather than default
+	public function Reload():Void {
+		if (!IsLoaded) { TraceMsg("Config never loaded, cannot reload."); return; }
+		LoadConfig(m_CurrentArchive);
+	}
+
 	// Updates the cached m_CurrentArchive if dirty
 	private function UpdateCachedArchive():Void {
 		delete m_CurrentArchive;
@@ -202,13 +204,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	private static function Package(value:Object) {
 		if (value instanceof ConfigWrapper) { return value.SaveConfig(); }
 		if (value instanceof Archive) { return value; }
-		if (value instanceof Point) {
-			var wrapper:Archive = new Archive();
-			wrapper.AddEntry("ArchiveType", "Point");
-			wrapper.AddEntry("X", value.x);
-			wrapper.AddEntry("Y", value.y);
-			return wrapper;
-		}
+		if (value instanceof Point) { return value; }
 		if (value instanceof Array || value instanceof Object) {
 			var wrapper:Archive = new Archive();
 			var values:Archive = new Archive();
@@ -260,7 +256,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 				case "Config":
 					// Have to use the existing config, as it has the field names defined
 					return m_Settings[key].value.FromArchive(element);
-				case "Point":
+				case "Point": // Depreciated storage method, retained for backwards compatibility
 					return new Point(element.FindEntry("X"), element.FindEntry("Y"));
 				case "Array":
 				case "Object": // Serialized unspecified type
@@ -275,10 +271,13 @@ class efd.LoreHound.lib.ConfigWrapper {
 				// Archive type is not supported
 				// (Caused by reversion when a setting has had its type changed
 				//  A bit late to be working this out though)
+					TraceMsg("Setting '" + key + "' was saved with a type not supported by this version. Default values will be used.");
 					return null;
 			}
 		}
 		return element; // Basic type
 	}
+
+	private function TraceMsg(msg:String) {	Mod.TraceMsgS("Config - " + msg); }
 
 }

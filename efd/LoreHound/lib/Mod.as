@@ -25,22 +25,19 @@ import efd.LoreHound.lib.ConfigWrapper;
 
 // Base class with general mod utility functions
 // The Mod framework reserves the following Config setting names for internal use:
-// "Installed": Used to trigger first run events
-// "Version": Used to detect upgrades and rollbacks
-// "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart
-// "IconPosition": Only used if topbar is not handling icon layout
-// "IconScale": Only used if topbar is not handling icon layout
-// "ConfigWindowPosition":
+//   "Installed": Used to trigger first run events
+//   "Version": Used to detect upgrades (and rollbacks, but that's of limited use)
+//   "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart (the config based toggle var does prevent loading if false)
+//   "IconPosition": Only used if topbar is not handling icon layout
+//   "IconScale": Only used if topbar is not handling icon layout
+//   "ConfigWindowPosition"
 class efd.LoreHound.lib.Mod {
-
 	public function get ModName():String { return m_ModName; }
-	public function get Version():String { return m_Version; }
+	public function get Version():String { return Config.GetValue("Version"); }
 	public function get DevName():String { return "Peloprata"; } // Others should replace
-	public function get ToggleVar():String { return m_ToggleVar; } // Name of DistributedValue toggle for mod (as in .xml)
 
-	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
-	public function get ConfigArchiveName():String { return ModName + "Config"; }
 	public function get Config():ConfigWrapper { return m_Config; }
+	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
 
 	public function get HostMovie():MovieClip { return m_HostMovie; }
 	public function get ModIcon():MovieClip { return m_ModIcon; }
@@ -61,43 +58,63 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private static var ChatLeadColor:String = "#00FFFF";
-
-	// Minimal constructor, as derived class cannot defer construction
-	public function Mod(modName:String, version:String, toggleVar:String, hostMovie:MovieClip) {
-		m_ModName = modName;
-		m_Version = version;
-		m_ToggleVar = toggleVar;
+	// The new archive loading scheme delays the loading of config settings until the activation stage
+	//   Config object definition can now be spread between the base and subclass constructors
+	// The modData object has the following fields:
+	//   Name (required, placeholder default "Unnamed") : The name of the mod, for display and used to generate a variety of default identifiers
+	//   Version (required, placeholder default "0.0.0") : Version of the current build, expects but does not verify a "#.#.#[.alpha|.beta]" format
+	//   Trace (optional, default false) : Whether to enable debug trace messages
+	//   ArchiveName (optional, default undefined) : Name of archive to use for main config if overriding the one provided by the game
+	//   IconName (optional, default Name + "Icon") : Name of library resource to use as an icon
+	//     An empty string can be used if a mod doesn't wish to have an icon (or related settings)
+	public function Mod(modInfo:Object, hostMovie:MovieClip) {
+		if (modInfo.Name == undefined || modInfo.Name == "") {
+			m_ModName = "Unnamed";
+			ChatMsg("Mod requires a name!");
+		} else { m_ModName = modInfo.Name; }
+		if (modInfo.Version == undefined || modInfo.Version == "") {
+			modInfo.Version = "0.0.0";
+			ChatMsg("Mod requires a version number!");
+		}
+		m_DebugTrace = modInfo.Trace != undefined && modInfo.Trace;
 		m_HostMovie = hostMovie;
+
+		ChatMsgS = Delegate.create(this, ChatMsg);
+		TraceMsgS = Delegate.create(this, TraceMsg);
+		LogMsgS = Delegate.create(this, LogMsg);
+
+		m_ScreenResolutionScale = DistributedValue.Create("GUIResolutionScale");
 		m_ShowConfig = DistributedValue.Create(ConfigWindowVar);
 		m_ShowConfig.SetValue(false);
 		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
-		m_DebugTrace = false;
-		m_ScreenResolutionScale = DistributedValue.Create("GUIResolutionScale");
+
+		InitializeModConfig(modInfo);
+		if (modInfo.IconName != "") {
+			LoadIcon(modInfo.IconName);
+		}
+		RegisterWithTopbar();
 	}
 
-	// Should be called in derived class constructor, after it has set up requirements of its own Init function
-	public function LoadConfig(archiveName:String):Void {
-		m_Config = new ConfigWrapper(archiveName);
-		Config.NewSetting("Version", Version);
+	private function InitializeModConfig(modInfo:Object):Void {
+		m_Config = new ConfigWrapper(modInfo.ArchiveName);
+
+		Config.NewSetting("Version", modInfo.Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
-		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
-		Config.NewSetting("IconPosition", new Point(20, 40)); // Used when topbar is unavailable
-		Config.NewSetting("IconScale", 100);
 
-		InitializeConfig(); // Hook for decendent class to customize config options
+		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
+		if (modInfo.IconName != "") {
+			// Used when topbar is unavailable
+			Config.NewSetting("IconPosition", new Point(20, 40));
+			Config.NewSetting("IconScale", 100);
+		}
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
-	// Placeholder function for overriden behaviour
-	// Config will be initialized at this point, and can just have settings added
-	public function InitializeConfig():Void {
-	}
-
 	private function ConfigLoaded(initialLoad:Boolean):Void {
+		TraceMsg("Config loaded");
 		if (initialLoad) { UpdateInstall(); }
 	}
 
@@ -107,20 +124,23 @@ class efd.LoreHound.lib.Mod {
 				Enabled = newValue;
 				break;
 			case "IconPosition":
-				m_ModIcon._x = newValue.x;
-				m_ModIcon._y = newValue.y;
+				if (!m_IsTopbarRegistered) {
+					m_ModIcon._x = newValue.x;
+					m_ModIcon._y = newValue.y;
+				}
 				break;
 			case "IconScale":
-				UpdateIconScale();
+				if (!m_IsTopbarRegistered) {
+					UpdateIconScale();
+				}
 				break;
-			default:
-			// Setting does not push changes (is checked on demand)
+			default: // Setting does not push changes (is checked on demand)
+				break;
 		}
 	}
 
 	private function ShowConfigWindow(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
-			TraceMsg("Config window requested.");
 			if (m_ConfigWindow == null) {
 				m_ConfigWindow = m_HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", m_HostMovie.getNextHighestDepth());
 				// Defer the actual binding to config until things are set up
@@ -143,7 +163,6 @@ class efd.LoreHound.lib.Mod {
 				m_ConfigWindow.SignalClose.Connect(ConfigWindowClosed , this);
 			}
 		} else {
-			TraceMsg("Config window closed.");
 			if (m_ConfigWindow != null) {
 				Config.SetValue("ConfigWindowPosition", new Point(m_ConfigWindow._x, m_ConfigWindow._y));
 				m_ConfigWindow.removeMovieClip();
@@ -153,7 +172,6 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function ConfigWindowLoaded():Void {
-		TraceMsg("Load Complete");
 		m_ConfigWindow.m_Content.AttachConfig(Config);
 	}
 
@@ -172,15 +190,14 @@ class efd.LoreHound.lib.Mod {
 		m_ShowConfig.SetValue(false);
 	}
 
-	// Should be called in derived class constructor, after config has been loaded
-	public function UpdateInstall():Void {
+	private function UpdateInstall():Void {
 		if (!Config.GetValue("Installed")) {
 			DoInstall();
 			Config.SetValue("Installed", true);
 			ChatMsg("Has been installed.");
-			Utils.PrintChatText("Please take a moment to review the options.");
-			// Thought about having the options menu auto open here, but decided that was a bad idea
-			// Users might not realize that it's a one off event, and worry that it will always open when they start up
+			ChatMsg("Please take a moment to review the options.", true);
+			// Decided against having the options menu auto open here
+			// Users might not realize that it's a one off event, and consider it a bug
 			return; // No existing version to update
 		}
 		var oldVersion:String = Config.GetValue("Version");
@@ -198,15 +215,7 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	// Placeholder function for overriden behaviour
-	public function DoInstall():Void {
-	}
-
-	// Placeholder function for overriden behaviour
-	public function DoUpdate(newVersion:String, oldVersion:String):Void {
-	}
-
-	public function LoadIcon(iconName:String):Void {
+	private function LoadIcon(iconName:String):Void {
 		if (iconName == undefined) { iconName = ModName + "Icon"; }
 		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
 		// These settings are for when not using topbar integration
@@ -306,28 +315,32 @@ class efd.LoreHound.lib.Mod {
 	// MeeehrUI is legacy compatible with the VTIO interface,
 	// but explicit support will make solving unique issues easier
 	// Meeehr's should always trigger first if present, and can be checked during the callback.
-	public function RegisterWithTopbar():Void {
+	private function RegisterWithTopbar():Void {
 		m_MeeehrUI = DistributedValue.Create("meeehrUI_IsLoaded");
 		m_ViperTIO = DistributedValue.Create("VTIO_IsLoaded");
-		m_MeeehrUI.SignalChanged.Connect(DoRegistration, this);
-		m_ViperTIO.SignalChanged.Connect(DoRegistration, this);
-		DoRegistration(m_MeeehrUI);
-		DoRegistration(m_ViperTIO);
+		// Try to register now, in case they loaded first, otherwise signup to detect if they load
+		if (!(DoRegistration(m_MeeehrUI) || DoRegistration(m_ViperTIO))) {
+			m_MeeehrUI.SignalChanged.Connect(DoRegistration, this);
+			m_ViperTIO.SignalChanged.Connect(DoRegistration, this);
+		}
 	}
 
-	private function DoRegistration(dv:DistributedValue):Void {
+	private function DoRegistration(dv:DistributedValue):Boolean {
 		if (dv.GetValue() && !m_IsTopbarRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
 			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
+			var regInfo:String = ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar;
 			// Adjust our default icon to be better suited for topbar integration
-			SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
-			m_ModIcon._x = 0;
-			m_ModIcon._y = 0;
-			m_ModIcon.filters = [];
-			GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
-			m_ScreenResolutionScale.SignalChanged.Disconnect(UpdateIconScale, this);
-
-			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
+			if (m_ModIcon != undefined) {
+				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+				m_ModIcon._x = 0;
+				m_ModIcon._y = 0;
+				m_ModIcon.filters = [];
+				GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+				m_ScreenResolutionScale.SignalChanged.Disconnect(UpdateIconScale, this);
+				regInfo += "|" + m_ModIcon.toString();
+			}
+			DistributedValue.SetDValue("VTIO_RegisterAddon", regInfo);
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, it breaks the event handling
 			// TODO: Look into that more, see if something can be done about it to avoid the duplication
@@ -337,6 +350,7 @@ class efd.LoreHound.lib.Mod {
 			m_IsTopbarRegistered = true;
 			TraceMsg("Topbar registration complete.");
 		}
+		return m_IsTopbarRegistered;
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
@@ -347,34 +361,35 @@ class efd.LoreHound.lib.Mod {
 			m_ShowConfig.SetValue(false);
 			return Config.SaveConfig();
 		} else {
-			if (!Config.IsLoaded) {
-				Config.LoadConfig(archive);
-			}
+			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
 		}
 	}
 
 	private function Activate():Void {
 		UpdateIcon();
-		TraceMsg("Activated");
 	}
 
 	private function Deactivate():Void {
 		UpdateIcon();
-		TraceMsg("Deactivated");
 	}
 
 	private function UpdateIcon():Void {
 		ModIcon.gotoAndStop(Enabled ? "active" : "inactive");
 	}
 
-	// Text output utilities
-	public function ChatMsg(message:String):Void {
-		Utils.PrintChatText("<font color='" + ChatLeadColor + "'>" + ModName + "</font>: " + message);
+	/// Text output utility functions
+	// Leader text should not be supressed on initial message for any particular notification, only on immediately subsequent lines
+	public function ChatMsg(message:String, suppressLeader:Boolean):Void {
+		if (!suppressLeader) {
+			Utils.PrintChatText("<font color='" + ChatLeadColor + "'>" + ModName + "</font>: " + message);
+		} else {
+			Utils.PrintChatText(message);
+		}
 	}
 
-	public function TraceMsg(message:String):Void {
+	public function TraceMsg(message:String, supressLeader:Boolean):Void {
 		if (DebugTrace) {
-			ChatMsg("Trace - " + message);
+			ChatMsg("Trace - " + message, supressLeader);
 		}
 	}
 
@@ -382,11 +397,18 @@ class efd.LoreHound.lib.Mod {
 		Log.Error(ModName, message);
 	}
 
+	// Static delegates to the ones above
+	// So other components can access them without needing a reference
+	// Recommend wrapping the call in a local version, that inserts an identifer for the subcomponent involved
+	public static var ChatMsgS:Function;
+	public static var TraceMsgS:Function;
+	public static var LogMsgS:Function;
+
 	// Compares two version strings (format "#.#.#[.alpha|.beta]")
 	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
 	// If positive, then the first version is higher, negative means first version was lower
 	// A return of 0 indicates that the versions were the same
-	private static function CompareVersions(firstVer:String, secondVer:String) : Number {
+	public static function CompareVersions(firstVer:String, secondVer:String) : Number {
 		// Support depreciated "v" prefix on version strings
 		if (firstVer.charAt(0) == "v") { firstVer = firstVer.substr(1); }
 		if (secondVer.charAt(0) == "v") { secondVer = secondVer.substr(1); }
@@ -411,16 +433,20 @@ class efd.LoreHound.lib.Mod {
 		return 0;
 	}
 
-	private var m_ModName:String;
-	private var m_Version:String;
+	/// The following empty functions are provided as override hooks for subclasses to implement
+	private function DoInstall():Void { }
+	private function DoUpdate(newVersion:String, oldVersion:String):Void { }
 
-	private var m_ToggleVar:String;
+	private static var ChatLeadColor:String = "#00FFFF";
+
+	private var m_ModName:String;
+
 	private var m_Enabled:Boolean = false;
 	private var m_EnabledByGame:Boolean = false;
 	// Enabled by player is a persistant config setting
 
 	private var m_Config:ConfigWrapper;
-	private var m_ShowConfig:DistributedValue;
+	private var m_ShowConfig:DistributedValue; // Used by topbars to provide setting shortcut buttons
 	private var m_ConfigWindow:MovieClip = null;
 
 	private var m_HostMovie:MovieClip;
