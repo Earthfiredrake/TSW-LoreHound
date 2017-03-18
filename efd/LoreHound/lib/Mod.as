@@ -2,26 +2,22 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import flash.filters.DropShadowFilter;
 import flash.geom.Point;
 
 import gfx.utils.Delegate;
 
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Log;
-import com.GameInterface.Tooltip.TooltipData;
-import com.GameInterface.Tooltip.TooltipInterface;
-import com.GameInterface.Tooltip.TooltipManager;
 import com.GameInterface.Utils;
 import com.Utils.Archive;
-import com.Utils.GlobalSignal;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
 
-import efd.LoreHound.lib.etModUtils.GemController;
+import efd.LoreHound.lib.etModUtils.MovieClipHelper;
 
 import efd.LoreHound.gui.ConfigWindowContent;
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.ModIcon;
 
 // Base class with general mod utility functions
 // The Mod framework reserves the following Config setting names for internal use:
@@ -40,7 +36,7 @@ class efd.LoreHound.lib.Mod {
 	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
 
 	public function get HostMovie():MovieClip { return m_HostMovie; }
-	public function get ModIcon():MovieClip { return m_ModIcon; }
+	public function get Icon():ModIcon { return m_ModIcon; }
 
 	public function get DebugTrace():Boolean { return m_DebugTrace; }
 	public function set DebugTrace(value:Boolean):Void { m_DebugTrace = value; }
@@ -50,9 +46,6 @@ class efd.LoreHound.lib.Mod {
 		value = m_EnabledByGame && Config.GetValue("Enabled");
 		if (value != Enabled) { // State changed
 			m_Enabled = value;
-			if (m_IconTooltip != undefined) {
-				CreateIconTooltip();
-			}
 			if (value) { Activate(); }
 			else { Deactivate(); }
 		}
@@ -61,12 +54,21 @@ class efd.LoreHound.lib.Mod {
 	// The new archive loading scheme delays the loading of config settings until the activation stage
 	//   Config object definition can now be spread between the base and subclass constructors
 	// The modData object has the following fields:
-	//   Name (required, placeholder default "Unnamed") : The name of the mod, for display and used to generate a variety of default identifiers
-	//   Version (required, placeholder default "0.0.0") : Version of the current build, expects but does not verify a "#.#.#[.alpha|.beta]" format
-	//   Trace (optional, default false) : Whether to enable debug trace messages
-	//   ArchiveName (optional, default undefined) : Name of archive to use for main config if overriding the one provided by the game
-	//   IconName (optional, default Name + "Icon") : Name of library resource to use as an icon
+	//   Name (required, placeholder default "Unnamed")
+	//     The name of the mod, for display and used to generate a variety of default identifiers
+	//   Version (required, placeholder default "0.0.0")
+	//     Current build version
+	//     Expects "#.#.#[.alpha|.beta]" format but does not verify
+	//   Trace (optional, default false)
+	//     Enables debug trace messages
+	//   ArchiveName (optional, default undefined)
+	//     Name of archive to use for main config if overriding the one provided by the game
+	//   IconName (optional, default Name + "Icon")
+	//     Library resource id to use as an icon
 	//     An empty string can be used if a mod doesn't wish to have an icon (or related settings)
+	//   NoTopbar (optional, default false)
+	//     Disable integration with a VTIO compatible topbar mod (Viper's or Meeehr's)
+	//     Also useful for testing
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		if (modInfo.Name == undefined || modInfo.Name == "") {
 			m_ModName = "Unnamed";
@@ -83,16 +85,19 @@ class efd.LoreHound.lib.Mod {
 		TraceMsgS = Delegate.create(this, TraceMsg);
 		LogMsgS = Delegate.create(this, LogMsg);
 
-		m_ScreenResolutionScale = DistributedValue.Create("GUIResolutionScale");
 		m_ShowConfig = DistributedValue.Create(ConfigWindowVar);
 		m_ShowConfig.SetValue(false);
 		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
-
 		InitializeModConfig(modInfo);
-		if (modInfo.IconName != "") {
-			LoadIcon(modInfo.IconName);
+
+		var iconName = modInfo.IconName;
+		if (iconName != "") {
+			if (iconName == undefined) { iconName = ModName + "Icon"; }
+			m_ModIcon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
+				{ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: m_ShowConfig}));
 		}
-		RegisterWithTopbar();
+
+		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
 	}
 
 	private function InitializeModConfig(modInfo:Object):Void {
@@ -103,11 +108,6 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 
 		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
-		if (modInfo.IconName != "") {
-			// Used when topbar is unavailable
-			Config.NewSetting("IconPosition", new Point(20, 40));
-			Config.NewSetting("IconScale", 100);
-		}
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
@@ -122,17 +122,6 @@ class efd.LoreHound.lib.Mod {
 		switch(setting) {
 			case "Enabled":
 				Enabled = newValue;
-				break;
-			case "IconPosition":
-				if (!m_IsTopbarRegistered) {
-					m_ModIcon._x = newValue.x;
-					m_ModIcon._y = newValue.y;
-				}
-				break;
-			case "IconScale":
-				if (!m_IsTopbarRegistered) {
-					UpdateIconScale();
-				}
 				break;
 			default: // Setting does not push changes (is checked on demand)
 				break;
@@ -215,103 +204,6 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function LoadIcon(iconName:String):Void {
-		if (iconName == undefined) { iconName = ModName + "Icon"; }
-		m_ModIcon = m_HostMovie.attachMovie(iconName, "ModIcon", m_HostMovie.getNextHighestDepth());
-		// These settings are for when not using topbar integration
-		// They will need to be reset prior to use with the topbar
-		var position:Point = Config.GetValue("IconPosition");
-		m_ModIcon._x = position.x;
-		m_ModIcon._y = position.y;
-		m_ModIcon.filters = [new DropShadowFilter(50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false)];
-		GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
-		m_ScreenResolutionScale.SignalChanged.Connect(UpdateIconScale, this);
-		UpdateIconScale();
-		// Events need to be retained for topbar
-		m_ModIcon.onMousePress = Delegate.create(this, IconMouseClick);
-		m_ModIcon.onRollOver = Delegate.create(this, CreateIconTooltip);
-		var closeTooltip:Function = Delegate.create(this, CloseIconTooltip);
-		// If the mouse button is down when moving off the icon, it won't trigger onRollOut
-		// Compensate by closing the tooltip when the mouse is released
-		// Meeehr's topbar doesn't copy the aux event over properly
-		m_ModIcon.onRollOut = closeTooltip;
-		m_ModIcon.onReleaseOutside = closeTooltip; // Left click only
-		m_ModIcon.onReleaseOutsideAux = closeTooltip; // Other mouse buttons (Scaleform extension)
-	}
-
-	private function IconMouseClick(buttonID:Number) {
-		switch(buttonID) {
-			case 1: // Left mouse button
-				m_ShowConfig.SetValue(!m_ShowConfig.GetValue());
-				break;
-			case 2: // Right mouse button
-				Config.SetValue("Enabled", !Config.GetValue("Enabled"));
-				break;
-			default:
-				TraceMsg("Unexpected mouse button press: " + buttonID);
-		}
-	}
-
-	// Default tooltip, data can be overriden or expanded by child classes
-	private function GetIconTooltipData():TooltipData {
-		var toggle:String = Enabled ? "Disable" : "Enable";
-		var data:TooltipData = new TooltipData();
-		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'13\' color=\'#FF8000\'><b>" + ModName + "</b></font>");
-		data.AddAttribute("", "<font face=\'_StandardFont\' size=\'10\'>By " + DevName + " v" + Version + "</font>");
-		// Descriptions are always listed at the bottom, after a divider line from any attributes
-        data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Left click: Show Options</font>");
-        data.AddDescription("<font face=\'_StandardFont\' size=\'12\' color=\'#FFFFFF\'>Right click: " + toggle + " Mod</font>");
-        data.m_Padding = 4;
-        data.m_MaxWidth = 200;
-		return data;
-	}
-
-	private function CreateIconTooltip():Void {
-		// Negative delay parameter causes the manager to insert a delay based on the player's settings
-		var delay:Number = -1;
-		if (m_IconTooltip != undefined) {
-			// Replacing an existing tooltip, no delay
-			CloseIconTooltip();
-			delay = 0;
-		}
-		m_IconTooltip = TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, delay, GetIconTooltipData());
-	}
-
-	private function CloseIconTooltip():Void {
-		m_IconTooltip.Close();
-		m_IconTooltip = undefined;
-	}
-
-	private function ManageGEM(unlocked:Boolean):Void {
-		if (unlocked && !m_GemManager) {
-			m_GemManager = GemController.create("GuiEditModeInterface", m_HostMovie, m_HostMovie.getNextHighestDepth(), m_ModIcon);
-			m_GemManager.addEventListener( "scrollWheel", this, "ChangeIconScale" );
-			m_GemManager.addEventListener( "endDrag", this, "ChangeIconPosition" );
-		}
-		if (!unlocked) {
-			m_GemManager.removeMovieClip();
-			m_GemManager = null;
-		}
-	}
-
-	private function ChangeIconScale(event:Object): Void {
-		var newScale:Number = Config.GetValue("IconScale") + event.delta * 5;
-		newScale = Math.min(200, Math.max(30, newScale));
-		Config.SetValue("IconScale", newScale);
-		m_GemManager.invalidate();
-	}
-
-	private function ChangeIconPosition(event:Object):Void {
-		Config.SetValue("IconPosition", new Point(m_ModIcon._x, m_ModIcon._y));
-	}
-
-	private function UpdateIconScale(dv:DistributedValue):Void {
-		var guiScale:Number = m_ScreenResolutionScale.GetValue();
-		if ( guiScale == undefined) { guiScale = 1; }
-		m_ModIcon._xscale = guiScale * Config.GetValue("IconScale");
-		m_ModIcon._yscale = guiScale * Config.GetValue("IconScale");
-	}
-
 	// MeeehrUI is legacy compatible with the VTIO interface,
 	// but explicit support will make solving unique issues easier
 	// Meeehr's should always trigger first if present, and can be checked during the callback.
@@ -329,26 +221,22 @@ class efd.LoreHound.lib.Mod {
 		if (dv.GetValue() && !m_IsTopbarRegistered) {
 			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
 			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
-			var regInfo:String = ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar;
 			// Adjust our default icon to be better suited for topbar integration
 			if (m_ModIcon != undefined) {
 				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
-				m_ModIcon._x = 0;
-				m_ModIcon._y = 0;
-				m_ModIcon.filters = [];
-				GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
-				m_ScreenResolutionScale.SignalChanged.Disconnect(UpdateIconScale, this);
-				regInfo += "|" + m_ModIcon.toString();
+				m_ModIcon.ConfigureForTopbar();
 			}
-			DistributedValue.SetDValue("VTIO_RegisterAddon", regInfo);
+			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
+			//       Both are capable of handling "undefined" or otherwise invalid icon names
+			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
 			// Topbar creates its own icon, use it as our target for changes instead
-			// Can't actually remove ours though, it breaks the event handling
-			// TODO: Look into that more, see if something can be done about it to avoid the duplication
+			// Can't actually remove ours though, Meeehr's redirects event handling oddly
+			// (It calls back to the original clip, using the new clip as the "this" instance)
+			m_ModIcon.CopyToTopbar(HostMovie.Icon);
 			m_ModIcon = HostMovie.Icon;
-			// The copy will default to frame 1 (inactive), and may not be properly updated if the topbar loaded after this mod
-			UpdateIcon();
 			m_IsTopbarRegistered = true;
-			TraceMsg("Topbar registration complete.");
+			TopbarRegistered();
+			TraceMsg("Topbar registration complete");
 		}
 		return m_IsTopbarRegistered;
 	}
@@ -365,32 +253,16 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function Activate():Void {
-		UpdateIcon();
-	}
-
-	private function Deactivate():Void {
-		UpdateIcon();
-	}
-
-	private function UpdateIcon():Void {
-		ModIcon.gotoAndStop(Enabled ? "active" : "inactive");
-	}
-
 	/// Text output utility functions
 	// Leader text should not be supressed on initial message for any particular notification, only on immediately subsequent lines
 	public function ChatMsg(message:String, suppressLeader:Boolean):Void {
 		if (!suppressLeader) {
 			Utils.PrintChatText("<font color='" + ChatLeadColor + "'>" + ModName + "</font>: " + message);
-		} else {
-			Utils.PrintChatText(message);
-		}
+		} else { Utils.PrintChatText(message); }
 	}
 
 	public function TraceMsg(message:String, supressLeader:Boolean):Void {
-		if (DebugTrace) {
-			ChatMsg("Trace - " + message, supressLeader);
-		}
+		if (DebugTrace) { ChatMsg("Trace - " + message, supressLeader);	}
 	}
 
 	public function LogMsg(message:String):Void {
@@ -436,6 +308,9 @@ class efd.LoreHound.lib.Mod {
 	/// The following empty functions are provided as override hooks for subclasses to implement
 	private function DoInstall():Void { }
 	private function DoUpdate(newVersion:String, oldVersion:String):Void { }
+	private function Activate():Void { }
+	private function Deactivate():Void { }
+	private function TopbarRegistered():Void { }
 
 	private static var ChatLeadColor:String = "#00FFFF";
 
@@ -450,10 +325,7 @@ class efd.LoreHound.lib.Mod {
 	private var m_ConfigWindow:MovieClip = null;
 
 	private var m_HostMovie:MovieClip;
-	private var m_ModIcon:MovieClip;
-	private var m_IconTooltip:TooltipInterface;
-	private var m_GemManager:GemController;
-	private var m_ScreenResolutionScale:DistributedValue;
+	private var m_ModIcon:ModIcon;
 
 	private var m_MeeehrUI:DistributedValue;
 	private var m_ViperTIO:DistributedValue;

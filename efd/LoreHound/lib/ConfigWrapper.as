@@ -87,8 +87,8 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	// Get a reference to the setting (value, defaultValue) tuple object
-	// Useful if a subcomponent needs to track a small number of settings and doesn't need the whole config
-	// Note: Unless it's a pull system only, it may need the config long enough to hook up to the ValueChanged signal
+	// Useful if a subcomponent needs to view but not change a small number of settings
+	// Hooking up ValueChanged event requires at least temporary access to Config object
 	public function GetSetting(key:String) {
 		if (m_Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
 		return m_Settings[key];
@@ -278,6 +278,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return element; // Basic type
 	}
 
-	private function TraceMsg(msg:String) {	Mod.TraceMsgS("Config - " + msg); }
+	private function TraceMsg(msg:String, supressLeader:Boolean) {
+		if (!supressLeader) {
+			Mod.TraceMsgS("Config - " + msg, supressLeader);
+		} else { Mod.TraceMsgS(msg, supressLeader); }
+	}
 
 }

@@ -25,7 +25,8 @@ import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.LoreHound extends Mod {
 	private static var ModInfo:Object = {
-		// Trace : true, // At top so commenting out doesn't leave a hanging ','
+		// Debug settings at top so that commenting out leaves no hanging ','
+		// Trace : true,
 		Name : "LoreHound",
 		Version : "0.5.0.beta"
 	}
@@ -47,15 +48,14 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 4) - 1;
 
+	// Flags for persistant icon states
+	private static var ef_IconState_Alert = 1 << 0;
+	private static var ef_IconState_Reports = 1 << 1;
+
 	/// Initialization
 
 	public function LoreHound(hostMovie:MovieClip) {
 		super(ModInfo, hostMovie);
-		m_AutoReport = new AutoReport(ModName, Version, DevName); // Initialized first so that its Config is available to be nested
-		m_AutoReport.SignalReportsSent.Connect(this, UpdateIcon);
-
-		InitializeConfig();
-
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
@@ -63,6 +63,30 @@ class efd.LoreHound.LoreHound extends Mod {
 		m_Details_StatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		m_DebugVerify = true;
 		m_TrackedLore = new Object();
+
+		m_AutoReport = new AutoReport(ModName, Version, DevName);
+		m_AutoReport.SignalReportsSent.Connect(Icon, function() { this.UpdateState(ef_IconState_Reports, false); });
+
+		InitializeConfig();
+
+		Icon.UpdateState = function(stateFlag:Number, enable:Boolean) {
+			if (stateFlag != undefined) {
+				switch (enable) {
+					case true: { this.StateFlags |= stateFlag; break; }
+					case false: { this.StateFlags &= ~stateFlag; break; }
+					case undefined: { this.StateFlags ^= stateFlag; break; }
+				}
+				if (Config.GetValue("Enabled")) {
+					if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
+					if ((this.StateFlags & LoreHound.ef_IconState_Reports) == LoreHound.ef_IconState_Reports) { this.gotoAndStop("reporting"); return; }
+					this.gotoAndStop("active");
+				} else {
+					this.gotoAndStop("inactive");
+				}
+			} else {
+				this.DefaultUpdateState();
+			}
+		};
 
 		// Character teleported also triggers on anima leaps and agartha teleports
 		// While character destructed seems to only trigger when changing zones
@@ -91,6 +115,13 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	/// Mod framework extensions and overrides
+
+	private function ConfigLoaded():Void {
+		super.ConfigLoaded();
+		if (m_AutoReport.HasReportsPending) {
+			Icon.UpdateState(ef_IconState_Alert, true);
+		}
+	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
@@ -143,25 +174,18 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function Deactivate():Void {
+		ClearTracking(); // Disconnected DynelGone handler means things won't be removed as they despawn
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		m_AutoReport.IsEnabled = false;
 		super.Deactivate();
 	}
 
-	private function UpdateIcon():Void {
-		if (Enabled) {
-			for (var key:String in m_TrackedLore) {
-				// Only care about existence of any entry, not the content
-				ModIcon.gotoAndStop("alerted");
-				return;
-			}
-			if (m_AutoReport.IsEnabled() && m_AutoReport.HasReportsPending()) {
-				ModIcon.gotoAndStop("reporting");
-				return;
-			}
+	private function TopbarRegistered():Void {
+		// Topbar icon does not copy custom state variable, so needs explicit update
+		if (m_AutoReport.HasReportsPending) {
+			Icon.UpdateState(ef_IconState_Alert, true);
 		}
-		super.UpdateIcon();
 	}
 
 	// Notes on Dynel API:
@@ -246,7 +270,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				// Don't care about the value, but the request is required to get DynelGone events
 				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
 				m_TrackedLore[dynelId.toString()] = loreId;
-				UpdateIcon();
+				Icon.UpdateState(ef_IconState_Alert, true);
 				TraceMsg("Now tracking lore drop: " + AttemptIdentification(loreId, loreType, categorizationId, dynelName));
 			}
 		}
@@ -277,7 +301,10 @@ class efd.LoreHound.LoreHound extends Mod {
 			DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
 		}
 		delete m_TrackedLore[despawnedId];
-		UpdateIcon();
+		for (var key:String in m_TrackedLore) {
+			return; // There's still at least one lore being tracked
+		}
+		Icon.UpdateState(ef_IconState_Alert, false);
 	}
 
 	private function ClearTracking():Void {
@@ -287,8 +314,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		delete m_TrackedLore;
 		m_TrackedLore = new Object();
-		UpdateIcon();
-		TraceMsg("Player changed zones, tracked lore has been cleared.");
+		Icon.UpdateState(ef_IconState_Alert, false);
 	}
 
 	/// Lore identification
@@ -537,11 +563,11 @@ class efd.LoreHound.LoreHound extends Mod {
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
 			m_AutoReport.AddReport({ id: categorizationId, text: report });
-			UpdateIcon();
+			Icon.UpdateState(ef_IconState_Reports, true);
 		}
 	}
 
-	// Various constants found to be useful
+	/// Variables
 	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
@@ -563,5 +589,4 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
 	private var m_AutoReport:AutoReport;
-
 }

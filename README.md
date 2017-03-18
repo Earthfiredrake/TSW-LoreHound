@@ -45,6 +45,7 @@ Version 0.1.1-alpha
 + Unknown lore id count:  26
 
 ## Known Issues
++ Confused by players whose names contain "Lore" (or the localized varient) and goes slightly berserk around them.
 + German users may see a number of false positive detections, due to wide use of "Wissen" in names
   + Disabling the unknown lore category will remove the spam (as well as any accurate detections)
 
