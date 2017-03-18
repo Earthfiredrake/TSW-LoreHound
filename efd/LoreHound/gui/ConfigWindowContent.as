@@ -16,6 +16,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var m_CBIgnoreUnclaimedLore:CheckBox;
 	private var m_CBIgnoreOffSeasonLore:CheckBox;
 	private var m_CBErrorReports:CheckBox;
+	private var m_CBNewContent:CheckBox;
 
 	private var m_CBDetailLocation:CheckBox;
 	private var m_CBDetailCategory:CheckBox;
@@ -41,6 +42,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		m_CBIgnoreUnclaimedLore.disableFocus = true;
 		m_CBIgnoreOffSeasonLore.disableFocus = true;
 		m_CBErrorReports.disableFocus = true;
+		m_CBNewContent.disableFocus = true;
 		m_CBDetailLocation.disableFocus = true;
 		m_CBDetailCategory.disableFocus = true;
 		m_CBDetailInstance.disableFocus = true;
@@ -55,6 +57,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		m_CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
 		m_CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
 		m_CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
+		m_CBNewContent.addEventListener("select", this, "CBNewContent_Select");
 		m_CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
 		m_CBDetailCategory.addEventListener("select", this, "CBDetailCategory_Select");
 		m_CBDetailInstance.addEventListener("select", this, "CBDetailInstance_Select");
@@ -86,6 +89,9 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "SendReports" || setting == undefined) {
 			m_CBErrorReports.selected = m_Config.GetValue("SendReports");
 		}
+		if (setting == "CheckNewContent" || setting == undefined) {
+			m_CBNewContent.selected = m_Config.GetValue("CheckNewContent");
+		}
 		if (setting == "Details" || setting == undefined) {
 			var details = m_Config.GetValue("Details");
 			m_CBDetailLocation.selected = (details & LoreHound.ef_Details_Location) == LoreHound.ef_Details_Location;
@@ -109,6 +115,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	private function CBErrorReports_Select(event:Object):Void {
 		m_Config.SetValue("SendReports", event.selected);
+	}
+
+	private function CBNewContent_Select(event:Object):Void {
+		m_Config.SetValue("CheckNewContent", event.selected);
 	}
 
 	private function CBDetailLocation_Select(event:Object):Void {

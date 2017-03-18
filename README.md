@@ -18,8 +18,11 @@ If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the exi
 ## Changelog
 Version next
 + Mostly code cleanup and other backend stuff
-+ May have slight efficiency gains, but the hound was already lazy and tries to do as little work as possible
-+ Unknown lore id count: 9
++ Now even lazier, does less work wherever possible
+  + A setting has been added to push it to do more work for looking at new content
++ No longer goes berserk around certain players, and has been told to stop sniffing the German corpses
+  + Some false positives in the detection system for previously unknown lore have been stomped
++ Unknown lore id count: 8
 
 Version 0.5.0-beta
 + New responses to lore pickups that don't connect to anything (formerly "Unable to identify")
@@ -45,9 +48,7 @@ Version 0.1.1-alpha
 + Unknown lore id count:  26
 
 ## Known Issues
-+ Confused by players whose names contain "Lore" (or the localized varient) and goes slightly berserk around them.
-+ German users may see a number of false positive detections, due to wide use of "Wissen" in names
-  + Disabling the unknown lore category will remove the spam (as well as any accurate detections)
++ Suspicious that autoreports are not working as intended, will be testing
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.
