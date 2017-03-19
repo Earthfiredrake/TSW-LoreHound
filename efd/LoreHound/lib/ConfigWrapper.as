@@ -23,7 +23,7 @@ import efd.LoreHound.lib.Mod;
 class efd.LoreHound.lib.ConfigWrapper {
 
 	// TODO: SignalConfigLoaded doesn't trigger for subconfig groups on first install
-	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void
+	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
 	public var SignalConfigLoaded:Signal; // (initialLoad:Boolean):Void // Parameter is true when the config is loaded for the very first time
 
  	// The distributed value archive saved into the game settings which contains this config setting
@@ -54,11 +54,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 		}
 		return false;
 	}
-	// Allows for higher levels to suggest that config should be saved
-	// - Automated detection doesn't pick up on internal changes to objects/arrays, needs manual notification
-	public function set IsDirty(value:Boolean) {
-		m_DirtyFlag = value;
-	}
 
 	// ArchiveName is distributed value to be saved to for top level config wrappers
 	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
@@ -86,6 +81,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 		// Worst case: An unsaved default setting is changed by an upgrade
 	}
 
+	public function DeleteSetting(key:String):Void {
+		delete m_Settings[key];
+	}
+
 	// Get a reference to the setting (value, defaultValue) tuple object
 	// Useful if a subcomponent needs to view but not change a small number of settings
 	// Hooking up ValueChanged event requires at least temporary access to Config object
@@ -107,7 +106,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 			// Points cause frequent redundant saves and are easy enough to compare
 			if (value instanceof Point && oldVal.equals(value)) { return oldVal; }
 			m_Settings[key].value = value;
-			IsDirty = true;
+			m_DirtyFlag = true;
 			SignalValueChanged.Emit(key, value, oldVal);
 		}
 		return value;
@@ -134,6 +133,12 @@ class efd.LoreHound.lib.ConfigWrapper {
 		for (var key:String in m_Settings) {
 			ResetValue(key);
 		}
+	}
+
+	// Notify the config wrapper of changes made to the internals of composite object settings
+	public function NotifyChange(key:String):Void {
+		m_DirtyFlag = true;
+		SignalValueChanged.Emit(key, GetValue(key)); // oldValue cannot be provided
 	}
 
 	// Allows defaults to be distinct from values for reference types
@@ -198,7 +203,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 				m_CurrentArchive.AddEntry(key, pack);
 			}
 		}
-		IsDirty = false;
+		m_DirtyFlag = false;
 	}
 
 	private static function Package(value:Object) {
@@ -241,7 +246,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		}
 		SignalConfigLoaded.Emit(!IsLoaded);
 		m_CurrentArchive = archive;
-		IsDirty = false;
+		m_DirtyFlag = false;
 		return this;
 	}
 

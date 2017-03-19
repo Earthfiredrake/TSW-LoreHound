@@ -48,7 +48,7 @@ Version 0.1.1-alpha
 + Unknown lore id count:  26
 
 ## Known Issues
-+ Suspicious that autoreports are not working as intended, will be testing
++ Find me some issues!
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.

@@ -51,7 +51,9 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	public function AttachConfig(config:ConfigWrapper) {
 		m_Config = config;
 		ConfigUpdated();
+		AutoReportConfigUpdated();
 		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
+		m_Config.GetValue("AutoReport").SignalValueChanged.Connect(AutoReportConfigUpdated, this);
 
 		m_CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
 		m_CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
@@ -86,9 +88,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			m_CBIgnoreOffSeasonLore.selected = m_Config.GetValue("IgnoreOffSeasonLore");
 		}
-		if (setting == "SendReports" || setting == undefined) {
-			m_CBErrorReports.selected = m_Config.GetValue("SendReports");
-		}
 		if (setting == "CheckNewContent" || setting == undefined) {
 			m_CBNewContent.selected = m_Config.GetValue("CheckNewContent");
 		}
@@ -97,6 +96,12 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 			m_CBDetailLocation.selected = (details & LoreHound.ef_Details_Location) == LoreHound.ef_Details_Location;
 			m_CBDetailCategory.selected = (details & LoreHound.ef_Details_FormatString) == LoreHound.ef_Details_FormatString;
 			m_CBDetailInstance.selected = (details & LoreHound.ef_Details_DynelId) == LoreHound.ef_Details_DynelId;
+		}
+	}
+
+	private function AutoReportConfigUpdated(setting:String, newValue, oldValue):Void {
+		if (setting == "Enabled" || setting == undefined) {
+			m_CBErrorReports.selected = m_Config.GetValue("AutoReport").GetValue("Enabled");
 		}
 	}
 
@@ -114,7 +119,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	private function CBErrorReports_Select(event:Object):Void {
-		m_Config.SetValue("SendReports", event.selected);
+		m_Config.GetValue("AutoReport").SetValue("Enabled", event.selected);
 	}
 
 	private function CBNewContent_Select(event:Object):Void {

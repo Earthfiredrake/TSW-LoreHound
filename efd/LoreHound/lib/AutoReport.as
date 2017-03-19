@@ -11,6 +11,7 @@ import com.GameInterface.Utils;
 import com.Utils.Signal;
 
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.Mod;
 
 // Automated error/information reporting framework
 // Accepts arbitrary report items, as long as they have an:
@@ -22,29 +23,27 @@ import efd.LoreHound.lib.ConfigWrapper;
 
 class efd.LoreHound.lib.AutoReport {
 
-	private var m_Enabled:Boolean = false;
 	private var m_Config:ConfigWrapper;
 
-	public function get IsEnabled():Boolean { return m_Enabled; }
-	public function set IsEnabled(value:Boolean) {
-		if (Character.GetClientCharacter().GetName() == m_Recipient) {
-			// Can't send mail to ourselves, system should remain disabled
-			value = false;
-		}
-		if (value != m_Enabled) {
-			if (value) {
-				m_MailTrigger.SignalChanged.Connect(TriggerReports, this);
-				Tradepost.SignalMailResult.Connect(VerifyReceipt, this);
-			} else {
-				m_MailTrigger.SignalChanged.Disconnect(TriggerReports, this);
-				Tradepost.SignalMailResult.Disconnect(VerifyReceipt, this);
-			}
-			m_Enabled = value;
+	public function get IsEnabled():Boolean {
+		// This is only internal state
+		return m_Config.GetValue("Enabled") && Character.GetClientCharacter().GetName() != m_Recipient;
+	}
+	public function set IsEnabled(modEnabled:Boolean) {
+		// These include mod enabled states
+		if (modEnabled != undefined) { IsModActive = modEnabled; }
+		if (IsModActive && IsEnabled) {
+			m_MailTrigger.SignalChanged.Connect(TriggerReports, this);
+			Tradepost.SignalMailResult.Connect(VerifyReceipt, this);
+		} else {
+			m_MailTrigger.SignalChanged.Disconnect(TriggerReports, this);
+			Tradepost.SignalMailResult.Disconnect(VerifyReceipt, this);
 		}
 	}
-
-	public function get HasReportsPending():Boolean { return m_Config.GetValue("QueuedReports").length > 0; }
-	public var SignalReportsSent:Signal;
+	public function get HasReportsPending():Boolean {
+		// Does not care about mod state, only internal state
+		return IsEnabled && m_Config.GetValue("QueuedReports").length > 0;
+	}
 
 	// Mailing information
     private var m_ModName:String;
@@ -64,19 +63,29 @@ class efd.LoreHound.lib.AutoReport {
 		m_Recipient = devCharName;
 
 		m_Config = new ConfigWrapper();
+		m_Config.NewSetting("Enabled", false); // For privacy reasons, this system should be opt-in
 	 	m_Config.NewSetting("QueuedReports", new Array());
 		m_Config.NewSetting("PriorReports", new Array());
+		m_Config.SignalValueChanged.Connect(ConfigChanged, this);
 
-		SignalReportsSent = new Signal();
 		m_MailTrigger = DistributedValue.Create("tradepost_window");
-		IsEnabled = true;
 	}
 
 	public function GetConfigWrapper():ConfigWrapper {
 		return m_Config;
 	}
 
+	private function ConfigChanged(setting:String, newValue, oldValue):Void {
+		switch (setting) {
+			case "Enabled":
+				IsEnabled = undefined; // Update enabled state without changing mod state
+				break;
+			default: break;
+		}
+	}
+
 	public function AddReport(report:Object):Boolean {
+		if (!IsModActive) { TraceMsg("Inactive mod is queuing reports!"); }
 		if (!IsEnabled) {
 			// Don't build up queue while system is disabled
 			return false;
@@ -91,11 +100,12 @@ class efd.LoreHound.lib.AutoReport {
 		var queue:Array = m_Config.GetValue("QueuedReports");
 		if (contains(m_Config.GetValue("PriorReports"), function (id):Boolean { return id == report.id; }) ||
 			contains(queue, function (pending):Boolean { return pending.id == report.id; })) {
+				TraceMsg("Report ID #" + report.id + " is already pending or sent.");
 				return false;
 		}
 		queue.push(report);
-		m_Config.IsDirty = true;
-		Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: An automated report has been generated, and will be sent when next you are at the bank.");
+		m_Config.NotifyChange("QueuedReports");
+		ChatMsg("A report has been generated and will be sent when you are next at the bank.");
 		return true;
 	}
 
@@ -123,7 +133,7 @@ class efd.LoreHound.lib.AutoReport {
 				if (attempt < c_MaxRetries) {
 					setTimeout(Delegate.create(this, SendReport), c_RetryDelay, attempt + 1);
 				} else {
-					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: One or more automated reports failed to send and will remain queued.");
+					ChatMsg("One or more reports failed to send and will remain queued.");
 				}
 			}
 		}
@@ -131,6 +141,8 @@ class efd.LoreHound.lib.AutoReport {
 
 	private function VerifyReceipt(success:Boolean, error:String):Void {
 		// We only care about our own messages, not about other mail
+		// Assuming that this is triggered immediately after the send
+		// Problematic if there could be multiple mails in transit
 		if (m_ReportsSent > 0) {
 			if (success) {
 				// Record and clear sent reports
@@ -141,21 +153,34 @@ class efd.LoreHound.lib.AutoReport {
 				}
 				queue.splice(0, m_ReportsSent);
 				m_ReportsSent = 0;
-				m_Config.IsDirty = true;
+				m_Config.NotifyChange("QueuedReports");
+				m_Config.NotifyChange("PriorReports");
 				// Continue sending reports as needed
 				if (queue.length > 0) {
 					// Delay to avoid triggering flow restrictions
 					setTimeout(Delegate.create(this, SendReport), c_RetryDelay, 0);
 				} else {
-					Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: All queued reports have been sent. Thank you for your assistance.");
-					SignalReportsSent.Emit();
+					ChatMsg("All queued reports have been sent. Thank you for your assistance.");
 				}
 			} else {
 				// Reset index, and keep remaining reports to retry later
 				m_ReportsSent = 0;
-				Utils.PrintChatText("<font color='#00FFFF'>" + m_ModName + "</font>: One or more automated reports could not be delivered and will remain queued. (Reason: " + error + ")");
+				ChatMsg("One or more reports could not be delivered and will remain queued. (Reason: " + error + ")");
 			}
 		}
 	}
 
+	private function ChatMsg(msg:String, suppressLeader:Boolean):Void {
+		if (!suppressLeader) {
+			Mod.ChatMsgS("AutoReport - " + msg, suppressLeader);
+		} else { Mod.ChatMsgS(msg, suppressLeader); }
+	}
+
+	private function TraceMsg(msg:String, suppressLeader:Boolean):Void {
+		if (!suppressLeader) {
+			Mod.TraceMsgS("AutoReport - " + msg, suppressLeader);
+		} else { Mod.TraceMsgS(msg, suppressLeader); }
+	}
+
+	private var IsModActive:Boolean;
 }

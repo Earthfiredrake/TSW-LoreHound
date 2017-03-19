@@ -27,7 +27,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "0.5.0.beta"
+		Version : "0.6.0.alpha"
 	}
 
 	// Category flags for identifiable lore types
@@ -48,7 +48,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
 	private static var ef_Details_All:Number = (1 << 4) - 1;
 
-	// Flags for persistant icon states
+	// Flags for ongoing icon states
 	private static var ef_IconState_Alert = 1 << 0;
 	private static var ef_IconState_Reports = 1 << 1;
 
@@ -63,7 +63,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		m_TrackedLore = new Object();
 
 		m_AutoReport = new AutoReport(ModName, Version, DevName);
-		m_AutoReport.SignalReportsSent.Connect(Icon, function() { this.UpdateState(ef_IconState_Reports, false); });
 
 		InitializeConfig();
 
@@ -74,15 +73,13 @@ class efd.LoreHound.LoreHound extends Mod {
 					case false: { this.StateFlags &= ~stateFlag; break; }
 					case undefined: { this.StateFlags ^= stateFlag; break; }
 				}
-				if (Config.GetValue("Enabled")) {
-					if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
-					if ((this.StateFlags & LoreHound.ef_IconState_Reports) == LoreHound.ef_IconState_Reports) { this.gotoAndStop("reporting"); return; }
-					this.gotoAndStop("active");
-				} else {
-					this.gotoAndStop("inactive");
-				}
+			}
+			if (Config.GetValue("Enabled")) {
+				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
+				if ((this.StateFlags & LoreHound.ef_IconState_Reports) == LoreHound.ef_IconState_Reports) { this.gotoAndStop("reporting"); return; }
+				this.gotoAndStop("active");
 			} else {
-				this.DefaultUpdateState();
+				this.gotoAndStop("inactive");
 			}
 		};
 
@@ -105,27 +102,25 @@ class efd.LoreHound.LoreHound extends Mod {
 		// - Some fields are always included when detecting Unknown category lore, to help identify it
 		Config.NewSetting("Details", ef_Details_Location);
 
-		Config.NewSetting("AutoReport", m_AutoReport.GetConfigWrapper());
+		var autoReportConfig:ConfigWrapper = m_AutoReport.GetConfigWrapper();
+		autoReportConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
+		Config.NewSetting("AutoReport", autoReportConfig);
+	}
+
+	private function AutoReportConfigChanged(setting:String, newValue, oldValue):Void {
+		switch(setting) {
+			case "Enabled":
+			case "QueuedReports":
+				Icon.UpdateState(ef_IconState_Reports, m_AutoReport.HasReportsPending);
+				break;
+			default: break;
+		}
 	}
 
 	/// Mod framework extensions and overrides
-	private function ConfigLoaded():Void {
-		super.ConfigLoaded();
-		if (m_AutoReport.HasReportsPending) {
-			Icon.UpdateState(ef_IconState_Alert, true);
-		}
-	}
-
-	private function ConfigChanged(setting:String, newValue, oldValue):Void {
-		switch(setting) {
-			case "SendReports":
-				m_AutoReport.IsEnabled = newValue;
-				break;
-			default:
-			// Defer to parent
-				super.ConfigChanged(setting, newValue, oldValue);
-				break;
-		}
+	private function ConfigLoaded(initialLoad:Boolean):Void {
+		super.ConfigLoaded(initialLoad);
+		if (initialLoad) { Config.DeleteSetting("SendReports"); } // Setting removed (v0.6.0)
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
@@ -146,6 +141,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		// After v0.5.0-beta: Points now saved using built in support from Archive
 		//   Should not require additional update code
+		if (CompareVersions("0.5.0.beta", oldVersion) >= 0) {
+			// Enabled state of autoreport system is now internal to that config group
+			if (Config.GetValue("SendReports")) {
+				Config.GetValue("AutoReport").SetValue("Enabled", true);
+			}
+		}
 	}
 
 	private function CleanReportArray(array:Array, extractor:Function):Array {
@@ -160,7 +161,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function Activate():Void {
-		m_AutoReport.IsEnabled = Config.GetValue("SendReports");
+		m_AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
@@ -172,12 +173,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		ClearTracking();
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
-		m_AutoReport.IsEnabled = false;
+		m_AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 
 	private function TopbarRegistered():Void {
 		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		if (m_AutoReport.HasReportsPending) { Icon.UpdateState(ef_IconState_Alert, true); }
+		Icon.UpdateState(ef_IconState_Reports, m_AutoReport.HasReportsPending);
 	}
 
 	// Notes on Dynel API:
@@ -552,11 +553,10 @@ class efd.LoreHound.LoreHound extends Mod {
 				LogMsg(detailStrings[i]);
 			}
 		}
-		if (Config.GetValue("SendReports") && loreType == ef_LoreType_Unknown) {
+		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
 			m_AutoReport.AddReport({ id: categorizationId, text: report });
-			Icon.UpdateState(ef_IconState_Reports, true);
 		}
 	}
 
