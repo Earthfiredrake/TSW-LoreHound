@@ -21,45 +21,11 @@ import efd.LoreHound.lib.Mod;
 // Supports basic types and limited composite types (nested ConfigWrapper, Array, Point, and generic Object)
 
 class efd.LoreHound.lib.ConfigWrapper {
-
-	// TODO: SignalConfigLoaded doesn't trigger for subconfig groups on first install
-	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
-	public var SignalConfigLoaded:Signal; // (initialLoad:Boolean):Void // Parameter is true when the config is loaded for the very first time
-
- 	// The distributed value archive saved into the game settings which contains this config setting
-	// Usually only has a value for the root of the config tree
-	// Most options should be saved to the same archive, leaving this undefined in child nodes
-	// If a secondary archive is in use, providing a value will allow both archives to be unified in a single config wrapper
-	// Alternatively a config wrapper may elect to forgo the names, and offload the actual archive load/save through parameters
-	// Parameters take precidence over names
-	private var m_ArchiveName:String;
-	private var m_Settings:Object;
-
-	// A cache of the last loaded/saved archive, will see if it lets us get away with this
-	private var m_CurrentArchive:Archive;
-	private var m_DirtyFlag:Boolean = false;
-
-	// TODO: IsLoaded will be false if nothing was loaded, which may result in multiple ConfigLoaded(true) signals
-	public function get IsLoaded():Boolean { return m_CurrentArchive != undefined; }
-
-	// Checks if this, or any nested Config settings object, is dirty
-	public function get IsDirty():Boolean {
-		if (m_DirtyFlag == true) { return true; }
-		for (var key:String in m_Settings) {
-			var setting = GetValue(key);
-			// In theory a nested independent archive could be saved by itself, without touching the main archive
-			// but most usages will just save the main and expect it to save everything.
-			// Could be expanded into a tri-state so it could skip down to the relevant sections on save.
-			if (setting instanceof ConfigWrapper && setting.IsDirty) { return true; }
-		}
-		return false;
-	}
-
 	// ArchiveName is distributed value to be saved to for top level config wrappers
 	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
 	public function ConfigWrapper(archiveName:String) {
-		m_ArchiveName = archiveName;
-		m_Settings = new Object();
+		ArchiveName = archiveName;
+		Settings = new Object();
 		SignalValueChanged = new Signal();
 		SignalConfigLoaded = new Signal();
 	}
@@ -71,9 +37,9 @@ class efd.LoreHound.lib.ConfigWrapper {
 	//   - Provide its own archive, if it's a static module that can share the settings between uses
 	public function NewSetting(key:String, defaultValue):Void {
 		if (key == "ArchiveType") { TraceMsg("'" + key + "' is a reserved setting name."); return; } // Reserved
-		if (m_Settings[key] != undefined) { TraceMsg("Setting '" + key + "' redefined, existing definition will be overwritten."); }
+		if (Settings[key] != undefined) { TraceMsg("Setting '" + key + "' redefined, existing definition will be overwritten."); }
 		if (IsLoaded) { TraceMsg("Setting '" + key + "' added after loading archive will have default values."); }
-		m_Settings[key] = {
+		Settings[key] = {
 			value: CloneValue(defaultValue),
 			defaultValue: defaultValue
 		};
@@ -82,15 +48,15 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function DeleteSetting(key:String):Void {
-		delete m_Settings[key];
+		delete Settings[key];
 	}
 
 	// Get a reference to the setting (value, defaultValue) tuple object
 	// Useful if a subcomponent needs to view but not change a small number of settings
 	// Hooking up ValueChanged event requires at least temporary access to Config object
 	public function GetSetting(key:String) {
-		if (m_Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
-		return m_Settings[key];
+		if (Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
+		return Settings[key];
 	}
 
 	// If changes are made to a returned reference the caller is responsible for setting the dirty flag and firing the value changed signal
@@ -105,8 +71,8 @@ class efd.LoreHound.lib.ConfigWrapper {
 		if (oldVal != value) {
 			// Points cause frequent redundant saves and are easy enough to compare
 			if (value instanceof Point && oldVal.equals(value)) { return oldVal; }
-			m_Settings[key].value = value;
-			m_DirtyFlag = true;
+			Settings[key].value = value;
+			DirtyFlag = true;
 			SignalValueChanged.Emit(key, value, oldVal);
 		}
 		return value;
@@ -130,20 +96,20 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function ResetAll():Void {
-		for (var key:String in m_Settings) {
+		for (var key:String in Settings) {
 			ResetValue(key);
 		}
 	}
 
 	// Notify the config wrapper of changes made to the internals of composite object settings
 	public function NotifyChange(key:String):Void {
-		m_DirtyFlag = true;
+		DirtyFlag = true;
 		SignalValueChanged.Emit(key, GetValue(key)); // oldValue cannot be provided
 	}
 
 	// Allows defaults to be distinct from values for reference types
 	// TODO: Very uncertain if Archives can be cloned at all, consider removing support for them below
-	private function CloneValue(value) {
+	private static function CloneValue(value) {
 		if (value instanceof ConfigWrapper) {
 			// No need to clone a ConfigWrapper
 			// The slightly faster reset call isn't worth two extra copies of all the defaults
@@ -172,38 +138,38 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function LoadConfig(archive:Archive):Void {
-		if (archive == undefined) { archive = DistributedValue.GetDValue(m_ArchiveName); }
+		if (archive == undefined) { archive = DistributedValue.GetDValue(ArchiveName); }
 		FromArchive(archive);
 	}
 
 	public function SaveConfig():Archive {
 		if (IsDirty) {
 			UpdateCachedArchive();
-			if (m_ArchiveName != undefined) { DistributedValue.SetDValue(m_ArchiveName, m_CurrentArchive); }
+			if (ArchiveName != undefined) { DistributedValue.SetDValue(ArchiveName, CurrentArchive); }
 		}
-		return m_CurrentArchive;
+		return CurrentArchive;
 	}
 
 	// Reloads from cached archive, resets to last saved values, rather than default
 	public function Reload():Void {
 		if (!IsLoaded) { TraceMsg("Config never loaded, cannot reload."); return; }
-		LoadConfig(m_CurrentArchive);
+		LoadConfig(CurrentArchive);
 	}
 
-	// Updates the cached m_CurrentArchive if dirty
+	// Updates the cached CurrentArchive if dirty
 	private function UpdateCachedArchive():Void {
-		delete m_CurrentArchive;
-		m_CurrentArchive = new Archive();
-		m_CurrentArchive.AddEntry("ArchiveType", "Config");
-		for (var key:String in m_Settings) {
+		delete CurrentArchive;
+		CurrentArchive = new Archive();
+		CurrentArchive.AddEntry("ArchiveType", "Config");
+		for (var key:String in Settings) {
 			var value = GetValue(key);
 			var pack = Package(value);
-			if (!(value instanceof ConfigWrapper && value.m_ArchiveName != undefined)) {
+			if (!(value instanceof ConfigWrapper && value.ArchiveName != undefined)) {
 				// Only add the pack if it's not an independent archive
-				m_CurrentArchive.AddEntry(key, pack);
+				CurrentArchive.AddEntry(key, pack);
 			}
 		}
-		m_DirtyFlag = false;
+		DirtyFlag = false;
 	}
 
 	private static function Package(value:Object) {
@@ -226,11 +192,11 @@ class efd.LoreHound.lib.ConfigWrapper {
 
 	private function FromArchive(archive:Archive):ConfigWrapper {
 		if (archive != undefined) {
-			for (var key:String in m_Settings) {
+			for (var key:String in Settings) {
 				var element:Object = archive.FindEntry(key,null);
 				if (element == null) {
 					var value = GetValue(key);
-					if (value instanceof ConfigWrapper && value.m_ArchiveName != undefined) {
+					if (value instanceof ConfigWrapper && value.ArchiveName != undefined) {
 						// Nested config saved as independent archive
 						value.LoadConfig();
 					} else {
@@ -245,22 +211,22 @@ class efd.LoreHound.lib.ConfigWrapper {
 			}
 		}
 		SignalConfigLoaded.Emit(!IsLoaded);
-		m_CurrentArchive = archive;
-		m_DirtyFlag = false;
+		CurrentArchive = archive;
+		DirtyFlag = false;
 		return this;
 	}
 
 	private function Unpack(element:Object, key:String) {
 		if (element instanceof Archive) {
-			var type:String = element.FindEntry("ArchiveType");
-			if (type == undefined) {
+			var type:String = element.FindEntry("ArchiveType", null);
+			if (type == null) {
 				// Basic archive
 				return element;
 			}
 			switch (type) {
 				case "Config":
 					// Have to use the existing config, as it has the field names defined
-					return m_Settings[key].value.FromArchive(element);
+					return GetValue(key).FromArchive(element);
 				case "Point": // Depreciated storage method, retained for backwards compatibility
 					return new Point(element.FindEntry("X"), element.FindEntry("Y"));
 				case "Array":
@@ -289,4 +255,36 @@ class efd.LoreHound.lib.ConfigWrapper {
 		} else { Mod.TraceMsgS(msg, supressLeader); }
 	}
 
+	// TODO: IsLoaded will be false if nothing was loaded, which may result in multiple ConfigLoaded(true) signals
+	public function get IsLoaded():Boolean { return CurrentArchive != undefined; }
+
+	// Checks if this, or any nested Config settings object, is dirty
+	public function get IsDirty():Boolean {
+		if (DirtyFlag == true) { return true; }
+		for (var key:String in Settings) {
+			var setting = GetValue(key);
+			// In theory a nested independent archive could be saved by itself, without touching the main archive
+			// but most usages will just save the main and expect it to save everything.
+			// Could be expanded into a tri-state so it could skip down to the relevant sections on save.
+			if (setting instanceof ConfigWrapper && setting.IsDirty) { return true; }
+		}
+		return false;
+	}
+
+	// TODO: SignalConfigLoaded doesn't trigger for subconfig groups on first install
+	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
+	public var SignalConfigLoaded:Signal; // (initialLoad:Boolean):Void // Parameter is true when the config is loaded for the very first time
+
+ 	// The distributed value archive saved into the game settings which contains this config setting
+	// Usually only has a value for the root of the config tree
+	// Most options should be saved to the same archive, leaving this undefined in child nodes
+	// If a secondary archive is in use, providing a value will allow both archives to be unified in a single config wrapper
+	// Alternatively a config wrapper may elect to forgo the names, and offload the actual archive load/save through parameters
+	// Parameters take precidence over names
+	private var ArchiveName:String;
+	private var Settings:Object;
+
+	// A cache of the last loaded/saved archive, will see if it lets us get away with this
+	private var CurrentArchive:Archive;
+	private var DirtyFlag:Boolean = false;
 }

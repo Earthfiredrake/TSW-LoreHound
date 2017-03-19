@@ -13,7 +13,7 @@ import com.Utils.Archive;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
 
-import efd.LoreHound.lib.etModUtils.MovieClipHelper;
+import efd.LoreHound.lib.etu.MovieClipHelper;
 
 import efd.LoreHound.gui.ConfigWindowContent;
 import efd.LoreHound.lib.ConfigWrapper;
@@ -28,29 +28,6 @@ import efd.LoreHound.lib.ModIcon;
 //   "IconScale": Only used if topbar is not handling icon layout
 //   "ConfigWindowPosition"
 class efd.LoreHound.lib.Mod {
-	public function get ModName():String { return m_ModName; }
-	public function get Version():String { return Config.GetValue("Version"); }
-	public function get DevName():String { return "Peloprata"; } // Others should replace
-
-	public function get Config():ConfigWrapper { return m_Config; }
-	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
-
-	public function get HostMovie():MovieClip { return m_HostMovie; }
-	public function get Icon():ModIcon { return m_ModIcon; }
-
-	public function get DebugTrace():Boolean { return m_DebugTrace; }
-	public function set DebugTrace(value:Boolean):Void { m_DebugTrace = value; }
-
-	public function get Enabled():Boolean { return m_Enabled; }
-	public function set Enabled(value:Boolean):Void {
-		value = m_EnabledByGame && Config.GetValue("Enabled");
-		if (value != Enabled) { // State changed
-			m_Enabled = value;
-			if (value) { Activate(); }
-			else { Deactivate(); }
-		}
-	}
-
 	// The new archive loading scheme delays the loading of config settings until the activation stage
 	//   Config object definition can now be spread between the base and subclass constructors
 	// The modData object has the following fields:
@@ -71,37 +48,37 @@ class efd.LoreHound.lib.Mod {
 	//     Also useful for testing
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		if (modInfo.Name == undefined || modInfo.Name == "") {
-			m_ModName = "Unnamed";
+			_ModName = "Unnamed";
 			ChatMsg("Mod requires a name!");
-		} else { m_ModName = modInfo.Name; }
+		} else { _ModName = modInfo.Name; }
 		if (modInfo.Version == undefined || modInfo.Version == "") {
 			modInfo.Version = "0.0.0";
 			ChatMsg("Mod requires a version number!");
 		}
-		m_DebugTrace = modInfo.Trace != undefined && modInfo.Trace;
-		m_HostMovie = hostMovie;
+		DebugTrace = modInfo.Trace;
+		HostMovie = hostMovie;
 
 		ChatMsgS = Delegate.create(this, ChatMsg);
 		TraceMsgS = Delegate.create(this, TraceMsg);
 		LogMsgS = Delegate.create(this, LogMsg);
 
-		m_ShowConfig = DistributedValue.Create(ConfigWindowVar);
-		m_ShowConfig.SetValue(false);
-		m_ShowConfig.SignalChanged.Connect(ShowConfigWindow, this);
+		ShowConfigDV = DistributedValue.Create(ConfigWindowVar);
+		ShowConfigDV.SetValue(false);
+		ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
 		InitializeModConfig(modInfo);
 
 		var iconName = modInfo.IconName;
 		if (iconName != "") {
 			if (iconName == undefined) { iconName = ModName + "Icon"; }
-			m_ModIcon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
-				{ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: m_ShowConfig}));
+			IconClip = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
+				{ ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: ShowConfigDV }));
 		}
 
 		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
 	}
 
 	private function InitializeModConfig(modInfo:Object):Void {
-		m_Config = new ConfigWrapper(modInfo.ArchiveName);
+		_Config = new ConfigWrapper(modInfo.ArchiveName);
 
 		Config.NewSetting("Version", modInfo.Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
@@ -130,38 +107,38 @@ class efd.LoreHound.lib.Mod {
 
 	private function ShowConfigWindow(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
-			if (m_ConfigWindow == null) {
-				m_ConfigWindow = m_HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", m_HostMovie.getNextHighestDepth());
+			if (ConfigWindowClip == null) {
+				ConfigWindowClip = HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", HostMovie.getNextHighestDepth());
 				// Defer the actual binding to config until things are set up
-				m_ConfigWindow.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
+				ConfigWindowClip.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
 
-				m_ConfigWindow.SetTitle(ModName + " Settings", "left");
-				m_ConfigWindow.SetPadding(10);
-				m_ConfigWindow.SetContent(ModName+ "ConfigWindowContent");
+				ConfigWindowClip.SetTitle(ModName + " Settings", "left");
+				ConfigWindowClip.SetPadding(10);
+				ConfigWindowClip.SetContent(ModName+ "ConfigWindowContent");
 
-				m_ConfigWindow.ShowCloseButton(true);
-				m_ConfigWindow.ShowStroke(false);
-				m_ConfigWindow.ShowResizeButton(false);
-				m_ConfigWindow.ShowFooter(false);
+				ConfigWindowClip.ShowCloseButton(true);
+				ConfigWindowClip.ShowStroke(false);
+				ConfigWindowClip.ShowResizeButton(false);
+				ConfigWindowClip.ShowFooter(false);
 
 				var position:Point = Config.GetValue("ConfigWindowPosition");
 				KeepInVisibleBounds(position, Config.GetDefault("ConfigWindowPosition"));
-				m_ConfigWindow._x = position.x;
-				m_ConfigWindow._y = position.y;
+				ConfigWindowClip._x = position.x;
+				ConfigWindowClip._y = position.y;
 
-				m_ConfigWindow.SignalClose.Connect(ConfigWindowClosed , this);
+				ConfigWindowClip.SignalClose.Connect(ConfigWindowClosed , this);
 			}
 		} else {
-			if (m_ConfigWindow != null) {
-				Config.SetValue("ConfigWindowPosition", new Point(m_ConfigWindow._x, m_ConfigWindow._y));
-				m_ConfigWindow.removeMovieClip();
-				m_ConfigWindow = null;
+			if (ConfigWindowClip != null) {
+				Config.SetValue("ConfigWindowPosition", new Point(ConfigWindowClip._x, ConfigWindowClip._y));
+				ConfigWindowClip.removeMovieClip();
+				ConfigWindowClip = null;
 			}
 		}
 	}
 
 	private function ConfigWindowLoaded():Void {
-		m_ConfigWindow.m_Content.AttachConfig(Config);
+		ConfigWindowClip.m_Content.AttachConfig(Config);
 	}
 
 	// TODO: This only works on top and left of screen, need to account for Window size on other sides
@@ -176,7 +153,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function ConfigWindowClosed():Void {
-		m_ShowConfig.SetValue(false);
+		ShowConfigDV.SetValue(false);
 	}
 
 	private function UpdateInstall():Void {
@@ -208,45 +185,45 @@ class efd.LoreHound.lib.Mod {
 	// but explicit support will make solving unique issues easier
 	// Meeehr's should always trigger first if present, and can be checked during the callback.
 	private function RegisterWithTopbar():Void {
-		m_MeeehrUI = DistributedValue.Create("meeehrUI_IsLoaded");
-		m_ViperTIO = DistributedValue.Create("VTIO_IsLoaded");
+		MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
+		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
 		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		if (!(DoRegistration(m_MeeehrUI) || DoRegistration(m_ViperTIO))) {
-			m_MeeehrUI.SignalChanged.Connect(DoRegistration, this);
-			m_ViperTIO.SignalChanged.Connect(DoRegistration, this);
+		if (!(DoRegistration(MeeehrDV) || DoRegistration(ViperDV))) {
+			MeeehrDV.SignalChanged.Connect(DoRegistration, this);
+			ViperDV.SignalChanged.Connect(DoRegistration, this);
 		}
 	}
 
 	private function DoRegistration(dv:DistributedValue):Boolean {
-		if (dv.GetValue() && !m_IsTopbarRegistered) {
-			m_MeeehrUI.SignalChanged.Disconnect(DoRegistration, this);
-			m_ViperTIO.SignalChanged.Disconnect(DoRegistration, this);
+		if (dv.GetValue() && !IsTopbarRegistered) {
+			MeeehrDV.SignalChanged.Disconnect(DoRegistration, this);
+			ViperDV.SignalChanged.Disconnect(DoRegistration, this);
 			// Adjust our default icon to be better suited for topbar integration
-			if (m_ModIcon != undefined) {
-				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(m_HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
-				m_ModIcon.ConfigureForTopbar();
+			if (Icon != undefined) {
+				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+				Icon.ConfigureForTopbar();
 			}
 			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
 			//       Both are capable of handling "undefined" or otherwise invalid icon names
-			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + m_ModIcon.toString());
+			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + Icon.toString());
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, Meeehr's redirects event handling oddly
 			// (It calls back to the original clip, using the new clip as the "this" instance)
-			m_ModIcon.CopyToTopbar(HostMovie.Icon);
-			m_ModIcon = HostMovie.Icon;
-			m_IsTopbarRegistered = true;
+			Icon.CopyToTopbar(HostMovie.Icon);
+			IconClip = HostMovie.Icon;
+			IsTopbarRegistered = true;
 			TopbarRegistered();
 			TraceMsg("Topbar registration complete");
 		}
-		return m_IsTopbarRegistered;
+		return IsTopbarRegistered;
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
 	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
-		m_EnabledByGame = state;
+		EnabledByGame = state;
 		Enabled = state;
 		if (!state) {
-			m_ShowConfig.SetValue(false);
+			ShowConfigDV.SetValue(false);
 			return Config.SaveConfig();
 		} else {
 			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
@@ -312,24 +289,44 @@ class efd.LoreHound.lib.Mod {
 	private function Deactivate():Void { }
 	private function TopbarRegistered():Void { }
 
+	/// Properites and variables
+	public function get ModName():String { return _ModName; }
+	public function get Version():String { return Config.GetValue("Version"); }
+	public function get DevName():String { return "Peloprata"; } // Others should replace
+
+	public function get Config():ConfigWrapper { return _Config; }
+	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
+
+	public function get Icon():ModIcon { return IconClip; }
+
+	public function get Enabled():Boolean { return _Enabled; }
+	public function set Enabled(value:Boolean):Void {
+		value = EnabledByGame && Config.GetValue("Enabled");
+		if (value != _Enabled) { // State changed
+			_Enabled = value;
+			if (value) { Activate(); }
+			else { Deactivate(); }
+		}
+	}
+
 	private static var ChatLeadColor:String = "#00FFFF";
 
-	private var m_ModName:String;
+	private var _ModName:String;
 
-	private var m_Enabled:Boolean = false;
-	private var m_EnabledByGame:Boolean = false;
+	private var _Enabled:Boolean = false;
+	private var EnabledByGame:Boolean = false;
 	// Enabled by player is a persistant config setting
 
-	private var m_Config:ConfigWrapper;
-	private var m_ShowConfig:DistributedValue; // Used by topbars to provide setting shortcut buttons
-	private var m_ConfigWindow:MovieClip = null;
+	private var _Config:ConfigWrapper;
+	private var ShowConfigDV:DistributedValue; // Used by topbars to provide setting shortcut buttons
+	private var ConfigWindowClip:MovieClip = null;
 
-	private var m_HostMovie:MovieClip;
-	private var m_ModIcon:ModIcon;
+	private var HostMovie:MovieClip;
+	private var IconClip:ModIcon;
 
-	private var m_MeeehrUI:DistributedValue;
-	private var m_ViperTIO:DistributedValue;
-	private var m_IsTopbarRegistered:Boolean = false;
+	private var IsTopbarRegistered:Boolean = false;
+	private var MeeehrDV:DistributedValue;
+	private var ViperDV:DistributedValue;
 
-	private var m_DebugTrace:Boolean;
+	private var DebugTrace:Boolean;
 }

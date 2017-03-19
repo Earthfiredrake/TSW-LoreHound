@@ -17,12 +17,12 @@ If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the exi
 
 ## Changelog
 Version next
-+ Mostly code cleanup and other backend stuff
 + Now even lazier, does less work wherever possible
   + A setting has been added to push it to do more work for looking at new content
 + No longer goes berserk around certain players, and has been told to stop sniffing the German corpses
-  + Some false positives in the detection system for previously unknown lore have been stomped
-+ Unknown lore id count: 8
+  + False positives in the detection system have been stomped
++ Various other code cleanup and backend changes
++ Unknown lore id count: 7
 
 Version 0.5.0-beta
 + New responses to lore pickups that don't connect to anything (formerly "Unable to identify")
@@ -48,7 +48,7 @@ Version 0.1.1-alpha
 + Unknown lore id count:  26
 
 ## Known Issues
-+ Find me some issues!
++ Find me some issues! Find me those missing lores!
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.

@@ -12,7 +12,7 @@
  * - e.g. create a clip+class without needing a symbol in the library for it, or create an instance of a symbol with a class specified at runtime
  *
  */
-class efd.LoreHound.lib.etModUtils.MovieClipHelper {
+class efd.LoreHound.lib.etu.MovieClipHelper {
 
 	/**
 	 * static class only, cannot be instantiated

@@ -17,7 +17,7 @@ import flash.geom.Point;
  * This cannot be instantiated using new GemOverlay(), but must instead be attached to a movieclip symbol.  However, creating instances of GemOverlay outside of GemController is reasonably useless.
  *
  */
-class efd.LoreHound.lib.etModUtils.GemOverlay extends UIComponent {
+class efd.LoreHound.lib.etu.GemOverlay extends UIComponent {
 
 	public static var __className:String = "efd.LoreHound.lib.etModUtils.GemOverlay";
 

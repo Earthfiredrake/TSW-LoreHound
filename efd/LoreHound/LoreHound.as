@@ -58,11 +58,11 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
-		m_Details_StatRange = 1; // Start with the first million
-		m_Details_StatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
-		m_TrackedLore = new Object();
+		DetailStatRange = 1; // Start with the first million
+		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
+		TrackedLore = new Object();
 
-		m_AutoReport = new AutoReport(ModName, Version, DevName);
+		ReportManager = new AutoReport(ModName, Version, DevName);
 
 		InitializeConfig();
 
@@ -74,7 +74,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					case undefined: { this.StateFlags ^= stateFlag; break; }
 				}
 			}
-			if (Config.GetValue("Enabled")) {
+			if (Config.GetValue("Enabled")) { // Should this also deactivate if the game turns it off? Use the proprety Enabled instead.
 				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
 				if ((this.StateFlags & LoreHound.ef_IconState_Reports) == LoreHound.ef_IconState_Reports) { this.gotoAndStop("reporting"); return; }
 				this.gotoAndStop("active");
@@ -102,7 +102,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// - Some fields are always included when detecting Unknown category lore, to help identify it
 		Config.NewSetting("Details", ef_Details_Location);
 
-		var autoReportConfig:ConfigWrapper = m_AutoReport.GetConfigWrapper();
+		var autoReportConfig:ConfigWrapper = ReportManager.Config;
 		autoReportConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
 		Config.NewSetting("AutoReport", autoReportConfig);
 	}
@@ -111,7 +111,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		switch(setting) {
 			case "Enabled":
 			case "QueuedReports":
-				Icon.UpdateState(ef_IconState_Reports, m_AutoReport.HasReportsPending);
+				Icon.UpdateState(ef_IconState_Reports, ReportManager.HasReportsPending);
 				break;
 			default: break;
 		}
@@ -125,9 +125,10 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
+		// TODO: See about moving much of this into the auto-report subsystem
 		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
-		autoRepConfig.SetValue("PriorReports", CleanReportArray(autoRepConfig.GetValue("PriorReports"), function(id) { return id; }));
-		autoRepConfig.SetValue("QueuedReports", CleanReportArray(autoRepConfig.GetValue("QueuedReports"), function(report) { return report.id; }));
+		autoRepConfig.SetValue("PriorReports", CleanReportArray(ReportManager.Archive, function(id) { return id; }));
+		autoRepConfig.SetValue("QueuedReports", CleanReportArray(ReportManager.Queue, function(report) { return report.id; }));
 
 		// Version specific updates
 		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
@@ -149,19 +150,19 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 	}
 
-	private function CleanReportArray(array:Array, extractor:Function):Array {
+	private static function CleanReportArray(array:Array, extractor:Function):Array {
 		var cleanedArray = new Array();
 		for (var i:Number = 0; i < array.length; i++) {
 			if (ClassifyID(Number(extractor(array[i]))) == ef_LoreType_Unknown) {
 				cleanedArray.push(array[i]);
 			}
 		}
-		TraceMsg("Cleanup removed " + (array.length - cleanedArray.length) + " records, " + cleanedArray.length + " records remain.");
+		TraceMsgS("Cleanup removed " + (array.length - cleanedArray.length) + " records, " + cleanedArray.length + " records remain.");
 		return cleanedArray;
 	}
 
 	private function Activate():Void {
-		m_AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
+		ReportManager.IsEnabled = true; // Only updates this component's view of the mod state
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
@@ -173,12 +174,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		ClearTracking();
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
-		m_AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
+		ReportManager.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 
 	private function TopbarRegistered():Void {
 		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		Icon.UpdateState(ef_IconState_Reports, m_AutoReport.HasReportsPending);
+		Icon.UpdateState(ef_IconState_Reports, ReportManager.HasReportsPending);
 	}
 
 	// Notes on Dynel API:
@@ -256,10 +257,10 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			// Track dropped lore so that notifications can be made on despawn
 			// While could hook to the DynelLeave proximity detector, this method should be more efficient
-			if (loreType == ef_LoreType_Drop && m_TrackedLore[dynelId.toString()] == undefined) {
+			if (loreType == ef_LoreType_Drop && TrackedLore[dynelId.toString()] == undefined) {
 				// Don't care about the value, but the request is required to get DynelGone events
 				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-				m_TrackedLore[dynelId.toString()] = loreId;
+				TrackedLore[dynelId.toString()] = loreId;
 				Icon.UpdateState(ef_IconState_Alert, true);
 			}
 		}
@@ -278,26 +279,26 @@ class efd.LoreHound.LoreHound extends Mod {
 	// With no dynel to query, all required info has to be known values or cached
 	private function LoreDespawned(type:Number, instance:Number):Void {
 		var despawnedId:String = new ID32(type, instance).toString();
-		var loreId:Number = m_TrackedLore[despawnedId];
+		var loreId:Number = TrackedLore[despawnedId];
 		// Conform to the player's choice of notification on unclaimed lore, should they have left it unclaimed
 		if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
 			var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId); //
 			DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
 		}
-		delete m_TrackedLore[despawnedId];
-		for (var key:String in m_TrackedLore) {
+		delete TrackedLore[despawnedId];
+		for (var key:String in TrackedLore) {
 			return; // There's still at least one lore being tracked, don't clear the icon
 		}
 		Icon.UpdateState(ef_IconState_Alert, false);
 	}
 
 	private function ClearTracking():Void {
-		for (var key:String in m_TrackedLore) {
+		for (var key:String in TrackedLore) {
 			var id:Array = key.split(":");
 			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
 		}
-		delete m_TrackedLore;
-		m_TrackedLore = new Object();
+		delete TrackedLore;
+		TrackedLore = new Object();
 		Icon.UpdateState(ef_IconState_Alert, false);
 	}
 
@@ -316,6 +317,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				return ef_LoreType_Common;
 			case 7648084: // Pol (Hidden zombie after #1)
 						  // Pol (Drone spawn) is ??
+			case 7653135: // HR6 (Post boss lore spawn)
 			case 7661215: // DW6 (Post boss lore spawn)
 			case 7648451: // Ankh (Orochi Agent after #1)
 			case 7648450: // Ankh (Wretched Receptacles (Ankh #5))
@@ -342,7 +344,6 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 9135398: // Two one-off lores found in MFB (probably should be grouped as Triggered, want to go back in and verify which was which first)
 			case 9135406:
 				return ef_LoreType_Special;
-			case 7653135: // HR post MT?
 			case 8397678: // Probably Niflheim
 			case 8397708: // Probably Niflheim
 			case 8437788: // Unknown (KD?)
@@ -524,11 +525,11 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
 			// Fishing expedition, trying to find anything potentially useful
-			detailStrings.push("Stat Dump: Mode " + m_Details_StatMode);
-			var start:Number = (m_Details_StatRange - 1) * 1000000;
-			var end:Number = m_Details_StatRange * 1000000;
+			detailStrings.push("Stat Dump: Mode " + DetailStatMode);
+			var start:Number = (DetailStatRange - 1) * 1000000;
+			var end:Number = DetailStatRange * 1000000;
 			for (var statID:Number = start; statID < end; ++statID) {
-				var val = dynel.GetStat(statID, m_Details_StatMode);
+				var val = dynel.GetStat(statID, DetailStatMode);
 				if (val != 0) { // I think this only returns numbers, might be interesting to be proven wrong
 					detailStrings.push("Stat: #" + statID + " Value: " + val);
 				}
@@ -556,7 +557,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state
 			var report:String = messageStrings[3];
 			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
-			m_AutoReport.AddReport({ id: categorizationId, text: report });
+			ReportManager.AddReport({ id: categorizationId, text: report });
 		}
 	}
 
@@ -568,15 +569,15 @@ class efd.LoreHound.LoreHound extends Mod {
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided
 	// Tradeoff between the length of time locked up, and the number of tests needed
-	private var m_Details_StatRange:Number;
-	private var m_Details_StatMode:Number;
+	private var DetailStatRange:Number;
+	private var DetailStatMode:Number;
 
-	private var m_TrackedLore:Object;
+	private var TrackedLore:Object;
 
 	// When compiling reports for the automated report system consider the following options for IDs
 	// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
 	// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
 	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
-	private var m_AutoReport:AutoReport;
+	private var ReportManager:AutoReport;
 }

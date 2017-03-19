@@ -10,8 +10,8 @@ import gfx.core.UIComponent;
 
 import flash.geom.Point;
 
-import efd.LoreHound.lib.etModUtils.MovieClipHelper;
-import efd.LoreHound.lib.etModUtils.GemOverlay;
+import efd.LoreHound.lib.etu.MovieClipHelper;
+import efd.LoreHound.lib.etu.GemOverlay;
 
 
 /**
@@ -24,7 +24,7 @@ import efd.LoreHound.lib.etModUtils.GemOverlay;
  * - only create instance of the controller using the create() factory method, do not instantiate using new GemController()
  *
  */
-class efd.LoreHound.lib.etModUtils.GemController extends UIComponent {
+class efd.LoreHound.lib.etu.GemController extends UIComponent {
 
 	public static var __className:String = "efd.LoreHound.lib.etModUtils.GemController";
 

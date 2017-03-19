@@ -9,14 +9,6 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.LoreHound;
 
 class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
-
-	private var m_GroupTitle:TextField;
-	private var m_CBFifoEnabled:CheckBox;
-	private var m_CBChatEnabled:CheckBox;
-
-	private var m_Type:Number;
-	private var m_Config:ConfigWrapper;
-
 	private function LoreCategorySettingGroup() {
 		super();
 	}
@@ -24,54 +16,61 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 	private function configUI():Void {
 		super.configUI();
 		// Disable focus to prevent selections from locking user input until the window closes
-		m_CBFifoEnabled.disableFocus = true;
-		m_CBChatEnabled.disableFocus = true;
+		CBFifoEnabled.disableFocus = true;
+		CBChatEnabled.disableFocus = true;
 	}
 
 	public function SetType(loreType:Number):Void {
-		m_Type = loreType;
+		Type = loreType;
 		switch(loreType) {
 		case LoreHound.ef_LoreType_Common:
-			m_GroupTitle.text = "Standard Lore";
+			GroupTitle.text = "Standard Lore";
 			break;
 		case LoreHound.ef_LoreType_Triggered:
-			m_GroupTitle.text = "Triggered Lore";
+			GroupTitle.text = "Triggered Lore";
 			break;
 		case LoreHound.ef_LoreType_Drop:
-			m_GroupTitle.text = "Timed Drop Lore";
+			GroupTitle.text = "Timed Drop Lore";
 			break;
 		case LoreHound.ef_LoreType_Special:
-			m_GroupTitle.text = "Unusual Lore";
+			GroupTitle.text = "Unusual Lore";
 			break;
 		case LoreHound.ef_LoreType_Unknown:
-			m_GroupTitle.text = "Uncategorized Lore";
+			GroupTitle.text = "Uncategorized Lore";
 			break;
 		}
 	}
 
 	public function AttachConfig(config:ConfigWrapper):Void {
-		m_Config = config;
+		Config = config;
 		ConfigUpdated();
-		m_Config.SignalValueChanged.Connect(ConfigUpdated, this);
+		Config.SignalValueChanged.Connect(ConfigUpdated, this);
 
-		m_CBFifoEnabled.addEventListener("select", this, "CBFifo_Select");
-		m_CBChatEnabled.addEventListener("select", this, "CBChat_Select");
+		CBFifoEnabled.addEventListener("select", this, "CBFifo_Select");
+		CBChatEnabled.addEventListener("select", this, "CBChat_Select");
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue) {
 		if (setting == "FifoLevel" || setting == undefined) {
-			m_CBFifoEnabled.selected = ((m_Config.GetValue("FifoLevel") & m_Type) == m_Type);
+			CBFifoEnabled.selected = ((Config.GetValue("FifoLevel") & Type) == Type);
 		}
 		if (setting == "ChatLevel" || setting == undefined) {
-			m_CBChatEnabled.selected = ((m_Config.GetValue("ChatLevel") & m_Type) == m_Type);
+			CBChatEnabled.selected = ((Config.GetValue("ChatLevel") & Type) == Type);
 		}
 	}
 
 	private function CBFifo_Select(event:Object):Void {
-		m_Config.SetFlagValue("FifoLevel", m_Type, event.selected);
+		Config.SetFlagValue("FifoLevel", Type, event.selected);
 	}
 
 	private function CBChat_Select(event:Object):Void {
-		m_Config.SetFlagValue("ChatLevel", m_Type, event.selected);
+		Config.SetFlagValue("ChatLevel", Type, event.selected);
 	}
+
+	private var GroupTitle:TextField;
+	private var CBFifoEnabled:CheckBox;
+	private var CBChatEnabled:CheckBox;
+
+	private var Config:ConfigWrapper;
+	private var Type:Number;
 }

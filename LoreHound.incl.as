@@ -13,6 +13,7 @@ var efdLoreHound:LoreHound;
 
 // Called when the clip is first loaded
 // - When the player logs in a character, including on relogs
+// - When /relaodui is called
 // - If the mod activation distributed value is false, it may skip loading entirely
 function onLoad():Void {
 	efdLoreHound = new LoreHound(this);

@@ -14,7 +14,7 @@ import com.GameInterface.Tooltip.TooltipManager;
 import com.Utils.GlobalSignal;
 import GUIFramework.SFClipLoader;
 
-import efd.LoreHound.lib.etModUtils.GemController;
+import efd.LoreHound.lib.etu.GemController;
 
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.Mod;
