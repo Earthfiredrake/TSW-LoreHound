@@ -21,6 +21,7 @@ Version next
   + A setting has been added to push it to do more work for looking at new content
 + No longer goes berserk around certain players, and has been told to stop sniffing the German corpses
   + False positives in the detection system have been stomped
++ No longer baffled by the drone in Polaris and can spot lore #4 there
 + Various other code cleanup and backend changes
 + Unknown lore id count: 7
 

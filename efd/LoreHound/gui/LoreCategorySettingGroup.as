@@ -52,10 +52,10 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	private function ConfigUpdated(setting:String, newValue, oldValue) {
 		if (setting == "FifoLevel" || setting == undefined) {
-			CBFifoEnabled.selected = ((Config.GetValue("FifoLevel") & Type) == Type);
+			CBFifoEnabled.selected = (Config.GetValue("FifoLevel") & Type) == Type;
 		}
 		if (setting == "ChatLevel" || setting == undefined) {
-			CBChatEnabled.selected = ((Config.GetValue("ChatLevel") & Type) == Type);
+			CBChatEnabled.selected = (Config.GetValue("ChatLevel") & Type) == Type;
 		}
 	}
 
