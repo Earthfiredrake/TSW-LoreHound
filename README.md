@@ -16,10 +16,10 @@ Any packaged releases can be installed by copying the contents into [Game Direct
 If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Changelog
-Version next
+Version 0.6.0-beta
 + Now even lazier, does less work wherever possible
-  + A setting has been added to push it to do more work for looking at new content
-+ No longer goes berserk around certain players, and has been told to stop sniffing the German corpses
+  + Setting for "new content" will re-enable some of these tests, but should not be needed unitl new content arrives. May be useful if a particular piece of lore does not seem to be detected at all.
++ No longer goes berserk around certain players, and has been told to stop sniffing German corpses
   + False positives in the detection system have been stomped
 + No longer baffled by the drone in Polaris and can spot lore #4 there
 + Various other code cleanup and backend changes
@@ -54,6 +54,13 @@ Version 0.1.1-alpha
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.
 
+As this approaches an official release version, there's a few more changes I'm looking at making:
++ The Unusual category is likely to be removed, leaving Placed (formerly Common), Triggered, and Dropped for categorized lore.
+  + The Shrouded Lore (the only actual member of the Unusual group) will be shifted into Placed lore, where most other event lore already falls.
++ Am considering adding a feature related to the Abandoned lore, if it proves to be useful/needed after initial tests.
++ Depreciated features of the config system that have been retained to permit smooth upgrades from older versions may start to be removed. Likely starting with the version to follow v1.0.0.
++ Support for localization, and the ability to categorize lore entries through data files have been pushed to a later version.
+
 Defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata (by pm or mail) in game, or submitted via the project page or official forum post.
 
 Project Page: https://github.com/Earthfiredrake/TSW-LoreHound
@@ -61,7 +68,7 @@ Project Page: https://github.com/Earthfiredrake/TSW-LoreHound
 Forum Post: https://forums.thesecretworld.com/showthread.php?98459-Mod-LoreHound&p=2031487#post2031487
 
 ## Build Requirements
-Building from source requires a copy of the TSW API and of the Scaleform CLIK API. (Existing project files are configured for Flash Pro CS5.5)
+Building from source requires a copy of the TSW API and of the Scaleform CLIK API. Existing project files are configured for Flash Pro CS5.5.
 
 ## License and Attribution
 Copyright (c) 2017 Earthfiredrake
@@ -70,13 +77,13 @@ Software and source released under the MIT License
 
 Uses the TSW-AddonUtils library and graphical elements from the UI_Tweaks mod
 
-Both Copyright (c) 2015 eltorqiro and used under the terms of the MIT License
+Both copyright (c) 2015 eltorqiro and used under the terms of the MIT License
 
 https://github.com/eltorqiro/TSW-Utils
 
 https://github.com/eltorqiro/TSW-UITweaks
 
-TSW, the related API, and most graphics elements are products of Funcom
+TSW, the related API, and most graphics elements are copyright (c) 2012 Funcom GmBH
 
 LoreHound icon developed from game graphics (sourced from TSWDB) and  http://www.iconninja.com/basset-hound-dog-head-icon-843075
 

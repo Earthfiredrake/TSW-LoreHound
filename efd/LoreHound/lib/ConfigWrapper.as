@@ -284,7 +284,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	private var ArchiveName:String;
 	private var Settings:Object;
 
-	// A cache of the last loaded/saved archive, will see if it lets us get away with this
+	// A cache of the last loaded/saved archive
 	private var CurrentArchive:Archive;
 	private var DirtyFlag:Boolean = false;
 }

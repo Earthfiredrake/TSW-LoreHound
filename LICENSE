@@ -25,3 +25,40 @@ TSW-AddonUtils library & UITweaks mod
   Released under the MIT license
   https://github.com/eltorqiro/TSW-Utils
   https://github.com/eltorqiro/TSW-UITweaks
+
+Some graphical assets have been copied from the TSW API and are contained in this repository
+  Copyright (c) 2012 Funcom GmBH
+  Usage under the Funcom User Interface Source Code Limited License Agreement
+
+FUNCOM USER INTERFACE SOURCE CODE
+LIMITED LICENSE AGREEMENT
+May 15, 2012
+
+License Agreement
+This software license ("License") contains rights and restrictions associated with the use of the accompanying Funcom User Interface Source Code ("Source Code"), a product developed and owned by Funcom GmBH, a Swiss entity with offices at Lavaterstrasse 45,8002 Zürich, Switzerland (“Funcom”).
+By downloading an electronic copy and/or opening the seal of media or package containing the Source Code, you ("You" or "User") are indicating your acceptance of the terms, conditions, and disclaimers set forth in this agreement ("Agreement").
+Grant of License
+Subject to the terms and conditions of this Agreement, Funcom grants you a non-exclusive, non-commercial, limited license to reproduce, use and modify the Source Code for the purpose of customizing your user experience within Funcom games.
+License to Distribute Software. Subject to the terms and conditions of this Agreement, Funcom grants you a non-exclusive, non-transferable, limited license without fees to reproduce and distribute the Software, provided that (i) you distribute the modified software free of charge,  (ii) the modified software  is only permitted for use within Funcom games and (iii) you agree to  defend and indemnify Funcom and its licensors from and against any damages, costs, liabilities, settlement amounts and/or expenses (including attorneys' fees) incurred in connection with any claim, lawsuit or action by any third party that arises or results from the use or distribution of any and all Programs and/or Software created or derived from the Source Code.
+Automatic Licensing of Downstream Recipients.
+Each time you distribute a covered work, the recipient automatically receives a license from the original licensors, to run, modify and propagate that work, subject to this License. You are not responsible for enforcing compliance by third parties with this License.
+You may not impose any further restrictions on the exercise of the rights granted or affirmed under this License. For example, you may not impose a license fee, royalty, or other charge for exercise of rights granted under this License, and you may not initiate litigation (including a cross-claim or counterclaim in a lawsuit) alleging that any patent claim is infringed by making, using, selling, offering for sale, or importing the Program or any portion of it.
+
+Restrictions
+Source Code is copyrighted. Title to Source Code and all associated intellectual property rights are retained by Funcom and/or its licensors. No right, title or interest in or to any trademark, service mark, logo or trade name Funcom or its licensors is granted under this Agreement.
+This Agreement expressly prohibits the (public or private) distribution or display of Source Code in an indexed library or collection of code, or any use (public or private) that distributes or displays Source Code for any purpose outside of creating free customized user interfaces for use within Funcom games.
+DISCLAIMER OF WARRANTY
+SOURCE CODE IS PROVIDED "AS IS". THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+LIMITATION OF LIABILITY
+TO THE EXTENT NOT PROHIBITED BY LAW, IN NO EVENT WILL FUNCOM OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE, PROFIT OR DATA, OR FOR SPECIAL, INDIRECT, CONSEQUENTIAL, INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED REGARDLESS OF THE THEORY OF LIABILITY, ARISING OUT OF OR RELATED TO THE USE OF OR INABILITY TO USE SOURCE CODE.
+Indemnity
+As a condition of use of the Source Code, the User agrees to hold harmless, defend, and indemnify Funcom and its affiliates, modifiers, and contributors from and against any and all liabilities, expenses (including attorneys' fees), and/or damages arising out of claims resulting from User's use of this Source Code, including without limitation any claims alleging facts that if true would constitute a breach by User of these terms and conditions and the terms and conditions incorporated by reference herein.
+Termination
+This Agreement is effective until terminated. You may terminate this Agreement at any time by destroying all copies of the Source Code. This Agreement will terminate immediately without notice from Funcom if you fail to comply with any provision of this Agreement. Either party may terminate this Agreement immediately should any software become, or in either party's opinion be likely to become, the subject of a claim of infringement of any intellectual property right. Upon Termination, you must destroy all copies of software created with the source code, and the source code itself.
+Governing Law
+Any action related to this Agreement will be governed by New York law and controlling U.S. federal law. No choice of law rules of any jurisdiction will apply.
+Severability
+If any provision of this Agreement is held to be unenforceable, this Agreement will remain in effect with the provision omitted, unless omission would frustrate the intent of the parties, in which case this Agreement will immediately terminate.
+Integration
+This Agreement is the entire agreement between you and Funcom relating to its subject matter. It supersedes all prior or contemporaneous oral or written communications, proposals, representations and warranties and prevails over any conflicting or additional terms of any quote, order, acknowledgment, or other communication between the parties relating to its subject matter during the term of this Agreement. No modification of this Agreement will be binding, unless in writing and signed by an authorized representative of each party.
+Questions may be directed to legal@funcom.com

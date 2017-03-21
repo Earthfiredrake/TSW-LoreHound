@@ -27,7 +27,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "0.6.0.alpha"
+		Version : "0.6.0.beta"
 	}
 
 	// Category flags for identifiable lore types
@@ -194,7 +194,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     key: Some sort of hash? May vary by id# or string content (shrouded and regular lore have different values), but seems constant within a group
 	//     knubot: No idea at all. Always seems to be 0 for what it's worth.
 	//   GetID() - The ID type seems to be constant (51320) for all lore, but is shared with a wide variety of other props
-	//       Other types: 
+	//       Other types:
 	//         50000 - used by all creatures (players, pets, npcs, monsters, etc.)
 	//         51322 - loot bags
 	//       As a note for later, the other category uses a different GetName() system (is pre-localized, rather than the xml tag used by objects)
@@ -239,7 +239,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == ef_LoreType_None) {
-			if (Config.GetValue("CheckNewContent") && CheckLocalizedName(dynelName)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
+			if (Config.GetValue("CheckNewContent") && ConfirmVerification(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
 			else { return; }
 		}
 
@@ -384,15 +384,15 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 	}
 
-	private static function CheckLocalizedName(formatStr:String):Boolean {
-		// Have the localization system provide a language dependent string to compare with
+	private static function ConfirmVerification(dynel:Dynel):Boolean {
+		// Check the dynel's lore ID, it may not have a proper entry in the string table (Polaris drone clause)
+		// Won't detect inactive event lore though
+		if (dynel.GetStat(e_Stats_LoreId, 2) != 0) { return true; }
+		// Have the localization system provide language dependent strings to compare
 		// Using exact comparison, should be slightly faster and eliminate almost all false positives
 		// Will require occasional scans of the string db to catch additions of things like "Shrouded Lore"
-		// In English this ends up being "Lore", which only seems to clash with the teleport objects
-		// The French term (Compendium) appears to be similarly uniquely used
-		// The German term (Wissen) unfortunately also pops up on every scientist around... including many corpses
-		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string identifiers for commonly placed lore
-		return LDBFormat.Translate(formatStr) == testStr;
+		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string for common placed lore
+		return LDBFormat.Translate(dynel.GetName()) == testStr;
 	}
 
 	/// Notification and message formatting
@@ -500,7 +500,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				// All the unidentified common lore I ran into matched up with event/seasonal lore
 				// Though not all the event/seasonal lore exists in this disabled state
 				// For lore in accessible locations (ie, not event instances):
-				// - Samhain lores seem to be mostly absent
+				// - Samhain lores seem to be mostly absent (double checked in light of Polaris drone... really seems to be absent)
 				// - Other event lores seem to be mostly present
 				// (There are, of course, exceptions)
 				return "Inactive event lore";
@@ -580,7 +580,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Variables
 	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
-	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index
+	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
