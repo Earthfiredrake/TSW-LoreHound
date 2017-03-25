@@ -52,7 +52,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	// Copy needed properties and functions to the topbar's copy of the icon
-	public function CopyToTopbar(copy:MovieClip):Void {
+	public function CopyToTopbar(copy:ModIcon):ModIcon {
 		// Topbar handles all layout and GEM related properties itself
 		copy.ModName = ModName;
 		copy.DevName = DevName;
@@ -72,6 +72,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		Config.SignalValueChanged.Connect(ConfigChanged, copy);
 
 		copy.gotoAndStop(_currentframe); // Match the current icons
+		return copy;
 	}
 
 	/// Config and state changes

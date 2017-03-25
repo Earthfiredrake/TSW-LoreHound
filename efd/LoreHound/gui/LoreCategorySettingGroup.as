@@ -20,28 +20,23 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 		CBChatEnabled.disableFocus = true;
 	}
 
-	public function SetType(loreType:Number):Void {
+	public function Init(loreType:Number, config:ConfigWrapper):Void {
 		Type = loreType;
 		switch(loreType) {
-		case LoreHound.ef_LoreType_Common:
-			GroupTitle.text = "Standard Lore";
+		case LoreHound.ef_LoreType_Placed:
+			GroupTitle.text = "Placed Lore";
 			break;
-		case LoreHound.ef_LoreType_Triggered:
+		case LoreHound.ef_LoreType_Trigger:
 			GroupTitle.text = "Triggered Lore";
 			break;
 		case LoreHound.ef_LoreType_Drop:
 			GroupTitle.text = "Timed Drop Lore";
 			break;
-		case LoreHound.ef_LoreType_Special:
-			GroupTitle.text = "Unusual Lore";
-			break;
 		case LoreHound.ef_LoreType_Unknown:
 			GroupTitle.text = "Uncategorized Lore";
 			break;
 		}
-	}
 
-	public function AttachConfig(config:ConfigWrapper):Void {
 		Config = config;
 		ConfigUpdated();
 		Config.SignalValueChanged.Connect(ConfigUpdated, this);

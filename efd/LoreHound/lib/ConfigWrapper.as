@@ -49,6 +49,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 
 	public function DeleteSetting(key:String):Void {
 		delete Settings[key];
+		DirtyFlag = true;
 	}
 
 	// Get a reference to the setting (value, defaultValue) tuple object
@@ -96,9 +97,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function ResetAll():Void {
-		for (var key:String in Settings) {
-			ResetValue(key);
-		}
+		for (var key:String in Settings) { ResetValue(key);	}
 	}
 
 	// Notify the config wrapper of changes made to the internals of composite object settings
@@ -190,14 +189,17 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return value; // Basic type
 	}
 
-	private function FromArchive(archive:Archive):ConfigWrapper {
+	private function FromArchive(archive:Archive):Void {
+		var initialLoad:Boolean = !IsLoaded;
 		if (archive != undefined) {
 			for (var key:String in Settings) {
 				var element:Object = archive.FindEntry(key,null);
-				if (element == null) {
+				if (element == null) { // Could not find the key in the archive, likely a new setting
 					var value = GetValue(key);
-					if (value instanceof ConfigWrapper && value.ArchiveName != undefined) {
-						// Nested config saved as independent archive
+					if (value instanceof ConfigWrapper) {
+						// Either of these, both of which can be Loaded
+						//   Nested config saved as independent archive
+						//   New sub-config
 						value.LoadConfig();
 					} else {
 						TraceMsg("Setting '" + key + "' could not be found in archive. (New setting?)");
@@ -205,29 +207,29 @@ class efd.LoreHound.lib.ConfigWrapper {
 					continue;
 				}
 				var savedValue = Unpack(element, key);
-				if (savedValue != null) {
-					SetValue(key, savedValue);
-				}
+				if (savedValue != null) { SetValue(key, savedValue); }
 			}
+			CurrentArchive = archive;
+			DirtyFlag = false;
+		} else {
+			CurrentArchive = new Archive(); // Nothing to load, but we tried
 		}
-		SignalConfigLoaded.Emit(!IsLoaded);
-		CurrentArchive = archive;
-		DirtyFlag = false;
-		return this;
+		SignalConfigLoaded.Emit(initialLoad);
+		return;
 	}
 
 	private function Unpack(element:Object, key:String) {
 		if (element instanceof Archive) {
 			var type:String = element.FindEntry("ArchiveType", null);
 			if (type == null) {
-				// Basic archive
-				return element;
+				return element;	// Basic archive
 			}
 			switch (type) {
 				case "Config":
 					// Have to use the existing config, as it has the field names defined
-					return GetValue(key).FromArchive(element);
-				case "Point": // Depreciated storage method, retained for backwards compatibility
+					GetValue(key).FromArchive(element);
+					return null;
+				case "Point": // DEPRECIATED:(v0.5.0) storage method, retained for backwards compatibility
 					return new Point(element.FindEntry("X"), element.FindEntry("Y"));
 				case "Array":
 				case "Object": // Serialized unspecified type
@@ -255,7 +257,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		} else { Mod.TraceMsgS(msg, supressLeader); }
 	}
 
-	// TODO: IsLoaded will be false if nothing was loaded, which may result in multiple ConfigLoaded(true) signals
+	// As long as we're using the game
 	public function get IsLoaded():Boolean { return CurrentArchive != undefined; }
 
 	// Checks if this, or any nested Config settings object, is dirty
@@ -271,7 +273,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return false;
 	}
 
-	// TODO: SignalConfigLoaded doesn't trigger for subconfig groups on first install
 	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
 	public var SignalConfigLoaded:Signal; // (initialLoad:Boolean):Void // Parameter is true when the config is loaded for the very first time
 

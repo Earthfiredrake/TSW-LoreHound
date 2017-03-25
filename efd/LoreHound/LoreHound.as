@@ -15,6 +15,8 @@ import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
 import com.GameInterface.Utils;
 import com.GameInterface.VicinitySystem;
+import com.GameInterface.WaypointInterface;
+import com.Utils.Format;
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -27,17 +29,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "0.6.0.beta"
+		Version : "0.6.6.alpha"
 	}
 
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
-	public static var ef_LoreType_Common:Number = 1 << 0; // Most lore with fixed locations
-	public static var ef_LoreType_Triggered:Number = 1 << 1; // Lore with triggered spawn conditions, seems to stay spawned once triggered (often after dungeon bosses)
+	public static var ef_LoreType_Placed:Number = 1 << 0; // Most lore with fixed locations
+	public static var ef_LoreType_Trigger:Number = 1 << 1; // Lore with triggered spawn conditions, seems to stay spawned once triggered (often after dungeon bosses)
 	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
-	public static var ef_LoreType_Special:Number = 1 << 3; // Particularly unusual lore: The Shrouded Lore for the Mayan Days bird as an example
+	private static var ef_LoreType_Despawn:Number = 1 << 3; // Special type for generating despawn messages (will be output as Drop lore)
 	public static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
-	private static var ef_LoreType_Despawn:Number = 1 << 6; // Special type for generating despawn messages (will be output as Drop lore)
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
@@ -45,12 +46,13 @@ class efd.LoreHound.LoreHound extends Mod {
 	public static var ef_Details_Location:Number = 1 << 0; // Playfield name and coordinate vector
 	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
 	public static var ef_Details_DynelId:Number = 1 << 2;
-	private static var ef_Details_StatDump:Number = 1 << 3; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
-	private static var ef_Details_All:Number = (1 << 4) - 1;
+	public static var ef_Details_Timestamp:Number = 1 << 3;
+	private static var ef_Details_StatDump:Number = 1 << 4; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
+	private static var ef_Details_All:Number = (1 << 5) - 1;
 
 	// Flags for ongoing icon states
 	private static var ef_IconState_Alert = 1 << 0;
-	private static var ef_IconState_Reports = 1 << 1;
+	private static var ef_IconState_Report = 1 << 1;
 
 	/// Initialization
 	public function LoreHound(hostMovie:MovieClip) {
@@ -61,7 +63,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		DumpToLog = false;
 		DetailStatRange = 1; // Start with the first million
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
+
 		TrackedLore = new Object();
+		WaypointInterface.SignalPlayfieldChanged.Connect(ClearTracking, this);
 
 		ReportManager = new AutoReport(ModName, Version, DevName);
 
@@ -77,7 +81,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			if (Config.GetValue("Enabled")) { // Should this also deactivate if the game turns it off? Use the proprety Enabled instead.
 				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
-				if ((this.StateFlags & LoreHound.ef_IconState_Reports) == LoreHound.ef_IconState_Reports) { this.gotoAndStop("reporting"); return; }
+				if ((this.StateFlags & LoreHound.ef_IconState_Report) == LoreHound.ef_IconState_Report) { this.gotoAndStop("reporting"); return; }
 				this.gotoAndStop("active");
 			} else {
 				this.gotoAndStop("inactive");
@@ -94,7 +98,8 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
-		Config.NewSetting("SendReports", false);
+		Config.NewSetting("TrackDespawns", true); // Track lore drops for when they despawn
+		Config.NewSetting("SendReports", false); // DEPRECIATED(v0.6.0): Setting removed
 		Config.NewSetting("CheckNewContent", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 
 		// Extended information, regardless of this setting:
@@ -111,7 +116,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		switch(setting) {
 			case "Enabled":
 			case "QueuedReports":
-				Icon.UpdateState(ef_IconState_Reports, ReportManager.HasReportsPending);
+				Icon.UpdateState(ef_IconState_Report, ReportManager.HasReportsPending);
 				break;
 			default: break;
 		}
@@ -120,15 +125,24 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// Mod framework extensions and overrides
 	private function ConfigLoaded(initialLoad:Boolean):Void {
 		super.ConfigLoaded(initialLoad);
-		if (initialLoad) { Config.DeleteSetting("SendReports"); } // Setting removed (v0.6.0)
+		if (initialLoad) {
+			Config.DeleteSetting("SendReports"); // DEPRECIATED(v0.6.0): Setting removed
+		}
+	}
+
+	private function ConfigChanged(setting:String, newValue, oldValue):Void {
+		switch(setting) {
+			case "TrackDespawns":
+				if (!newValue) { ClearTracking(); }
+				break;
+			default:
+				super.ConfigChanged(setting, newValue, oldValue);
+		}
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
-		// TODO: See about moving much of this into the auto-report subsystem
-		var autoRepConfig:ConfigWrapper = Config.GetValue("AutoReport");
-		autoRepConfig.SetValue("PriorReports", CleanReportArray(ReportManager.Archive, function(id) { return id; }));
-		autoRepConfig.SetValue("QueuedReports", CleanReportArray(ReportManager.Queue, function(report) { return report.id; }));
+		ReportManager.CleanupReports(IsCategorizedLore);
 
 		// Version specific updates
 		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
@@ -148,17 +162,16 @@ class efd.LoreHound.LoreHound extends Mod {
 				Config.GetValue("AutoReport").SetValue("Enabled", true);
 			}
 		}
+		if (CompareVersions("0.6.5.alpha", oldVersion) >=0) {
+			// Removed "Unusual" lore category, value now occupied by "Despawn" special flag
+			Config.SetFlagValue("FifoLevel", ef_LoreType_Despawn, false);
+			Config.SetFlagValue("ChatLevel", ef_LoreType_Despawn, false);
+		}
 	}
 
-	private static function CleanReportArray(array:Array, extractor:Function):Array {
-		var cleanedArray = new Array();
-		for (var i:Number = 0; i < array.length; i++) {
-			if (ClassifyID(Number(extractor(array[i]))) == ef_LoreType_Unknown) {
-				cleanedArray.push(array[i]);
-			}
-		}
-		TraceMsgS("Cleanup removed " + (array.length - cleanedArray.length) + " records, " + cleanedArray.length + " records remain.");
-		return cleanedArray;
+	private static function IsCategorizedLore(categoryId:Number):Boolean {
+		var category:Number = ClassifyID(categoryId);
+		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
 	}
 
 	private function Activate():Void {
@@ -168,10 +181,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function Deactivate():Void {
-		// Disconnected DynelGone handler means we're not clearing tracked lore as they despawn
-		// Most deactivations will cause us to miss the notification (zoning, teleporting etc.)
-		// Might as well keep it tidy rather than wait for more infrequent events for cleanup
-		ClearTracking();
+		// For most teleports this will be renabled before the despawn notification is sent
+		//   Oddly the despawn notification will be sent even if we deregister from the dynel stat
+		// When changing zones however, despawn and detection notices are both sent during the deactivated period
+		// Detection notices between the deactivate-activate pair have a strange habit of providing the correct LoreId, but being unable to link to an actual lore object
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		ReportManager.IsEnabled = false; // Only updates this component's view of the mod state
@@ -179,7 +192,18 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function TopbarRegistered():Void {
 		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		Icon.UpdateState(ef_IconState_Reports, ReportManager.HasReportsPending);
+		Icon.UpdateState(ef_IconState_Report, ReportManager.HasReportsPending);
+	}
+
+	// Override to add timestamps before the lead text
+	private function ChatMsg(message:String, suppressLeader:Boolean, forceTimestamp:Boolean) {
+		var timestamp:String = "";
+		if (forceTimestamp) {
+			var time:Date = new Date();
+			timestamp = Format.Printf("[%02d:%02d] ", time.getHours(), time.getMinutes());
+		}
+		var lead:String = suppressLeader ? "" : "<font color='" + ChatLeadColor + "'>" + ModName + "</font>: ";
+		Utils.PrintChatText(timestamp + lead + message);
 	}
 
 	// Notes on Dynel API:
@@ -239,7 +263,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == ef_LoreType_None) {
-			if (Config.GetValue("CheckNewContent") && ConfirmVerification(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
+			if (Config.GetValue("CheckNewContent") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
 			else { return; }
 		}
 
@@ -258,13 +282,13 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Attempts to ensure that a lore has a valid loreId, and starts tracking of dropped lores
 		// Also filters out the various "Ignore" settings
 		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
-		if (loreId == 0 && (loreType == ef_LoreType_Common || categorizationId == c_ShroudedLoreCategory) && Config.GetValue("IgnoreOffSeasonLore")) {
+		if (Config.GetValue("IgnoreOffSeasonLore") && loreId == 0 && loreType == ef_LoreType_Placed) {
 			return false; // Ignoring offseason lore
 		}
 		// dynelId, loreType, categorizationId, dynel, loreId
 
-		if (loreType == ef_LoreType_Drop || loreType == ef_LoreType_Triggered || loreType == ef_LoreType_Unknown) {
-			// Drops without a valid loreId should correct themselves quickly, retest after a short delay
+		if (loreType != ef_LoreType_Placed) {
+			// Lore spawned without a valid loreId should correct itself quickly, retest after a short delay
 			// Also including Unknown lore as it may be uncategorized drop lore
 			if (loreId == 0 && repeat < 5) {
 				TraceMsg("Spawned lore required repeat: " + (repeat + 1));
@@ -273,15 +297,17 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			// Track dropped lore so that notifications can be made on despawn
 			// While could hook to the DynelLeave proximity detector, this method should be more efficient
-			var dynelId:ID32 = dynel.GetID();
-			if (loreType == ef_LoreType_Drop && TrackedLore[dynelId.toString()] == undefined) {
-				// Don't care about the value, but the request is required to get DynelGone events
-				Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-				TrackedLore[dynelId.toString()] = loreId;
-				Icon.UpdateState(ef_IconState_Alert, true);
+			if (loreType == ef_LoreType_Drop && Config.GetValue("TrackDespawns")) {
+				var dynelId:ID32 = dynel.GetID();
+				if (TrackedLore[dynelId.toString()] == undefined) {
+					// Don't care about the value, but the request is required to get DynelGone events
+					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+					TrackedLore[dynelId.toString()] = loreId;
+					Icon.UpdateState(ef_IconState_Alert, true);
+				}
 			}
 		}
-		if (loreId != 0 && Lore.IsLocked(loreId) && loreType != ef_LoreType_Unknown && Config.GetValue("IgnoreUnclaimedLore")) {
+		if (Config.GetValue("IgnoreUnclaimedLore") && loreId != 0 && Lore.IsLocked(loreId) && loreType != ef_LoreType_Unknown) {
 			// Ignoring unclaimed lore
 			// Do this after the tracking hook, as the user is likely to claim the lore
 			return false;
@@ -336,7 +362,8 @@ class efd.LoreHound.LoreHound extends Mod {
 				// - Lore on penthouse balcony (spawns after fight)
 				// - Lore for the faction allies in KD gained by speaking to their leaders
 				// - Lore from interaction with Akashi
-				return ef_LoreType_Common;
+			case 7993128: // Shrouded Lore (End of Days)
+				return ef_LoreType_Placed;
 			case 7648084: // Pol (Hidden zombie after #1)
 			case 7648085: // Pol (Drone spawn) (missing from string table)
 			case 7653135: // HR6 (Post boss lore spawn)
@@ -354,7 +381,9 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 8508000: // CK carpark (HiE BS #2) spawns after picking up the evidence
 			case 9125445: // MFA (Smiler mech after #5)
 			case 9125570: // MFA6 (Post boss lore spawn)
-				return ef_LoreType_Triggered;
+			case 9135398: // MFB4 (Post boss lore spawn)
+			case 9135406: // MFB5 (Filth Must Flow spawn)
+				return ef_LoreType_Trigger;
 			// Both Black Signal lores have 1 min despawn timers
 			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while
 			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS #4) in KD
@@ -362,10 +391,6 @@ class efd.LoreHound.LoreHound extends Mod {
 			case 9240080:  // Shared by almost all known monster drop or spawned bestiary lore
 			case 9241297:  // Spectres 11 drop, in anima form in KD
 				return ef_LoreType_Drop;
-			case 7993128: // Shrouded Lore (End of Days)
-			case 9135398: // Two one-off lores found in MFB (probably should be grouped as Triggered, want to go back in and verify which was which first)
-			case 9135406:
-				return ef_LoreType_Special;
 			case 8397678: // Probably Niflheim
 			case 8397708: // Probably Niflheim
 			case 8437788: // Unknown (KD?)
@@ -377,20 +402,20 @@ class efd.LoreHound.LoreHound extends Mod {
 				// One or more IDs might be related to the full sets of event lore missing entirely
 				// - Christmas (2 in Niflheim)
 				// - Scrappy (the spawn near kurt when it dies)
-				// - Riders (one or several (4, 8?) numbers)
+				// - Riders (one or several (4, 8?) numbers? Expect this to be the standard drop ID)
 				return ef_LoreType_Unknown;
 			default:
 				return ef_LoreType_None;
 		}
 	}
 
-	private static function ConfirmVerification(dynel:Dynel):Boolean {
+	private static function ExpandedDetection(dynel:Dynel):Boolean {
 		// Check the dynel's lore ID, it may not have a proper entry in the string table (Polaris drone clause)
-		// Won't detect inactive event lore though
+		// Won't detect inactive event lore though (Shrouded Lore would slip through both tests most of the time)
 		if (dynel.GetStat(e_Stats_LoreId, 2) != 0) { return true; }
 		// Have the localization system provide language dependent strings to compare
 		// Using exact comparison, should be slightly faster and eliminate almost all false positives
-		// Will require occasional scans of the string db to catch additions of things like "Shrouded Lore"
+		// May require occasional scans of the string db to catch additions of things like "Shrouded Lore"
 		var testStr:String = LDBFormat.LDBGetText(50200, 7128026); // Format string for common placed lore
 		return LDBFormat.Translate(dynel.GetName()) == testStr;
 	}
@@ -412,11 +437,11 @@ class efd.LoreHound.LoreHound extends Mod {
 		var loreName:String = AttemptIdentification(loreId, loreType, categorizationId);
 		var messageStrings:Array = new Array();
 		switch (loreType) {
-			case ef_LoreType_Common:
+			case ef_LoreType_Placed:
 				messageStrings.push("Lore (" + loreName + ") nearby");
 				messageStrings.push("Common lore nearby (" + loreName + ")");
 				break;
-			case ef_LoreType_Triggered:
+			case ef_LoreType_Trigger:
 				messageStrings.push("Lore (" + loreName + ") has appeared");
 				messageStrings.push("Triggered lore nearby (" + loreName + ")");
 				break;
@@ -424,17 +449,13 @@ class efd.LoreHound.LoreHound extends Mod {
 				messageStrings.push("Lore (" + loreName + ") dropped");
 				messageStrings.push("Dropped lore nearby (" + loreName + ")");
 				break;
-			case ef_LoreType_Special:
-				messageStrings.push("Lore (" + loreName + ") nearby");
-				messageStrings.push("Unusual lore nearby (" + loreName + ")");
+			case ef_LoreType_Despawn:
+				messageStrings.push("Lore (" + loreName + ") despawned");
+				messageStrings.push("Lore despawned or out of range (" + loreName + ")");
 				break;
 			case ef_LoreType_Unknown:
 				messageStrings.push("Lore (" + loreName + ") needs cataloguing");
 				messageStrings.push("Unknown lore detected (" + loreName + ")");
-				break;
-			case ef_LoreType_Despawn:
-				messageStrings.push("Lore (" + loreName + ") despawned");
-				messageStrings.push("Lore despawned or out of range (" + loreName + ")");
 				break;
 			default:
 				// It should be impossible for the game data to trigger this state
@@ -475,7 +496,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Consider setting up a report here, with LoreID as tag
 					// Low probability of it actually occuring, but knowing sooner rather than later might be nice
 					catCode = " ?#";
-					TraceMsgS("Lore has unknown speaker: " + loreSource);
+					TraceMsgS("Lore has unknown voice: " + loreSource);
 					break;
 			}
 			var parentNode:LoreNode = loreNode.m_Parent;
@@ -489,29 +510,23 @@ class efd.LoreHound.LoreHound extends Mod {
 					++priorSiblings;
 				}
 			}
+			TraceMsgS("Unknown topic or entry #, malformed lore ID: " + loreId);
+			return "Invalid lore ID";
 		}
-		// Shrouded Lore, amusingly, uniformly lacks the loreId field (due to being out of season?) and is the only type known to have an informative localized string.
-		if (categorizationId == c_ShroudedLoreCategory) {
-			return "Inactive " + LDBFormat.LDBGetText(50200, categorizationId);
-		}
-		// Deal with the rest of the missing data
+		// Deal with any that are missing data
 		switch (loreType) {
-			case ef_LoreType_Common:
+			case ef_LoreType_Placed:
 				// All the unidentified common lore I ran into matched up with event/seasonal lore
 				// Though not all the event/seasonal lore exists in this disabled state
 				// For lore in accessible locations (ie, not event instances):
 				// - Samhain lores seem to be mostly absent (double checked in light of Polaris drone... really seems to be absent)
 				// - Other event lores seem to be mostly present
 				// (There are, of course, exceptions)
-				return "Inactive event lore";
-			case ef_LoreType_Drop:
-			case ef_LoreType_Despawn:
+				return "Inactive " + (categorizationId == c_ShroudedLoreCategory ? "shrouded lore" : "event lore");
+			default:
 				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
 				// The only reason to see this now is if the automatic redetection system failed
-				return "Incomplete data, rescanning failed";
-			default:
-				// Just in case
-				return "Unable to identify, unknown reason.";
+				return "Incomplete data, rescan failed";
 		}
 	}
 
@@ -562,7 +577,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			Chat.SignalShowFIFOMessage.Emit(messageStrings[0], 0);
 			}
 		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
-			ChatMsg(messageStrings[1]);
+			ChatMsg(messageStrings[1], false, (Config.GetValue("Details") & ef_Details_Timestamp) == ef_Details_Timestamp);
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
 				ChatMsg(detailStrings[i], true);
 			}

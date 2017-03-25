@@ -7,6 +7,8 @@ import flash.geom.Point;
 import gfx.utils.Delegate;
 
 import com.GameInterface.DistributedValue;
+import com.GameInterface.EscapeStack;
+import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
 import com.GameInterface.Utils;
 import com.Utils.Archive;
@@ -48,12 +50,12 @@ class efd.LoreHound.lib.Mod {
 	//     Also useful for testing
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		if (modInfo.Name == undefined || modInfo.Name == "") {
-			_ModName = "Unnamed";
+			ModName = "Unnamed";
 			ChatMsg("Mod requires a name!");
-		} else { _ModName = modInfo.Name; }
+		} else { ModName = modInfo.Name; }
 		if (modInfo.Version == undefined || modInfo.Version == "") {
 			modInfo.Version = "0.0.0";
-			ChatMsg("Mod requires a version number!");
+			ChatMsg("Mod expects a version number!");
 		}
 		DebugTrace = modInfo.Trace;
 		HostMovie = hostMovie;
@@ -62,6 +64,7 @@ class efd.LoreHound.lib.Mod {
 		TraceMsgS = Delegate.create(this, TraceMsg);
 		LogMsgS = Delegate.create(this, LogMsg);
 
+		EscStackTrigger = new EscapeStackNode();
 		ShowConfigDV = DistributedValue.Create(ConfigWindowVar);
 		ShowConfigDV.SetValue(false);
 		ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
@@ -70,15 +73,18 @@ class efd.LoreHound.lib.Mod {
 		var iconName = modInfo.IconName;
 		if (iconName != "") {
 			if (iconName == undefined) { iconName = ModName + "Icon"; }
-			IconClip = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
+			Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
 				{ ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: ShowConfigDV }));
 		}
 
 		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
+
+		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
+		ModLoadedDV.SetValue(false);
 	}
 
 	private function InitializeModConfig(modInfo:Object):Void {
-		_Config = new ConfigWrapper(modInfo.ArchiveName);
+		Config = new ConfigWrapper(modInfo.ArchiveName);
 
 		Config.NewSetting("Version", modInfo.Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
@@ -92,7 +98,10 @@ class efd.LoreHound.lib.Mod {
 
 	private function ConfigLoaded(initialLoad:Boolean):Void {
 		TraceMsg("Config loaded");
-		if (initialLoad) { UpdateInstall(); }
+		if (initialLoad) {
+			UpdateInstall();
+			ModLoadedDV.SetValue(true);
+		}
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
@@ -106,7 +115,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function ShowConfigWindow(dv:DistributedValue):Void {
-		if (dv.GetValue()) {
+		if (dv.GetValue()) { // Open window
 			if (ConfigWindowClip == null) {
 				ConfigWindowClip = HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", HostMovie.getNextHighestDepth());
 				// Defer the actual binding to config until things are set up
@@ -126,10 +135,14 @@ class efd.LoreHound.lib.Mod {
 				ConfigWindowClip._x = position.x;
 				ConfigWindowClip._y = position.y;
 
-				ConfigWindowClip.SignalClose.Connect(ConfigWindowClosed , this);
+				EscStackTrigger.SignalEscapePressed.Connect(CloseConfigWindow, this);
+				EscapeStack.Push(EscStackTrigger);
+				ConfigWindowClip.SignalClose.Connect(CloseConfigWindow, this);
 			}
-		} else {
+		} else { // Close window
 			if (ConfigWindowClip != null) {
+				EscStackTrigger.SignalEscapePressed.Disconnect(CloseConfigWindow, this);
+
 				Config.SetValue("ConfigWindowPosition", new Point(ConfigWindowClip._x, ConfigWindowClip._y));
 				ConfigWindowClip.removeMovieClip();
 				ConfigWindowClip = null;
@@ -152,7 +165,7 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function ConfigWindowClosed():Void {
+	private function CloseConfigWindow():Void {
 		ShowConfigDV.SetValue(false);
 	}
 
@@ -175,7 +188,7 @@ class efd.LoreHound.lib.Mod {
 				changeType = "Updated";
 				DoUpdate(newVersion, oldVersion);
 			}
-			// Reset the version number, as the change has occured
+			// Reset the version number to the new version
 			Config.ResetValue("Version");
 			ChatMsg(changeType + " to v" + newVersion);
 		}
@@ -188,16 +201,16 @@ class efd.LoreHound.lib.Mod {
 		MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
 		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
 		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		if (!(DoRegistration(MeeehrDV) || DoRegistration(ViperDV))) {
-			MeeehrDV.SignalChanged.Connect(DoRegistration, this);
-			ViperDV.SignalChanged.Connect(DoRegistration, this);
+		if (!(DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV))) {
+			MeeehrDV.SignalChanged.Connect(DoTopbarRegistration, this);
+			ViperDV.SignalChanged.Connect(DoTopbarRegistration, this);
 		}
 	}
 
-	private function DoRegistration(dv:DistributedValue):Boolean {
+	private function DoTopbarRegistration(dv:DistributedValue):Boolean {
 		if (dv.GetValue() && !IsTopbarRegistered) {
-			MeeehrDV.SignalChanged.Disconnect(DoRegistration, this);
-			ViperDV.SignalChanged.Disconnect(DoRegistration, this);
+			MeeehrDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
+			ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
 			// Adjust our default icon to be better suited for topbar integration
 			if (Icon != undefined) {
 				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
@@ -209,8 +222,7 @@ class efd.LoreHound.lib.Mod {
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, Meeehr's redirects event handling oddly
 			// (It calls back to the original clip, using the new clip as the "this" instance)
-			Icon.CopyToTopbar(HostMovie.Icon);
-			IconClip = HostMovie.Icon;
+			Icon = Icon.CopyToTopbar(HostMovie.Icon);
 			IsTopbarRegistered = true;
 			TopbarRegistered();
 			TraceMsg("Topbar registration complete");
@@ -223,7 +235,7 @@ class efd.LoreHound.lib.Mod {
 		EnabledByGame = state;
 		Enabled = state;
 		if (!state) {
-			ShowConfigDV.SetValue(false);
+			CloseConfigWindow();
 			return Config.SaveConfig();
 		} else {
 			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
@@ -258,7 +270,7 @@ class efd.LoreHound.lib.Mod {
 	// If positive, then the first version is higher, negative means first version was lower
 	// A return of 0 indicates that the versions were the same
 	public static function CompareVersions(firstVer:String, secondVer:String) : Number {
-		// Support depreciated "v" prefix on version strings
+		// DEPRECIATED(v0.5.0): "v" prefix on version strings
 		if (firstVer.charAt(0) == "v") { firstVer = firstVer.substr(1); }
 		if (secondVer.charAt(0) == "v") { secondVer = secondVer.substr(1); }
 
@@ -290,14 +302,7 @@ class efd.LoreHound.lib.Mod {
 	private function TopbarRegistered():Void { }
 
 	/// Properites and variables
-	public function get ModName():String { return _ModName; }
 	public function get Version():String { return Config.GetValue("Version"); }
-	public function get DevName():String { return "Peloprata"; } // Others should replace
-
-	public function get Config():ConfigWrapper { return _Config; }
-	public function get ConfigWindowVar():String { return "Show" + ModName + "ConfigUI"; }
-
-	public function get Icon():ModIcon { return IconClip; }
 
 	public function get Enabled():Boolean { return _Enabled; }
 	public function set Enabled(value:Boolean):Void {
@@ -309,20 +314,29 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
+	public function get ModLoadEventVar():String { return DVPrefix + ModName + "IsLoaded"; }
+	public function get ConfigWindowVar():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
+
+	 // Customize based on mod authorship
+	public static var DevName:String = "Peloprata";
+	public static var DVPrefix:String = "efd"; // Retain this if making a compatible fork of an existing mod
+
 	private static var ChatLeadColor:String = "#00FFFF";
 
-	private var _ModName:String;
+	public var ModName:String;
+	private var ModLoadedDV:DistributedValue;
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
 	// Enabled by player is a persistant config setting
 
-	private var _Config:ConfigWrapper;
+	public var Config:ConfigWrapper;
 	private var ShowConfigDV:DistributedValue; // Used by topbars to provide setting shortcut buttons
 	private var ConfigWindowClip:MovieClip = null;
+	private var EscStackTrigger:EscapeStackNode;
 
 	private var HostMovie:MovieClip;
-	private var IconClip:ModIcon;
+	public var Icon:ModIcon;
 
 	private var IsTopbarRegistered:Boolean = false;
 	private var MeeehrDV:DistributedValue;

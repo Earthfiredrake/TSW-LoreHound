@@ -20,8 +20,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBModEnabled.disableFocus = true;
 		CBIgnoreUnclaimedLore.disableFocus = true;
 		CBIgnoreOffSeasonLore.disableFocus = true;
+		CBTrackDespawns.disableFocus = true;
 		CBErrorReports.disableFocus = true;
 		CBNewContent.disableFocus = true;
+		CBDetailTimestamp.disableFocus = true;
 		CBDetailLocation.disableFocus = true;
 		CBDetailCategory.disableFocus = true;
 		CBDetailInstance.disableFocus = true;
@@ -37,24 +39,19 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
 		CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
 		CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
+		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
 		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
 		CBNewContent.addEventListener("select", this, "CBNewContent_Select");
+		CBDetailTimestamp.addEventListener("select", this, "CBDetailTimestamp_Select");
 		CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
 		CBDetailCategory.addEventListener("select", this, "CBDetailCategory_Select");
 		CBDetailInstance.addEventListener("select", this, "CBDetailInstance_Select");
 
 		// Differentiate child content elements
-		CommonLoreGroup.SetType(LoreHound.ef_LoreType_Common);
-		TriggeredLoreGroup.SetType(LoreHound.ef_LoreType_Triggered);
-		DropLoreGroup.SetType(LoreHound.ef_LoreType_Drop);
-		SpecialLoreGroup.SetType(LoreHound.ef_LoreType_Special);
-		UnknownLoreGroup.SetType(LoreHound.ef_LoreType_Unknown);
-
-		CommonLoreGroup.AttachConfig(config);
-		TriggeredLoreGroup.AttachConfig(config);
-		DropLoreGroup.AttachConfig(config);
-		SpecialLoreGroup.AttachConfig(config);
-		UnknownLoreGroup.AttachConfig(config);
+		PlacedLoreGroup.Init(LoreHound.ef_LoreType_Placed, config);
+		TriggerLoreGroup.Init(LoreHound.ef_LoreType_Trigger, config);
+		DropLoreGroup.Init(LoreHound.ef_LoreType_Drop, config);
+		UnknownLoreGroup.Init(LoreHound.ef_LoreType_Unknown, config);
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue):Void {
@@ -67,11 +64,15 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
 		}
+		if (setting == "TrackDespawns" || setting == undefined) {
+			CBTrackDespawns.selected = Config.GetValue("TrackDespawns");
+		}
 		if (setting == "CheckNewContent" || setting == undefined) {
 			CBNewContent.selected = Config.GetValue("CheckNewContent");
 		}
 		if (setting == "Details" || setting == undefined) {
 			var details = Config.GetValue("Details");
+			CBDetailTimestamp.selected = (details & LoreHound.ef_Details_Timestamp) == LoreHound.ef_Details_Timestamp;
 			CBDetailLocation.selected = (details & LoreHound.ef_Details_Location) == LoreHound.ef_Details_Location;
 			CBDetailCategory.selected = (details & LoreHound.ef_Details_FormatString) == LoreHound.ef_Details_FormatString;
 			CBDetailInstance.selected = (details & LoreHound.ef_Details_DynelId) == LoreHound.ef_Details_DynelId;
@@ -97,12 +98,20 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("IgnoreOffSeasonLore", event.selected);
 	}
 
+	private function CBTrackDespawns_Select(event:Object):Void {
+		Config.SetValue("TrackDespawns", event.selected);
+	}
+
 	private function CBErrorReports_Select(event:Object):Void {
 		Config.GetValue("AutoReport").SetValue("Enabled", event.selected);
 	}
 
 	private function CBNewContent_Select(event:Object):Void {
 		Config.SetValue("CheckNewContent", event.selected);
+	}
+
+	private function CBDetailTimestamp_Select(event:Object):Void {
+		Config.SetFlagValue("Details", LoreHound.ef_Details_Timestamp, event.selected);
 	}
 
 	private function CBDetailLocation_Select(event:Object):Void {
@@ -121,18 +130,19 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var CBModEnabled:CheckBox;
 	private var CBIgnoreUnclaimedLore:CheckBox;
 	private var CBIgnoreOffSeasonLore:CheckBox;
+	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
 	private var CBNewContent:CheckBox;
 
+	private var CBDetailTimestamp:CheckBox;
 	private var CBDetailLocation:CheckBox;
 	private var CBDetailCategory:CheckBox;
 	private var CBDetailInstance:CheckBox;
 
 	// Lore Groups
-	private var CommonLoreGroup:LoreCategorySettingGroup;
-	private var TriggeredLoreGroup:LoreCategorySettingGroup;
+	private var PlacedLoreGroup:LoreCategorySettingGroup;
+	private var TriggerLoreGroup:LoreCategorySettingGroup;
 	private var DropLoreGroup:LoreCategorySettingGroup;
-	private var SpecialLoreGroup:LoreCategorySettingGroup;
 	private var UnknownLoreGroup:LoreCategorySettingGroup;
 
 	private var Config:ConfigWrapper;

@@ -24,8 +24,7 @@ import efd.LoreHound.lib.Mod;
 class efd.LoreHound.lib.AutoReport {
 
 	public function AutoReport(modName:String, modVer:String, devCharName:String) {
-		ModName = modName;
-		ModVersion = modVer;
+		MailHeader = modName + ": Automated report (" + modVer + ")";
 		Recipient = devCharName;
 
 		_Config = new ConfigWrapper();
@@ -52,6 +51,12 @@ class efd.LoreHound.lib.AutoReport {
 			// Don't build up queue while system is disabled
 			return false;
 		}
+		// Verify that the report will fit in a mail
+		// Otherwise a single oversized report at the head of the queue could block it up eternally
+		if (!(MailHeader.length + report.text.length < MaxMailLength)) {
+			TraceMsg("Report was too long to fit in mail and has been discarded.");
+			return false;
+		}
 		// Ensure that report ids are only sent once
 		var contains = function (array:Array, comparator:Function):Boolean {
 			for (var i:Number = 0; i < array.length; ++i) {
@@ -71,6 +76,28 @@ class efd.LoreHound.lib.AutoReport {
 		return true;
 	}
 
+	// To reduce config file size, clean out any pending or sent reports that are no longer required
+	public function CleanupReports(removalPredicate:Function):Void {
+		var cleanArray:Array = new Array();
+		var sourceArray:Array = Config.GetValue("PriorReports");
+		for (var i:Number = 0; i < sourceArray.length; ++i) {
+			if (!removalPredicate(sourceArray[i])) {
+				cleanArray.push(sourceArray[i]);
+			}
+		}
+		Config.SetValue("PriorReports", cleanArray);
+		TraceMsg("Sent report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
+		cleanArray = new Array();
+		sourceArray = Config.GetValue("QueuedReports");
+		for (var i:Number = 0; i < sourceArray.length; ++i) {
+			if (!removalPredicate(sourceArray[i].id)) {
+				cleanArray.push(sourceArray[i]);
+			}
+		}
+		Config.SetValue("QueuedReports", cleanArray);
+		TraceMsg("Queued report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
+	}
+
 	private function TriggerReports(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
 			// Only try to send when the bank is opened
@@ -82,11 +109,13 @@ class efd.LoreHound.lib.AutoReport {
 		var queue:Array = Queue;
 		if (queue.length > 0) {
 			// Compose the automated report message, splitting it if it would exceed our max mail length
-			var msg:String = ModName + ": Automated report (" + ModVersion + ")";
+			var msg:String = MailHeader;
 			while (ReportsSent < queue.length && (msg.length + queue[ReportsSent].text.length) < MaxMailLength) {
 				msg += "\n" + queue[ReportsSent++].text;
 			}
 
+			// Request delivery confirmation
+			Tradepost.SignalMailResult.Connect(VerifyReceipt, this);
 			// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0.
 			//   While a FiFo message is displayed by sending mail, it is easy to overlook and does not tell you who the recipient was.
 			if (!Tradepost.SendMail(Recipient, msg, 0)) {
@@ -106,6 +135,8 @@ class efd.LoreHound.lib.AutoReport {
 		// Assuming that this is triggered immediately after the send
 		// Problematic if there could be multiple mails in transit
 		if (ReportsSent > 0) {
+			// Detach this handler
+			Tradepost.SignalMailResult.Disconnect(VerifyReceipt, this);
 			if (success) {
 				// Record and clear sent reports
 				var queue:Array = Queue;
@@ -154,10 +185,8 @@ class efd.LoreHound.lib.AutoReport {
 		if (modEnabled != undefined) { IsModActive = modEnabled; }
 		if (IsModActive && IsEnabled) {
 			MailTrigger.SignalChanged.Connect(TriggerReports, this);
-			Tradepost.SignalMailResult.Connect(VerifyReceipt, this);
 		} else {
 			MailTrigger.SignalChanged.Disconnect(TriggerReports, this);
-			Tradepost.SignalMailResult.Disconnect(VerifyReceipt, this);
 		}
 	}
 
@@ -174,8 +203,7 @@ class efd.LoreHound.lib.AutoReport {
 	private var _Config:ConfigWrapper;
 
 	// Mailing information
-    private var ModName:String;
-	private var ModVersion:String;
+	private var MailHeader:String;
 	private var Recipient:String;
 
 	private var ReportsSent:Number = 0; // Counts the number of reports sent in the last mail

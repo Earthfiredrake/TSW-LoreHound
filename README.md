@@ -16,6 +16,13 @@ Any packaged releases can be installed by copying the contents into [Game Direct
 If upgrading from v0.1.1.alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Changelog
+Version next
++ Options menu no longer possessed by a gaki, you can now esc from it
++ Can timestamp detections without having to timestamp all of System chat
++ Despawn tracking can now be disabled independently of lore drop detection
++ Shrouded lore deemed not special enough to have a category all to itself, has been moved to Placed Lore
++ Install process has recovered from amnesia, no longer forgets to save settings
+
 Version 0.6.0-beta
 + Now even lazier, does less work wherever possible
   + Setting for "new content" will re-enable some of these tests, but should not be needed unitl new content arrives. May be useful if a particular piece of lore does not seem to be detected at all.
@@ -49,17 +56,18 @@ Version 0.1.1-alpha
 + Unknown lore id count:  26
 
 ## Known Issues
-+ Find me some issues! Find me those missing lores!
++ There are 7 uncategorized lores believed to be in the game
++ Misses lore pickups within the detection range when zoning into a new map
+  + "Fixing" this causes cascading strange behaviours as it starts detecting things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.
 
 As this approaches an official release version, there's a few more changes I'm looking at making:
-+ The Unusual category is likely to be removed, leaving Placed (formerly Common), Triggered, and Dropped for categorized lore.
-  + The Shrouded Lore (the only actual member of the Unusual group) will be shifted into Placed lore, where most other event lore already falls.
-+ Am considering adding a feature related to the Abandoned lore, if it proves to be useful/needed after initial tests.
 + Depreciated features of the config system that have been retained to permit smooth upgrades from older versions may start to be removed. Likely starting with the version to follow v1.0.0.
 + Support for localization, and the ability to categorize lore entries through data files have been pushed to a later version.
+
+A feature for helping with The Abandoned lore has been found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
 Defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata (by pm or mail) in game, or submitted via the project page or official forum post.
 
