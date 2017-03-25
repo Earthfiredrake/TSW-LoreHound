@@ -29,7 +29,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "0.6.6.alpha"
+		Version : "0.7.0.alpha"
 	}
 
 	// Category flags for identifiable lore types
@@ -70,6 +70,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		ReportManager = new AutoReport(ModName, Version, DevName);
 
 		InitializeConfig();
+		LoadLoreCategories();
 
 		Icon.UpdateState = function(stateFlag:Number, enable:Boolean) {
 			if (stateFlag != undefined) {
@@ -79,7 +80,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					case undefined: { this.StateFlags ^= stateFlag; break; }
 				}
 			}
-			if (Config.GetValue("Enabled")) { // Should this also deactivate if the game turns it off? Use the proprety Enabled instead.
+			if (Config.GetValue("Enabled")) { // If game disables mod, it isn't visible at all, so only user disables matter
 				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
 				if ((this.StateFlags & LoreHound.ef_IconState_Report) == LoreHound.ef_IconState_Report) { this.gotoAndStop("reporting"); return; }
 				this.gotoAndStop("active");
@@ -124,9 +125,12 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Mod framework extensions and overrides
 	private function ConfigLoaded(initialLoad:Boolean):Void {
-		super.ConfigLoaded(initialLoad);
+		// The standard config loaded behaviour triggers the update cycle
+		// Which requires the lore category index to be already loaded
+		// So override the default to defer updates until both have been loaded
 		if (initialLoad) {
-			Config.DeleteSetting("SendReports"); // DEPRECIATED(v0.6.0): Setting removed
+			if (IsIndexLoaded) { LoadingComplete(); }
+			else { IsConfigLoaded = true; }
 		}
 	}
 
@@ -138,6 +142,48 @@ class efd.LoreHound.LoreHound extends Mod {
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
 		}
+	}
+
+	// TODO: This is taking too long, it's triggering after the config has loaded
+	//       Which means after the update routine, which requires access to the categorization system
+	private function LoadLoreCategories():Void {
+		IndexFile = new XML();
+		IndexFile.ignoreWhite = true;
+		var capture:LoreHound = this;
+		IndexFile.onLoad = Delegate.create(this, IndexLoaded);
+		IndexFile.load("LoreHound/CategoryIndex.xml");
+	}
+
+	private function IndexLoaded(success:Boolean):Void {
+		if (success) {
+			TraceMsg("Loading CategoryIndex.xml");
+			CategoryIndex = new Array();
+			var xmlRoot:XMLNode = IndexFile.firstChild;
+			for (var i:Number = 0; i < xmlRoot.childNodes.length; ++i) {
+				var categoryXML:XMLNode = xmlRoot.childNodes[i];
+				var category:Number = LoreHound["ef_LoreType_" + categoryXML.attributes.name];
+				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
+					CategoryIndex[categoryXML.childNodes[j].attributes.value] = category;
+				}
+			}
+			delete IndexFile;
+			if (IsConfigLoaded) { LoadingComplete() }
+			else { IsIndexLoaded = true; }
+		} else {
+			TraceMsg("Failed to load category index");
+		}
+	}
+
+	private function IsCategorizedLore(categoryId:Number):Boolean {
+		var category:Number = ClassifyID(categoryId);
+		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
+	}
+
+	private function LoadingComplete():Void {
+		super.ConfigLoaded(true);
+		Config.DeleteSetting("SendReports"); // DEPRECIATED(v0.6.0): Setting removed
+		delete IsConfigLoaded;
+		delete IsIndexLoaded;
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
@@ -167,11 +213,6 @@ class efd.LoreHound.LoreHound extends Mod {
 			Config.SetFlagValue("FifoLevel", ef_LoreType_Despawn, false);
 			Config.SetFlagValue("ChatLevel", ef_LoreType_Despawn, false);
 		}
-	}
-
-	private static function IsCategorizedLore(categoryId:Number):Boolean {
-		var category:Number = ClassifyID(categoryId);
-		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
 	}
 
 	private function Activate():Void {
@@ -349,64 +390,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	/// Lore identification
-
-	private static function ClassifyID(categorizationId:Number):Number {
-		// Here be the magic numbers (probably planted by the Dragon)
-		switch (categorizationId) {
-			case 7128026: // Shared by all known fixed location lore
-				// Also includes: (rejected candidates for suspected unknown IDs)
-				// - Lore from end of Brotherly Loathe (drops from boss)
-				// - Lore on docks in One Kill Ahead (appears after cutscene)
-				// - Lore at pachinko machine in Pachinko Model (appears after use)
-				// - Lore in boardroom inaccessible (does not appear?) until after penthouse fight
-				// - Lore on penthouse balcony (spawns after fight)
-				// - Lore for the faction allies in KD gained by speaking to their leaders
-				// - Lore from interaction with Akashi
-			case 7993128: // Shrouded Lore (End of Days)
-				return ef_LoreType_Placed;
-			case 7648084: // Pol (Hidden zombie after #1)
-			case 7648085: // Pol (Drone spawn) (missing from string table)
-			case 7653135: // HR6 (Post boss lore spawn)
-			case 7661215: // DW6 (Post boss lore spawn)
-			case 7648451: // Ankh (Orochi Agent after #1)
-			case 7648450: // Ankh (Wretched Receptacles (Ankh #5))
-			case 7648452: // Ankh (Disembalmed Atenist after #3 (Ankh #8))
-			case 7648449: // Ankh (Pit Dwellers)
-			case 7647988: // HF6 (Post boss lore spawn)
-			case 7647983: // Fac6 (Post boss lore spawn)
-			case 7647985: // Fac5 (Post boss lore spawn)
-			case 7647986: // Fac3 (Post boss lore spawn)
-			case 7573298: // HE6 (Post boss lore spawn), also used for Faust Omega "Knowledge" room
-			case 8507997: // CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor
-			case 8508000: // CK carpark (HiE BS #2) spawns after picking up the evidence
-			case 9125445: // MFA (Smiler mech after #5)
-			case 9125570: // MFA6 (Post boss lore spawn)
-			case 9135398: // MFB4 (Post boss lore spawn)
-			case 9135406: // MFB5 (Filth Must Flow spawn)
-				return ef_LoreType_Trigger;
-			// Both Black Signal lores have 1 min despawn timers
-			case 8499259:  // Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while
-			case 8508040:  // Behemoth of the Devouring Plague drop (The Wall BS #4) in KD
-			// Bestiary lore seems to have 5 min despawn timers
-			case 9240080:  // Shared by almost all known monster drop or spawned bestiary lore
-			case 9241297:  // Spectres 11 drop, in anima form in KD
-				return ef_LoreType_Drop;
-			case 8397678: // Probably Niflheim
-			case 8397708: // Probably Niflheim
-			case 8437788: // Unknown (KD?)
-			case 8437793: // Unknown (KD?)
-			case 8508014: // Unknown (KD?)
-			case 8508217: // Unknown (KD?)
-			case 8587691: // Scrappy's death spawn?
-				// Cultist lore in The Prisoner (i6)?
-				// One or more IDs might be related to the full sets of event lore missing entirely
-				// - Christmas (2 in Niflheim)
-				// - Scrappy (the spawn near kurt when it dies)
-				// - Riders (one or several (4, 8?) numbers? Expect this to be the standard drop ID)
-				return ef_LoreType_Unknown;
-			default:
-				return ef_LoreType_None;
-		}
+	// Much of the primary categorization info is now contained in the xml data file
+	private function ClassifyID(categorizationId:Number):Number {
+		var category:Number = CategoryIndex[categorizationId];
+		return category ? category : ef_LoreType_None;
 	}
 
 	private static function ExpandedDetection(dynel:Dynel):Boolean {
@@ -605,6 +592,11 @@ class efd.LoreHound.LoreHound extends Mod {
 	private var DetailStatRange:Number;
 	private var DetailStatMode:Number;
 
+	private var IsConfigLoaded:Boolean;
+	private var IsIndexLoaded:Boolean;
+	private var IndexFile:XML;
+
+	private var CategoryIndex:Array;
 	private var TrackedLore:Object;
 
 	// When compiling reports for the automated report system consider the following options for IDs

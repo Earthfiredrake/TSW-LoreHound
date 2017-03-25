@@ -21,6 +21,8 @@ Version next
 + Can timestamp detections without having to timestamp all of System chat
 + Despawn tracking can now be disabled independently of lore drop detection
 + Shrouded lore deemed not special enough to have a category all to itself, has been moved to Placed Lore
++ XML file for primary categorization, so that the most basic updates can be accomplished without requiring a flash compiler
+  + Spoiler warning: Descriptive comments may ruin some surprises
 + Install process has recovered from amnesia, no longer forgets to save settings
 
 Version 0.6.0-beta
