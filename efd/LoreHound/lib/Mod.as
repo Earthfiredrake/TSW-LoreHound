@@ -90,7 +90,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 
-		Config.NewSetting("ConfigWindowPosition", new Point(20, 20));
+		Config.NewSetting("ConfigWindowPosition", new Point(20, 30));
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
@@ -131,7 +131,6 @@ class efd.LoreHound.lib.Mod {
 				ConfigWindowClip.ShowFooter(false);
 
 				var position:Point = Config.GetValue("ConfigWindowPosition");
-				KeepInVisibleBounds(position, Config.GetDefault("ConfigWindowPosition"));
 				ConfigWindowClip._x = position.x;
 				ConfigWindowClip._y = position.y;
 
@@ -143,6 +142,7 @@ class efd.LoreHound.lib.Mod {
 			if (ConfigWindowClip != null) {
 				EscStackTrigger.SignalEscapePressed.Disconnect(CloseConfigWindow, this);
 
+				ReturnWindowToVisibleBounds(ConfigWindowClip, Config.GetDefault("ConfigWindowPosition"));
 				Config.SetValue("ConfigWindowPosition", new Point(ConfigWindowClip._x, ConfigWindowClip._y));
 				ConfigWindowClip.removeMovieClip();
 				ConfigWindowClip = null;
@@ -154,14 +154,17 @@ class efd.LoreHound.lib.Mod {
 		ConfigWindowClip.m_Content.AttachConfig(Config);
 	}
 
-	// TODO: This only works on top and left of screen, need to account for Window size on other sides
-	private static function KeepInVisibleBounds(position:Point, defaults:Point):Void{
+	private static function ReturnWindowToVisibleBounds(window:MovieClip, defaults:Point):Void {
 		var visibleBounds = Stage.visibleRect;
-		if (position.x > visibleBounds.width || position.x < 0) {
-			position.x = defaults.x;
+		if (window._x < 0) {
+			window._x = 0;
+		} else if (window._x + window.m_Background._width > visibleBounds.width) {
+			window._x = visibleBounds.width - window.m_Background._width;
 		}
-		if (position.y > visibleBounds.height || position.y < 0) {
-			position.y = defaults.y;
+		if (window._y < defaults.y) {
+			window._y = defaults.y;
+		} else if (window._y + window.m_Background._height > visibleBounds.height) {
+			window._y = visibleBounds.height - window.m_Background._height;
 		}
 	}
 

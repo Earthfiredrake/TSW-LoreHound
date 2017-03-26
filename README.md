@@ -21,9 +21,10 @@ Version next
 + Can timestamp detections without having to timestamp all of System chat
 + Despawn tracking can now be disabled independently of lore drop detection
 + Shrouded lore deemed not special enough to have a category all to itself, has been moved to Placed Lore
-+ XML file for primary categorization, so that the most basic updates can be accomplished without requiring a flash compiler
++ XML file for primary categorization, the most basic updates no longer require a flash compiler
   + Spoiler warning: Descriptive comments may ruin some surprises
 + Install process has recovered from amnesia, no longer forgets to save settings
++ Unknown lore id count: 7 (still)
 
 Version 0.6.0-beta
 + Now even lazier, does less work wherever possible
@@ -67,7 +68,7 @@ This is a prerelease version of the mod, for testing purposes. Some things may n
 
 As this approaches an official release version, there's a few more changes I'm looking at making:
 + Depreciated features of the config system that have been retained to permit smooth upgrades from older versions may start to be removed. Likely starting with the version to follow v1.0.0.
-+ Support for localization, and the ability to categorize lore entries through data files have been pushed to a later version.
++ Support for localization or message customization is being investigated.
 
 A feature for helping with The Abandoned lore has been found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
