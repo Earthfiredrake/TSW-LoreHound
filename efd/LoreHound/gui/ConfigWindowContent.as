@@ -7,6 +7,7 @@ import gfx.controls.CheckBox;
 
 import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
 
 class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
@@ -27,9 +28,22 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailLocation.disableFocus = true;
 		CBDetailCategory.disableFocus = true;
 		CBDetailInstance.disableFocus = true;
+
+		LocaleManager.ApplyLabel(LBDetailGroupTitle);
+		LocaleManager.ApplyLabel(LBTimestamp);
+		LocaleManager.ApplyLabel(LBLocation);
+		LocaleManager.ApplyLabel(LBCategory);
+		LocaleManager.ApplyLabel(LBInstance);
+		LocaleManager.ApplyLabel(LBOtherGroupTitle);
+		LocaleManager.ApplyLabel(LBEnable);
+		LocaleManager.ApplyLabel(LBUnclaimed);
+		LocaleManager.ApplyLabel(LBInactive);
+		LocaleManager.ApplyLabel(LBDespawn);
+		LocaleManager.ApplyLabel(LBAutoReport);
+		LocaleManager.ApplyLabel(LBNewContent);
 	}
 
-	public function AttachConfig(config:ConfigWrapper) {
+	public function AttachConfig(config:ConfigWrapper):Void {
 		Config = config;
 		ConfigUpdated();
 		AutoReportConfigUpdated();
@@ -125,6 +139,20 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private function CBDetailInstance_Select(event:Object):Void {
 		Config.SetFlagValue("Details", LoreHound.ef_Details_DynelId, event.selected);
 	}
+
+	//Labels
+	private var LBDetailGroupTitle:TextField;
+	private var LBTimestamp:TextField;
+	private var LBLocation:TextField;
+	private var LBCategory:TextField;
+	private var LBInstance:TextField;
+	private var LBOtherGroupTitle:TextField;
+	private var LBEnable:TextField;
+	private var LBUnclaimed:TextField;
+	private var LBInactive:TextField;
+	private var LBDespawn:TextField;
+	private var LBAutoReport:TextField;
+	private var LBNewContent:TextField;
 
 	// Checkboxes
 	private var CBModEnabled:CheckBox;

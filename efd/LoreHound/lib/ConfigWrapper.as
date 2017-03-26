@@ -107,7 +107,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	// Allows defaults to be distinct from values for reference types
-	// TODO: Very uncertain if Archives can be cloned at all, consider removing support for them below
 	private static function CloneValue(value) {
 		if (value instanceof ConfigWrapper) {
 			// No need to clone a ConfigWrapper

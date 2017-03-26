@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- Copyright 2017, Earthfiredrake (Peloprata)
+     Released under the terms of the MIT License
+     https://github.com/Earthfiredrake/TSW-LoreHound -->
+
 <LoreCategories>
 	<!-- Here be the magic numbers (probably planted by the Dragon) -->
-	<Category name="Placed">
+	<Category name="Placed"> <!-- Lore pickup with fixed location and usually always visible -->
+		<!-- Also includes most event lore, and a handful of lores with minor trigger conditions -->
 		<ID value="7128026" /> <!-- Standard placed lore -->
 		<ID value="7993128" /> <!-- Shrouded lore (End of Days)-->
 	</Category>
-	<Category name="Trigger">
+	<Category name="Trigger"> <!-- Will spawn after a certain condition is met -->
+		<!-- Unknown if they despawn, most are in instances that don't permit MUs -->
 		<ID value="7648084" /> <!-- Pol (Hidden zombie after Pol1) -->
 		<ID value="7648085" /> <!-- Pol (Drone spawn after Pol3) (missing from string table) -->
 		<ID value="7653135" /> <!-- HR6 (Post boss lore spawn) -->
@@ -26,7 +32,7 @@
 		<ID value="9135398" /> <!-- MFB4 (Post boss lore spawn) -->
 		<ID value="9135406" /> <!-- MFB5 (Filth Must Flow spawn) -->
 	</Category>
-	<Category name="Drop">
+	<Category name="Drop"> <!-- Temporary lore spawns dropped by mobs or other special actions -->
 		<!-- Both Black Signal lores have 1 min despawn timers -->
 		<ID value="8499259" /> <!-- Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while -->
 		<ID value="8508040" /> <!-- Behemoth of the Devouring Plague drop (The Wall BS #4) -->
@@ -34,7 +40,7 @@
 		<ID value="9240080" /> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
 		<ID value="9241297" /> <!-- Spectres #11 drop -->
 	</Category>
-	<Category name="Unknown">
+	<Category name="Unknown"> <!-- Values believed to connect to lore pickups, location is unknown -->
 		<ID value="8397678" /> <!-- Probably Niflheim -->
 		<ID value="8397708" /> <!-- Probably Niflheim -->
 		<ID value="8437788" /> <!-- Unknown (KD?) -->

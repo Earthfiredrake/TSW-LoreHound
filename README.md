@@ -23,6 +23,9 @@ Version next
 + Shrouded lore deemed not special enough to have a category all to itself, has been moved to Placed Lore
 + XML file for primary categorization, the most basic updates no longer require a flash compiler
   + Spoiler warning: Descriptive comments may ruin some surprises
++ Teach the hound a new language, or just customize what he says
+  + XML file for text (strings) has been added, with some support for localization (actual localization not included)
+  + Has issues
 + Install process has recovered from amnesia, no longer forgets to save settings
 + Unknown lore id count: 7 (still)
 
@@ -62,13 +65,14 @@ Version 0.1.1-alpha
 + There are 7 uncategorized lores believed to be in the game
 + Misses lore pickups within the detection range when zoning into a new map
   + "Fixing" this causes cascading strange behaviours as it starts detecting things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
++ Long label customizations are truncated by the GUI
+  + If I get any translations, I'll likely have to expand the space to fit them
 
 ## Testing and Further Developments
 This is a prerelease version of the mod, for testing purposes. Some things may not be working as intended, or require further work. If you notice a problem with this mod, or with how it interacts with other mods, please let me know.
 
 As this approaches an official release version, there's a few more changes I'm looking at making:
 + Depreciated features of the config system that have been retained to permit smooth upgrades from older versions may start to be removed. Likely starting with the version to follow v1.0.0.
-+ Support for localization or message customization is being investigated.
 
 A feature for helping with The Abandoned lore has been found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 

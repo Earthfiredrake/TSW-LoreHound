@@ -12,6 +12,7 @@ import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
 import com.GameInterface.Utils;
 import com.Utils.Archive;
+import com.Utils.Format;
 import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
 
@@ -19,6 +20,7 @@ import efd.LoreHound.lib.etu.MovieClipHelper;
 
 import efd.LoreHound.gui.ConfigWindowContent;
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.ModIcon;
 
 // Base class with general mod utility functions
@@ -60,14 +62,20 @@ class efd.LoreHound.lib.Mod {
 		DebugTrace = modInfo.Trace;
 		HostMovie = hostMovie;
 
+		SystemsLoaded = { Config: false, Strings: false }
+
 		ChatMsgS = Delegate.create(this, ChatMsg);
 		TraceMsgS = Delegate.create(this, TraceMsg);
 		LogMsgS = Delegate.create(this, LogMsg);
+
+		LocaleManager.Initialize(ModName + "/Strings.xml");
+		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
 
 		EscStackTrigger = new EscapeStackNode();
 		ShowConfigDV = DistributedValue.Create(ConfigWindowVar);
 		ShowConfigDV.SetValue(false);
 		ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
+		ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
 		InitializeModConfig(modInfo);
 
 		var iconName = modInfo.IconName;
@@ -81,6 +89,12 @@ class efd.LoreHound.lib.Mod {
 
 		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
 		ModLoadedDV.SetValue(false);
+	}
+
+	private function StringsLoaded():Void {
+		TraceMsg("Localized strings loaded");
+		SystemsLoaded.Strings = true;
+		CheckLoadComplete();
 	}
 
 	private function InitializeModConfig(modInfo:Object):Void {
@@ -97,10 +111,10 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function ConfigLoaded(initialLoad:Boolean):Void {
-		TraceMsg("Config loaded");
 		if (initialLoad) {
-			UpdateInstall();
-			ModLoadedDV.SetValue(true);
+			TraceMsg("Config loaded");
+			SystemsLoaded.Config = true;
+			CheckLoadComplete();
 		}
 	}
 
@@ -121,9 +135,10 @@ class efd.LoreHound.lib.Mod {
 				// Defer the actual binding to config until things are set up
 				ConfigWindowClip.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
 
-				ConfigWindowClip.SetTitle(ModName + " Settings", "left");
+				var LocaleTitle:String = Format.Printf(LocaleManager.GetString("GUI", "ConfigWindowTitle"), ModName);
+				ConfigWindowClip.SetTitle(LocaleTitle, "left");
 				ConfigWindowClip.SetPadding(10);
-				ConfigWindowClip.SetContent(ModName+ "ConfigWindowContent");
+				ConfigWindowClip.SetContent(ModName + "ConfigWindowContent");
 
 				ConfigWindowClip.ShowCloseButton(true);
 				ConfigWindowClip.ShowStroke(false);
@@ -134,6 +149,9 @@ class efd.LoreHound.lib.Mod {
 				ConfigWindowClip._x = position.x;
 				ConfigWindowClip._y = position.y;
 
+				ResolutionScaleDV.SignalChanged.Connect(SetConfigWindowScale, this);
+				SetConfigWindowScale();
+
 				EscStackTrigger.SignalEscapePressed.Connect(CloseConfigWindow, this);
 				EscapeStack.Push(EscStackTrigger);
 				ConfigWindowClip.SignalClose.Connect(CloseConfigWindow, this);
@@ -141,9 +159,11 @@ class efd.LoreHound.lib.Mod {
 		} else { // Close window
 			if (ConfigWindowClip != null) {
 				EscStackTrigger.SignalEscapePressed.Disconnect(CloseConfigWindow, this);
+				ResolutionScaleDV.SignalChanged.Disconnect(SetConfigWindowScale, this);
 
 				ReturnWindowToVisibleBounds(ConfigWindowClip, Config.GetDefault("ConfigWindowPosition"));
 				Config.SetValue("ConfigWindowPosition", new Point(ConfigWindowClip._x, ConfigWindowClip._y));
+
 				ConfigWindowClip.removeMovieClip();
 				ConfigWindowClip = null;
 			}
@@ -168,16 +188,36 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
+	private function SetConfigWindowScale():Void {
+		var scale:Number = ResolutionScaleDV.GetValue() * 100;
+		ConfigWindowClip._xscale = scale;
+		ConfigWindowClip._yscale = scale;
+	}
+
 	private function CloseConfigWindow():Void {
 		ShowConfigDV.SetValue(false);
+	}
+
+	private function CheckLoadComplete():Void {
+		for (var key:String in SystemsLoaded) {
+			if (!SystemsLoaded[key]) { return; }
+		}
+		TraceMsg("Is fully loaded");
+		LoadComplete();
+	}
+
+	private function LoadComplete():Void {
+		UpdateInstall();
+		ModLoadedDV.SetValue(true);
+		delete SystemsLoaded; // No longer required
 	}
 
 	private function UpdateInstall():Void {
 		if (!Config.GetValue("Installed")) {
 			DoInstall();
 			Config.SetValue("Installed", true);
-			ChatMsg("Has been installed.");
-			ChatMsg("Please take a moment to review the options.", true);
+			ChatMsg(LocaleManager.GetString("General", "Installed"));
+			ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), true);
 			// Decided against having the options menu auto open here
 			// Users might not realize that it's a one off event, and consider it a bug
 			return; // No existing version to update
@@ -186,14 +226,16 @@ class efd.LoreHound.lib.Mod {
 		var newVersion:String = Config.GetDefault("Version");
 		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			var changeType:String = "Reverted";
+			var changeStr:String;
 			if (versionChange > 0) {
-				changeType = "Updated";
+				changeStr = LocaleManager.GetString("General", "Update");
 				DoUpdate(newVersion, oldVersion);
+			} else {
+				changeStr = LocaleManager.GetString("General", "Revert");
 			}
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
-			ChatMsg(changeType + " to v" + newVersion);
+			ChatMsg(Format.Printf(changeStr, newVersion));
 		}
 	}
 
@@ -327,6 +369,7 @@ class efd.LoreHound.lib.Mod {
 	private static var ChatLeadColor:String = "#00FFFF";
 
 	public var ModName:String;
+	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data
 	private var ModLoadedDV:DistributedValue;
 
 	private var _Enabled:Boolean = false;
@@ -335,6 +378,7 @@ class efd.LoreHound.lib.Mod {
 
 	public var Config:ConfigWrapper;
 	private var ShowConfigDV:DistributedValue; // Used by topbars to provide setting shortcut buttons
+	private var ResolutionScaleDV:DistributedValue;
 	private var ConfigWindowClip:MovieClip = null;
 	private var EscStackTrigger:EscapeStackNode;
 

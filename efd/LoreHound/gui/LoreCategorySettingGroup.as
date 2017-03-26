@@ -6,6 +6,7 @@ import gfx.controls.CheckBox;
 import gfx.core.UIComponent;
 
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
 
 class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
@@ -15,6 +16,8 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	private function configUI():Void {
 		super.configUI();
+		LocaleManager.ApplyLabel(LBFifoEnabled);
+		LocaleManager.ApplyLabel(LBChatEnabled);
 		// Disable focus to prevent selections from locking user input until the window closes
 		CBFifoEnabled.disableFocus = true;
 		CBChatEnabled.disableFocus = true;
@@ -22,20 +25,22 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	public function Init(loreType:Number, config:ConfigWrapper):Void {
 		Type = loreType;
+		GroupTitle.text = "SettingGroup"
 		switch(loreType) {
 		case LoreHound.ef_LoreType_Placed:
-			GroupTitle.text = "Placed Lore";
+			GroupTitle.text += "Placed";
 			break;
 		case LoreHound.ef_LoreType_Trigger:
-			GroupTitle.text = "Triggered Lore";
+			GroupTitle.text += "Trigger";
 			break;
 		case LoreHound.ef_LoreType_Drop:
-			GroupTitle.text = "Timed Drop Lore";
+			GroupTitle.text += "Drop";
 			break;
 		case LoreHound.ef_LoreType_Unknown:
-			GroupTitle.text = "Uncategorized Lore";
+			GroupTitle.text += "Unknown";
 			break;
 		}
+		LocaleManager.ApplyLabel(GroupTitle);
 
 		Config = config;
 		ConfigUpdated();
@@ -63,6 +68,8 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 	}
 
 	private var GroupTitle:TextField;
+	private var LBFifoEnabled:TextField;
+	private var LBChatEnabled:TextField;
 	private var CBFifoEnabled:CheckBox;
 	private var CBChatEnabled:CheckBox;
 

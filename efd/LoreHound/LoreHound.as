@@ -22,6 +22,7 @@ import com.Utils.LDBFormat;
 
 import efd.LoreHound.lib.AutoReport;
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.LoreHound extends Mod {
@@ -63,6 +64,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		DumpToLog = false;
 		DetailStatRange = 1; // Start with the first million
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
+		SystemsLoaded.Categories = false;
 
 		TrackedLore = new Object();
 		WaypointInterface.SignalPlayfieldChanged.Connect(ClearTracking, this);
@@ -124,16 +126,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	/// Mod framework extensions and overrides
-	private function ConfigLoaded(initialLoad:Boolean):Void {
-		// The standard config loaded behaviour triggers the update cycle
-		// Which requires the lore category index to be already loaded
-		// So override the default to defer updates until both have been loaded
-		if (initialLoad) {
-			if (IsIndexLoaded) { LoadingComplete(); }
-			else { IsConfigLoaded = true; }
-		}
-	}
-
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
 			case "TrackDespawns":
@@ -144,19 +136,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 	}
 
-	// TODO: This is taking too long, it's triggering after the config has loaded
-	//       Which means after the update routine, which requires access to the categorization system
 	private function LoadLoreCategories():Void {
 		IndexFile = new XML();
 		IndexFile.ignoreWhite = true;
 		var capture:LoreHound = this;
-		IndexFile.onLoad = Delegate.create(this, IndexLoaded);
+		IndexFile.onLoad = Delegate.create(this, CategoryIndexLoaded);
 		IndexFile.load("LoreHound/CategoryIndex.xml");
 	}
 
-	private function IndexLoaded(success:Boolean):Void {
+	private function CategoryIndexLoaded(success:Boolean):Void {
 		if (success) {
-			TraceMsg("Loading CategoryIndex.xml");
 			CategoryIndex = new Array();
 			var xmlRoot:XMLNode = IndexFile.firstChild;
 			for (var i:Number = 0; i < xmlRoot.childNodes.length; ++i) {
@@ -167,8 +156,9 @@ class efd.LoreHound.LoreHound extends Mod {
 				}
 			}
 			delete IndexFile;
-			if (IsConfigLoaded) { LoadingComplete() }
-			else { IsIndexLoaded = true; }
+			TraceMsg("Lore category data loaded");
+			SystemsLoaded.Categories = true;
+			CheckLoadComplete();
 		} else {
 			TraceMsg("Failed to load category index");
 		}
@@ -179,11 +169,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
 	}
 
-	private function LoadingComplete():Void {
-		super.ConfigLoaded(true);
+	private function LoadComplete():Void {
+		super.LoadComplete();
 		Config.DeleteSetting("SendReports"); // DEPRECIATED(v0.6.0): Setting removed
-		delete IsConfigLoaded;
-		delete IsIndexLoaded;
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
@@ -423,34 +411,31 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function GetMessageStrings(loreType:Number, loreId:Number, dynel:Dynel, categorizationId:Number):Array {
 		var loreName:String = AttemptIdentification(loreId, loreType, categorizationId);
 		var messageStrings:Array = new Array();
+		var typeString:String;
 		switch (loreType) {
 			case ef_LoreType_Placed:
-				messageStrings.push("Lore (" + loreName + ") nearby");
-				messageStrings.push("Common lore nearby (" + loreName + ")");
+				typeString = "Placed";
 				break;
 			case ef_LoreType_Trigger:
-				messageStrings.push("Lore (" + loreName + ") has appeared");
-				messageStrings.push("Triggered lore nearby (" + loreName + ")");
+				typeString = "Trigger";
 				break;
 			case ef_LoreType_Drop:
-				messageStrings.push("Lore (" + loreName + ") dropped");
-				messageStrings.push("Dropped lore nearby (" + loreName + ")");
+				typeString = "Drop";
 				break;
 			case ef_LoreType_Despawn:
-				messageStrings.push("Lore (" + loreName + ") despawned");
-				messageStrings.push("Lore despawned or out of range (" + loreName + ")");
+				typeString = "Despawn"
 				break;
 			case ef_LoreType_Unknown:
-				messageStrings.push("Lore (" + loreName + ") needs cataloguing");
-				messageStrings.push("Unknown lore detected (" + loreName + ")");
+				typeString = "Unknown"
 				break;
 			default:
 				// It should be impossible for the game data to trigger this state
 				// This message probably indicates a logical failure in the mod
-				messageStrings.push("Error, lore type defaulted: " + loreType);
-				messageStrings.push("Error, lore type defaulted: " + loreType);
-				break;
+				TraceMsg("Error, lore type defaulted: " + loreType);
+				return;
 		}
+		messageStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", typeString + "Fifo"), loreName));
+		messageStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", typeString + "Chat"), loreName));
 		messageStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
 		if (DumpToLog && dynel != undefined) {
 			var pos:Vector3 = dynel.GetPosition(0);
@@ -474,31 +459,31 @@ class efd.LoreHound.LoreHound extends Mod {
 			var catCode:String;
 			switch (loreSource) {
 				case 0: // Buzzing
-					catCode = " #";
+					catCode = LocaleManager.GetString("LoreHound", "BuzzingSource");
 					break;
 				case 1: // Black Signal
-					catCode = " BS#";
+					catCode = LocaleManager.GetString("LoreHound", "BlackSignalSource");
 					break;
 				default: // Unknown source
 					// Consider setting up a report here, with LoreID as tag
 					// Low probability of it actually occuring, but knowing sooner rather than later might be nice
-					catCode = " ?#";
-					TraceMsgS("Lore has unknown voice: " + loreSource);
+					catCode = LocaleManager.GetString("LoreHound", "UnknownSource");
+					TraceMsgS("Lore has unknown source: " + loreSource);
 					break;
 			}
 			var parentNode:LoreNode = loreNode.m_Parent;
-			var priorSiblings:Number = 1; // Most people number based on type and from a base of 1
+			var entryNumber:Number = 1; // Most people number based on type and from a base of 1
 			for (var i:Number = 0; i < parentNode.m_Children.length; ++i) {
 				var childId:Number = parentNode.m_Children[i].m_Id;
 				if (childId == loreId) {
-					return parentNode.m_Name + catCode + priorSiblings;
+					return Format.Printf(LocaleManager.GetString("LoreHound", "LoreName"), parentNode.m_Name, catCode, entryNumber);
 				}
 				if (Lore.GetTagViewpoint(childId) == loreSource) {
-					++priorSiblings;
+					++entryNumber;
 				}
 			}
 			TraceMsgS("Unknown topic or entry #, malformed lore ID: " + loreId);
-			return "Invalid lore ID";
+			return LocaleManager.GetString("LoreHound", "InvalidLoreID");
 		}
 		// Deal with any that are missing data
 		switch (loreType) {
@@ -509,11 +494,11 @@ class efd.LoreHound.LoreHound extends Mod {
 				// - Samhain lores seem to be mostly absent (double checked in light of Polaris drone... really seems to be absent)
 				// - Other event lores seem to be mostly present
 				// (There are, of course, exceptions)
-				return "Inactive " + (categorizationId == c_ShroudedLoreCategory ? "shrouded lore" : "event lore");
+				return LocaleManager.GetString("LoreHound", categorizationId == c_ShroudedLoreCategory ? "InactiveShrouded" : "InactiveEvent");
 			default:
 				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
 				// The only reason to see this now is if the automatic redetection system failed
-				return "Incomplete data, rescan failed";
+				return LocaleManager.GetString("LoreHound", "IncompleteDynel");
 		}
 	}
 
@@ -529,7 +514,9 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
 			// Y is being listed last because it's the vertical component, and most concern themselves with map coordinates (x,z)
 			var pos:Vector3 = dynel.GetPosition(0);
-			detailStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + ", " + Math.round(pos.z) + ", " + Math.round(pos.y) + ")");
+			var playfield:String = LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID());
+			var posStr:String = LocaleManager.GetString("LoreHound", "PositionInfo");
+			detailStrings.push(Format.Printf(posStr, playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
 		}
 		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
 			var formatStr:String = dynel.GetName();
@@ -539,13 +526,14 @@ class efd.LoreHound.LoreHound extends Mod {
 				var str = ids[i];
 				ids[i] = str.substring(str.indexOf('"') + 1, str.length - 1);
 			}
-			detailStrings.push("Category ID: " + ids[0] + " Supergroup: " + ids[1]);
+			detailStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", "CategoryInfo"), ids[0], ids[1]));
 		}
 		if ((details & ef_Details_DynelId) == ef_Details_DynelId) {
-			detailStrings.push("Dynel ID: " + dynel.GetID().toString());
+			detailStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", "InstanceInfo"), dynel.GetID().toString()));
 		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
 			// Fishing expedition, trying to find anything potentially useful
+			// Dev/debug only, does not need localization
 			detailStrings.push("Stat Dump: Mode " + DetailStatMode);
 			var start:Number = (DetailStatRange - 1) * 1000000;
 			var end:Number = DetailStatRange * 1000000;
@@ -592,8 +580,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	private var DetailStatRange:Number;
 	private var DetailStatMode:Number;
 
-	private var IsConfigLoaded:Boolean;
-	private var IsIndexLoaded:Boolean;
 	private var IndexFile:XML;
 
 	private var CategoryIndex:Array;

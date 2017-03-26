@@ -11,12 +11,14 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
 import com.GameInterface.Tooltip.TooltipManager;
+import com.Utils.Format;
 import com.Utils.GlobalSignal;
 import GUIFramework.SFClipLoader;
 
 import efd.LoreHound.lib.etu.GemController;
 
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.lib.ModIcon extends MovieClip {
@@ -88,7 +90,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 					_y = newValue.y;
 					break;
 				case "IconScale":
-					UpdateScale(newValue);
+					UpdateScale();
 					break;
 				default: break;
 			}
@@ -102,7 +104,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	/// Layout and GEM handling
-	private function UpdateScale(scale:Number):Void {
+	private function UpdateScale():Void {
 		var guiScale:Number = ScreenResScaleDV.GetValue();
 		if ( guiScale == undefined) { guiScale = 1; }
 		_xscale = guiScale * Config.GetValue("IconScale");
@@ -156,20 +158,20 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	public var GetTooltipData:Function = GetDefaultTooltipData;
 
 	private function GetDefaultTooltipData():TooltipData {
-		// This will cause the tooltip to reflect the state of the player's setting
-		// Which is accurate to what it actually affects, but doesn't reflect if the game's disabled the mod
-		var toggle:String = Config.GetValue("Enabled") ? "Disable" : "Enable";
 		var data:TooltipData = new TooltipData();
 		data.m_Padding = TooltipPadding;
 		data.m_MaxWidth = TooltipWidth; // The content does not affect the layout, so unless something that does (edge of screen perhaps?) gets in the way, this is how wide it will be
 
 		data.m_Title = "<font " + TooltipTitleFont + "><b>" + ModName + "</b></font>";
-		data.m_SubTitle = "<font " + TooltipCreditFont + ">v" + Config.GetValue("Version") + " by " + DevName + "</font>";
+		var credit:String = Format.Printf(LocaleManager.GetString("GUI", "TooltipCredit"), Config.GetValue("Version"), DevName);
+		data.m_SubTitle = "<font " + TooltipCreditFont + ">" + credit + "</font>";
 		data.m_Color = TooltipTitleColor;
 
 		// The internal newline reduces the spacing between lines compared to two seperate description strings
 		// It's a bit tight like this, but the spacing was excessive the other way
-		data.AddDescription("<font " + TooltipTextFont + ">Left Click: Show Options\nRight Click: " + toggle + " Mod</font>");
+		var lText:String = LocaleManager.GetString("GUI", "TooltipLeft");
+		var rText:String = LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipRightDisable" : "TooltipRightEnable");
+		data.AddDescription("<font " + TooltipTextFont + ">" + lText + "\n" + rText + "</font>");
 
 		return data;
 	}

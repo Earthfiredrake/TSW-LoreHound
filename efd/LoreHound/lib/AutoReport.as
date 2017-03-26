@@ -8,9 +8,11 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character;
 import com.GameInterface.Tradepost;
 import com.GameInterface.Utils;
+import com.Utils.Format;
 import com.Utils.Signal;
 
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
 // Automated error/information reporting framework
@@ -72,7 +74,7 @@ class efd.LoreHound.lib.AutoReport {
 		}
 		queue.push(report);
 		Config.NotifyChange("QueuedReports");
-		ChatMsg("A report has been generated and will be sent when you are next at the bank.");
+		ChatMsg(LocaleManager.GetString("AutoReport", "ReportQueued"));
 		return true;
 	}
 
@@ -124,7 +126,7 @@ class efd.LoreHound.lib.AutoReport {
 				if (attempt < MaxRetries) {
 					setTimeout(Delegate.create(this, SendReport), RetryDelay, attempt + 1);
 				} else {
-					ChatMsg("One or more reports failed to send and will remain queued.");
+					ChatMsg(LocaleManager.GetString("AutoReport", "FailSend"));
 				}
 			}
 		}
@@ -153,12 +155,13 @@ class efd.LoreHound.lib.AutoReport {
 					// Delay to avoid triggering flow restrictions
 					setTimeout(Delegate.create(this, SendReport), RetryDelay, 0);
 				} else {
-					ChatMsg("All queued reports have been sent. Thank you for your assistance.");
+					ChatMsg(LocaleManager.GetString("AutoReport", "Submitted"));
 				}
 			} else {
 				// Reset index, and keep remaining reports to retry later
 				ReportsSent = 0;
-				ChatMsg("One or more reports could not be delivered and will remain queued. (Reason: " + error + ")");
+				ChatMsg(LocaleManager.GetString("AutoReport", "FailDeliver"));
+				ChatMsg(Format.Printf(LocaleManager.GetString("AutoReport", "ErrorDesc"), error), true);
 			}
 		}
 	}
