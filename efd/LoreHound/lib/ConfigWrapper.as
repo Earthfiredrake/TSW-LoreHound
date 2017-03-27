@@ -245,10 +245,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return element; // Basic type
 	}
 
-	private function TraceMsg(msg:String, supressLeader:Boolean):Void {
-		if (!supressLeader) {
-			Mod.TraceMsgS("Config - " + msg, supressLeader);
-		} else { Mod.TraceMsgS(msg, supressLeader); }
+	private static function TraceMsg(msg:String, options:Object):Void {
+		if (options == undefined) { options = new Object(); }
+		options.system = "Config";
+		Mod.TraceMsg(msg, options);
 	}
 
 	// As long as we're using the game

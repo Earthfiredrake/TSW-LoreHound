@@ -10,7 +10,7 @@
 <!-- Strings themselves should be compatible with boost::format for inserting further data -->
 <!-- See http://www.boost.org/doc/libs/1_63_0/libs/format/doc/format.html#syntax for details (TSW likely uses earlier version, unsure which)-->
 <!-- For customized strings, replacement values may be skipped or duplicated without issue -->
-<!-- Adding more replacement values than provided is not reccomended (at best it would do nothing) -->
+<!-- Any replacement values beyond the number of provided parameters will display as 'undefined' -->
 <!-- Extra parameters are detailed after the string. Debug and trace messages are not localized -->
 <StringCategories>
 	<Category name="General"> <!-- Used for standard messages created as part of my mod framework -->
@@ -22,6 +22,19 @@
 				en="Updated to v%1%" /> <!-- %1% = ModVersion -->
 		<String tag="Revert"
 				en="Reverted to v%1%" /> <!-- %1% = ModVersion -->
+		<String tag="ModMessagePrefix"
+				en="&lt;font color='#00FFFF'&gt;%1%&lt;/font&gt;: " /> <!-- %1% = ModName; Yeah it's ugly, xml is not great for storing html -->
+		<String tag="SubsystemMessagePrefix"
+				en="%1% - " /> <!-- %1% = Subsystem name -->
+		<!-- Message format strings recieve the following values in standard positions -->
+		<!-- %1% = Message content -->
+		<!-- %2% = ModMessagePrefix (as above or "" if not provided) -->
+		<!-- %3% = SubsystemMessagePrefix (as above or "" if not provided) -->
+		<!-- Further parameters may be provided by the mod, as detailed -->
+		<String tag="FifoMessage"
+				en="%1%" /> <!-- Minimalist output, no non-standard parameters available -->
+		<String tag="ChatMessage"
+				en="%4%%2%%3%%1%" /> <!-- %4% = timestamp (as defined in LoreHound category or "" if not provided); By default formats as "[hh:mm] LoreHound: subsys - message" unless some parts are excluded -->
 	</Category>
 	<Category name="GUI"> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
 		<String tag="ConfigWindowTitle"

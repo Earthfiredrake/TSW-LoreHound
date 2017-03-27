@@ -6,14 +6,12 @@ import flash.geom.Point; // DEPRECIATED(v0.5.0: Required for update routine from
 
 import gfx.utils.Delegate;
 
-import com.GameInterface.Chat; // Actually FIFO messages
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Log;
 import com.GameInterface.Lore;
 import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
-import com.GameInterface.Utils; // Actually chat messages
 import com.GameInterface.VicinitySystem;
 import com.GameInterface.WaypointInterface; // Playfield change notifications
 import com.Utils.ID32;
@@ -160,10 +158,10 @@ class efd.LoreHound.LoreHound extends Mod {
 		} else {
 			// Loading is asynchronous, not localized
 			// Currently localization appears to load first, but I won't count on it
-			// There's also the possibility that it failed to load
+			// There's also the possibility that it also failed to load
 			// Could check SystemsLoaded, but seems excessive for what should be a disabled state
-			ChatMsg("Failed to load category index");
-			ChatMsg("Mod cannot be enabled", true);
+			ErrorMsg("Failed to load category index");
+			ErrorMsg("Mod cannot be enabled", { noPrefix : true });
 			Config.SetValue("Enabled", false);
 		}
 	}
@@ -228,15 +226,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
 	}
 
-	// Override to add timestamps before the lead text
-	private function ChatMsg(message:String, suppressLeader:Boolean, forceTimestamp:Boolean):Void {
+	// Override to add timestamps
+	//   forceTimestamp property added to options
+	private function _ChatMsg(message:String, options:Object):Void {
 		var timestamp:String = "";
-		if (forceTimestamp) {
+		if (options.forceTimestamp) {
 			var time:Date = new Date();
 			timestamp = LocaleManager.FormatString("LoreHound", "TimestampInfo", time.getHours(), time.getMinutes());
 		}
-		var lead:String = suppressLeader ? "" : "<font color='" + ChatLeadColor + "'>" + ModName + "</font>: ";
-		Utils.PrintChatText(timestamp + lead + message);
+		// Currently there is no allowance for attaching yet more additional parameters
+		super._ChatMsg(message, options, timestamp);
 	}
 
 	// Notes on Dynel API:
@@ -472,7 +471,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Consider setting up a report here, with LoreID as tag
 					// Low probability of it actually occuring, but knowing sooner rather than later might be nice
 					catCode = LocaleManager.GetString("LoreHound", "UnknownSource");
-					TraceMsgS("Lore has unknown source: " + loreSource);
+					TraceMsg("Lore has unknown source: " + loreSource);
 					break;
 			}
 			var parentNode:LoreNode = loreNode.m_Parent;
@@ -486,7 +485,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					++entryNumber;
 				}
 			}
-			TraceMsgS("Unknown topic or entry #, malformed lore ID: " + loreId);
+			TraceMsg("Unknown topic or entry #, malformed lore ID: " + loreId);
 			return LocaleManager.GetString("LoreHound", "InvalidLoreID");
 		}
 		// Deal with any that are missing data
@@ -552,12 +551,12 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function DispatchMessages(messageStrings:Array, loreType:Number, detailStrings:Array, categorizationId:Number):Void {
 		if ((Config.GetValue("FifoLevel") & loreType) == loreType) {
-			Chat.SignalShowFIFOMessage.Emit(messageStrings[0], 0);
-			}
+			FifoMsg(messageStrings[0]);
+		}
 		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
-			ChatMsg(messageStrings[1], false, (Config.GetValue("Details") & ef_Details_Timestamp) == ef_Details_Timestamp);
+			ChatMsg(messageStrings[1], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) == ef_Details_Timestamp });
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
-				ChatMsg(detailStrings[i], true);
+				ChatMsg(detailStrings[i], { noPrefix : true });
 			}
 		}
 		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state

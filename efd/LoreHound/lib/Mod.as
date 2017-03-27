@@ -6,11 +6,12 @@ import flash.geom.Point;
 
 import gfx.utils.Delegate;
 
+import com.GameInterface.Chat; // FIFO messages
 import com.GameInterface.DistributedValue;
 import com.GameInterface.EscapeStack;
 import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
-import com.GameInterface.Utils;
+import com.GameInterface.Utils; // Chat messages *shrug*
 import com.Utils.Archive;
 import GUIFramework.SFClipLoader;
 
@@ -48,15 +49,21 @@ class efd.LoreHound.lib.Mod {
 	//     Disable integration with a VTIO compatible topbar mod (Viper's or Meeehr's)
 	//     Also useful for testing
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
+		FifoMsg = Delegate.create(this, _FifoMsg);
+		ChatMsg = Delegate.create(this, _ChatMsg);
+		ErrorMsg = Delegate.create(this, _ErrorMsg);
+		TraceMsg = Delegate.create(this, _TraceMsg);
+		LogMsg = Delegate.create(this, _LogMsg);
+
 		if (modInfo.Name == undefined || modInfo.Name == "") {
 			ModName = "Unnamed";
 			// Dev message, not localized
-			ChatMsg("Mod requires a name!");
+			ErrorMsg("Mod requires a name");
 		} else { ModName = modInfo.Name; }
 		if (modInfo.Version == undefined || modInfo.Version == "") {
 			modInfo.Version = "0.0.0";
 			// Dev message, not localized
-			ChatMsg("Mod expects a version number!");
+			ErrorMsg("Mod expects a version number");
 		}
 		HostMovie = hostMovie;
 
@@ -67,10 +74,6 @@ class efd.LoreHound.lib.Mod {
 		SystemsLoaded = { Config: false, LocalizedText: false }
 		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
 		ModLoadedDV.SetValue(false);
-
-		ChatMsgS = Delegate.create(this, ChatMsg);
-		TraceMsgS = Delegate.create(this, TraceMsg);
-		LogMsgS = Delegate.create(this, LogMsg);
 
 		LocaleManager.Initialize(ModName + "/Strings.xml");
 		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
@@ -99,7 +102,7 @@ class efd.LoreHound.lib.Mod {
 			CheckLoadComplete();
 		} else {
 			// Localization support unavailable, not localized
-			ChatMsg("Mod cannot be enabled", true);
+			ErrorMsg("Mod cannot be enabled", { noPrefix : true });
 			Config.SetValue("Enabled", false);
 		}
 	}
@@ -127,9 +130,10 @@ class efd.LoreHound.lib.Mod {
 		switch(setting) {
 			case "Enabled":
 				if (newValue && SystemsLoaded != undefined) {
-					ChatMsg("Failed to load required information, and cannot be enabled");
+					// May not have loaded localization system
+					ErrorMsg("Failed to load required information, and cannot be enabled");
 					for (var key:String in SystemsLoaded) {
-						if (!SystemsLoaded[key]) { ChatMsg("Missing: " + key, true); }
+						if (!SystemsLoaded[key]) { ErrorMsg("Missing: " + key, { noPrefix : true }); }
 					}
 					Config.SetValue("Enabled", false);
 				} else { Enabled = newValue; }
@@ -222,7 +226,7 @@ class efd.LoreHound.lib.Mod {
 			DoInstall();
 			Config.SetValue("Installed", true);
 			ChatMsg(LocaleManager.GetString("General", "Installed"));
-			ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), true);
+			ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), { noPrefix : true });
 			// Decided against having the options menu auto open here
 			// Users might not realize that it's a one off event, and consider it a bug
 			return; // No existing version to update
@@ -295,25 +299,77 @@ class efd.LoreHound.lib.Mod {
 	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
 
 	/// Text output utility functions
-	// Leader text should not be supressed on initial message for any particular notification, only on immediately subsequent lines
-	public function ChatMsg(message:String, suppressLeader:Boolean):Void {
-		if (!suppressLeader) {
-			Utils.PrintChatText("<font color='" + ChatLeadColor + "'>" + ModName + "</font>: " + message);
-		} else { Utils.PrintChatText(message); }
+	// Options object supports the following properties:
+	//   system:String - Name of subsystem to include in the prefix
+	//   noPrefix:Boolean - Will not display mod or subsystem name if true
+	//     Initial messages should probably display this, but it is optional for immediate followup messages
+	// Additional properties may be defined for use by the mod itself
+	// It is discarded before passing the remaining parameters to the LocaleManager formatting system
+	// Parameters passed to the format string are:
+	//   %1% : The message text
+	//   %2% : The mod prefix text if not disabled
+	//   %3% : The subsystem prefix text if it exists and is not disabled
+	//   %4%+ : Arbitrary additional parameters passed in by the mod
+	// If a format string expects a certain number of parameters, but does not recieve that many it will:
+	//   Ignore any extra or unused parameters
+	//   Display 'undefined' if an expected parameter is missing
+	//     It is therefore important that any additional parameters passed in be defaulted to ""
+	private function _FifoMsg(message:String, options:Object):Void {
+		var prefixes:Array = GetPrefixes(options);
+		arguments.splice(1, 1, prefixes[0], prefixes[1]);
+		var args:Array = new Array("General", "FifoMessage").concat(arguments);
+		Chat.SignalShowFIFOMessage.Emit(LocaleManager.FormatString.apply(undefined, args), 0);
 	}
 
-	public function TraceMsg(message:String, supressLeader:Boolean):Void {
-		if (DebugTrace) { ChatMsg("Trace - " + message, supressLeader);	}
+	private function _ChatMsg(message:String, options:Object):Void {
+		var prefixes:Array = GetPrefixes(options);
+		arguments.splice(1, 1, prefixes[0], prefixes[1]);
+		var args:Array = new Array("General", "ChatMessage").concat(arguments);
+		Utils.PrintChatText(LocaleManager.FormatString.apply(undefined, args));
 	}
 
-	public function LogMsg(message:String):Void { Log.Error(ModName, message); }
+	// Bypasses localization, for fatal errors that can't count on localization support
+	private function _ErrorMsg(message:String, options:Object):Void {
+		if (!options.noPrefix) {
+			var sysPrefix:String = options.system ? (options.system + " - ") : "";
+			message = "<font color='#EE0000'>" + ModName +"</font>: ERROR - " + sysPrefix + message + "!";
+		}
+		Utils.PrintChatText(message);
+	}
+
+	private function _TraceMsg(message:String, options:Object):Void {
+		// Debug messages, should be independent of localization system to allow traces before it loads
+		if (DebugTrace) {
+			if (!options.noPrefix) {
+				var sysPrefix:String = options.system ? (options.system + " - ") : "";
+				message = "<font color='#FFB555'>" + ModName +"</font>: Trace - " + sysPrefix + message;
+			}
+		 	Utils.PrintChatText(message);
+		}
+	}
+
+	// Debug logging, not localized
+	public function _LogMsg(message:String):Void { Log.Error(ModName, message); }
+
+	private function GetPrefixes(options:Object):Array {
+		var prefixes:Array = new Array("", "");
+		if (!options.noPrefix) {
+			prefixes[0] = LocaleManager.FormatString("General", "ModMessagePrefix", ModName);
+			if (options.system != undefined) {
+				prefixes[1] = LocaleManager.FormatString("General", "SubsystemMessagePrefix", options.system);
+			}
+		}
+		return prefixes;
+	}
 
 	// Static delegates to the ones above
 	// So other components can access them without needing a reference
 	// Recommend wrapping the call in a local version, that inserts an identifer for the subcomponent involved
-	public static var ChatMsgS:Function;
-	public static var TraceMsgS:Function;
-	public static var LogMsgS:Function;
+	public static var FifoMsg:Function;
+	public static var ChatMsg:Function;
+	public static var ErrorMsg:Function;
+	public static var TraceMsg:Function;
+	public static var LogMsg:Function;
 
 	// Compares two version strings (format "#.#.#[.alpha|.beta]")
 	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
@@ -369,8 +425,6 @@ class efd.LoreHound.lib.Mod {
 	// Customize based on mod authorship
 	public static var DevName:String = "Peloprata";
 	public static var DVPrefix:String = "efd"; // Retain this if making a compatible fork of an existing mod
-
-	private static var ChatLeadColor:String = "#00FFFF";
 
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data

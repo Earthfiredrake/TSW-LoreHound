@@ -157,21 +157,21 @@ class efd.LoreHound.lib.AutoReport {
 				// Reset index, and keep remaining reports to retry later
 				ReportsSent = 0;
 				ChatMsg(LocaleManager.GetString("AutoReport", "FailDeliver"));
-				ChatMsg(LocaleManager.FormatString("AutoReport", "ErrorDesc", error), true);
+				ChatMsg(LocaleManager.FormatString("AutoReport", "ErrorDesc", error), { noPrefix : true });
 			}
 		}
 	}
 
-	private static function ChatMsg(msg:String, suppressLeader:Boolean):Void {
-		if (!suppressLeader) {
-			Mod.ChatMsgS("AutoReport - " + msg, suppressLeader);
-		} else { Mod.ChatMsgS(msg, suppressLeader); }
+	private static function ChatMsg(msg:String, options:Object):Void {
+		if (options == undefined) { options = new Object(); }
+		options.system = "AutoReport";
+		Mod.ChatMsg(msg, options);
 	}
 
-	private static function TraceMsg(msg:String, suppressLeader:Boolean):Void {
-		if (!suppressLeader) {
-			Mod.TraceMsgS("AutoReport - " + msg, suppressLeader);
-		} else { Mod.TraceMsgS(msg, suppressLeader); }
+	private static function TraceMsg(msg:String, options:Object):Void {
+		if (options == undefined) { options = new Object(); }
+		options.system = "AutoReport";
+		Mod.TraceMsg(msg, options);
 	}
 
 	public static function get IsEnabled():Boolean {

@@ -183,10 +183,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	/// Trace Wrapper
-	private function TraceMsg(msg:String, supressLeader:Boolean):Void {
-		if (!supressLeader) {
-			Mod.TraceMsgS("ModIcon - " + msg, supressLeader);
-		} else { Mod.TraceMsgS(msg, supressLeader); }
+	private function TraceMsg(msg:String, options:Object):Void {
+		if (options == undefined) { options = new Object(); }
+		options.system = "ModIcon";
+		Mod.TraceMsg(msg, options);
 	}
 
 	/// Variables

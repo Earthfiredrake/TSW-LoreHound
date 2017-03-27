@@ -57,17 +57,11 @@ class efd.LoreHound.lib.LocaleManager {
 				StringDict[categoryXML.attributes.name] = category;
 			}
 		} else {
-			// Not localized, for obvious reasons
-			Mod.ChatMsgS("Localization - Could not load localized strings");
+			// Bypass localization entirely
+			Mod.ErrorMsg("Could not load localized strings", { system : "Localization" });
 		}
 		delete StringFile;
 		SignalStringsLoaded.Emit(success);
-	}
-
-	private static function TraceMsg(msg:String, suppressLeader:Boolean):Void {
-		if (!suppressLeader) {
-			Mod.TraceMsgS("Localization - " + msg, suppressLeader);
-		} else { Mod.TraceMsgS(msg, suppressLeader); }
 	}
 
 	public static var SignalStringsLoaded:Signal; // (success:Boolean):Void
