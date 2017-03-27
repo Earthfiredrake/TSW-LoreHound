@@ -9,15 +9,13 @@ import efd.LoreHound.LoreHound;
 var efdLoreHound:LoreHound;
 // Function trigger descriptions are based upon the following settings in Modules.xml
 // flags = "GMF_DONT_UNLOAD" // Don't unload/reload the entire mod every time it's disabled
-// criteria contains "GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI" // Enable only if the player is in play,
+// criteria contains "GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI" // Enable only if the player is in play, or all gui is requested regardless
 
 // Called when the clip is first loaded
 // - When the player logs in a character, including on relogs
 // - When /relaodui is called
 // - If the mod activation distributed value is false, it may skip loading entirely
-function onLoad():Void {
-	efdLoreHound = new LoreHound(this);
-}
+function onLoad():Void { efdLoreHound = new LoreHound(this); }
 
 // Often called in pairs, deactivating and reactivating the mod as the criteria evaluation changes
 // Due to the frequency of this occuring, these should be relatively light functions
@@ -25,19 +23,10 @@ function onLoad():Void {
 // Paired calls are made when: Changing zones, cutscenes play, the player anima leaps or is otherwise teleported
 // Deactivate is called once immediately prior to OnUnload
 // Toggling the distributed value will force toggle these
-function OnModuleActivated(archive:Archive):Void {
-	// This could take an Archive parameter
-	// Does this have to do with that "config" attribute I was having problems with?
-	efdLoreHound.GameToggleModEnabled(true, archive);
-}
+function OnModuleActivated(archive:Archive):Void { efdLoreHound.GameToggleModEnabled(true, archive); }
 
-function OnModuleDeactivated():Archive {
-	// This could return an Archive value
-	// Does this have to do with that "config" attribute I was having problems with?
-	return efdLoreHound.GameToggleModEnabled(false);
-}
+function OnModuleDeactivated():Archive { return efdLoreHound.GameToggleModEnabled(false); }
 
 // Called just before the game unloads the clip
 // - When the user logs out, or returns to character selection (unconfirmed)
-function OnUnload():Void {
-}
+function OnUnload():Void { delete efdLoreHound; } // May as well be tidy

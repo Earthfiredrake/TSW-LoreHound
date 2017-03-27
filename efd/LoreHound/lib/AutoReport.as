@@ -2,14 +2,9 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import gfx.utils.Delegate;
-
 import com.GameInterface.DistributedValue;
-import com.GameInterface.Game.Character;
+import com.GameInterface.Game.Character; // To prevent self mailing
 import com.GameInterface.Tradepost;
-import com.GameInterface.Utils;
-import com.Utils.Format;
-import com.Utils.Signal;
 
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
@@ -24,21 +19,22 @@ import efd.LoreHound.lib.Mod;
 // Queued reports, and a list of report IDs sent are stored as a Config object, and can be persisted by the mod if desired.
 
 class efd.LoreHound.lib.AutoReport {
+	private function AutoReport() { } // Static class, don't really need more than one/mod
 
-	public function AutoReport(modName:String, modVer:String, devCharName:String) {
+	public static function Initialize(modName:String, modVer:String, devCharName:String):ConfigWrapper {
 		MailHeader = modName + ": Automated report (" + modVer + ")";
 		Recipient = devCharName;
+		MailTrigger = DistributedValue.Create("tradepost_window");
 
-		_Config = new ConfigWrapper();
+		Config = new ConfigWrapper();
 		Config.NewSetting("Enabled", false); // For privacy reasons, this system should be opt-in
 	 	Config.NewSetting("QueuedReports", new Array());
 		Config.NewSetting("PriorReports", new Array());
-		Config.SignalValueChanged.Connect(ConfigChanged, this);
-
-		MailTrigger = DistributedValue.Create("tradepost_window");
+		Config.SignalValueChanged.Connect(ConfigChanged);
+		return Config;
 	}
 
-	private function ConfigChanged(setting:String, newValue, oldValue):Void {
+	private static function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch (setting) {
 			case "Enabled":
 				IsEnabled = undefined; // Update enabled state without changing mod state
@@ -47,7 +43,7 @@ class efd.LoreHound.lib.AutoReport {
 		}
 	}
 
-	public function AddReport(report:Object):Boolean {
+	public static function AddReport(report:Object):Boolean {
 		if (!IsModActive) { TraceMsg("Inactive mod is queuing reports!"); }
 		if (!IsEnabled) {
 			// Don't build up queue while system is disabled
@@ -65,9 +61,9 @@ class efd.LoreHound.lib.AutoReport {
 				if (comparator(array[i])) { return true; }
 			}
 			return false;
-		}
-		var queue:Array = Queue;
-		if (contains(Archive, function (id):Boolean { return id == report.id; }) ||
+		};
+		var queue:Array = Config.GetValue("QueuedReports");
+		if (contains(Config.GetValue("PriorReports"), function (id):Boolean { return id == report.id; }) ||
 			contains(queue, function (pending):Boolean { return pending.id == report.id; })) {
 				TraceMsg("Report ID #" + report.id + " is already pending or sent.");
 				return false;
@@ -79,7 +75,7 @@ class efd.LoreHound.lib.AutoReport {
 	}
 
 	// To reduce config file size, clean out any pending or sent reports that are no longer required
-	public function CleanupReports(removalPredicate:Function):Void {
+	public static function CleanupReports(removalPredicate:Function):Void {
 		var cleanArray:Array = new Array();
 		var sourceArray:Array = Config.GetValue("PriorReports");
 		for (var i:Number = 0; i < sourceArray.length; ++i) {
@@ -100,15 +96,15 @@ class efd.LoreHound.lib.AutoReport {
 		TraceMsg("Queued report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
 	}
 
-	private function TriggerReports(dv:DistributedValue):Void {
+	private static function TriggerReports(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
 			// Only try to send when the bank is opened
 			SendReport(0);
 		}
 	}
 
-	private function SendReport(attempt:Number):Void {
-		var queue:Array = Queue;
+	private static function SendReport(attempt:Number):Void {
+		var queue:Array = Config.GetValue("QueuedReports");
 		if (queue.length > 0) {
 			// Compose the automated report message, splitting it if it would exceed our max mail length
 			var msg:String = MailHeader;
@@ -117,14 +113,14 @@ class efd.LoreHound.lib.AutoReport {
 			}
 
 			// Request delivery confirmation
-			Tradepost.SignalMailResult.Connect(VerifyReceipt, this);
-			// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0.
-			//   While a FiFo message is displayed by sending mail, it is easy to overlook and does not tell you who the recipient was.
+			Tradepost.SignalMailResult.Connect(VerifyReceipt);
+			// WARNING: The third parameter in this function is the pax to include in the mail. This must ALWAYS be 0
+			//   While a FiFo message is displayed by sending mail, it is easy to overlook and does not tell you who the recipient was
 			if (!Tradepost.SendMail(Recipient, msg, 0)) {
 				// Failed to send, will delay and retry up to max attempts
 				ReportsSent = 0;
 				if (attempt < MaxRetries) {
-					setTimeout(Delegate.create(this, SendReport), RetryDelay, attempt + 1);
+					setTimeout(SendReport, RetryDelay, attempt + 1);
 				} else {
 					ChatMsg(LocaleManager.GetString("AutoReport", "FailSend"));
 				}
@@ -132,17 +128,17 @@ class efd.LoreHound.lib.AutoReport {
 		}
 	}
 
-	private function VerifyReceipt(success:Boolean, error:String):Void {
+	private static function VerifyReceipt(success:Boolean, error:String):Void {
 		// We only care about our own messages, not about other mail
 		// Assuming that this is triggered immediately after the send
 		// Problematic if there could be multiple mails in transit
 		if (ReportsSent > 0) {
 			// Detach this handler
-			Tradepost.SignalMailResult.Disconnect(VerifyReceipt, this);
+			Tradepost.SignalMailResult.Disconnect(VerifyReceipt);
 			if (success) {
 				// Record and clear sent reports
-				var queue:Array = Queue;
-				var sent:Array = Archive;
+				var queue:Array = Config.GetValue("QueuedReports");
+				var sent:Array = Config.GetValue("PriorReprots");
 				for (var i:Number = 0; i < ReportsSent; ++i) {
 					sent.push(queue[i].id);
 				}
@@ -153,7 +149,7 @@ class efd.LoreHound.lib.AutoReport {
 				// Continue sending reports as needed
 				if (queue.length > 0) {
 					// Delay to avoid triggering flow restrictions
-					setTimeout(Delegate.create(this, SendReport), RetryDelay, 0);
+					setTimeout(SendReport, RetryDelay, 0);
 				} else {
 					ChatMsg(LocaleManager.GetString("AutoReport", "Submitted"));
 				}
@@ -161,56 +157,52 @@ class efd.LoreHound.lib.AutoReport {
 				// Reset index, and keep remaining reports to retry later
 				ReportsSent = 0;
 				ChatMsg(LocaleManager.GetString("AutoReport", "FailDeliver"));
-				ChatMsg(Format.Printf(LocaleManager.GetString("AutoReport", "ErrorDesc"), error), true);
+				ChatMsg(LocaleManager.FormatString("AutoReport", "ErrorDesc", error), true);
 			}
 		}
 	}
 
-	private function ChatMsg(msg:String, suppressLeader:Boolean):Void {
+	private static function ChatMsg(msg:String, suppressLeader:Boolean):Void {
 		if (!suppressLeader) {
 			Mod.ChatMsgS("AutoReport - " + msg, suppressLeader);
 		} else { Mod.ChatMsgS(msg, suppressLeader); }
 	}
 
-	private function TraceMsg(msg:String, suppressLeader:Boolean):Void {
+	private static function TraceMsg(msg:String, suppressLeader:Boolean):Void {
 		if (!suppressLeader) {
 			Mod.TraceMsgS("AutoReport - " + msg, suppressLeader);
 		} else { Mod.TraceMsgS(msg, suppressLeader); }
 	}
 
-	public function get IsEnabled():Boolean {
+	public static function get IsEnabled():Boolean {
 		// This is only internal state
 		return Config.GetValue("Enabled") && Character.GetClientCharacter().GetName() != Recipient;
 	}
 
-	public function set IsEnabled(modEnabled:Boolean) {
+	public static function set IsEnabled(modEnabled:Boolean):Void {
 		// These include mod enabled states
 		if (modEnabled != undefined) { IsModActive = modEnabled; }
 		if (IsModActive && IsEnabled) {
-			MailTrigger.SignalChanged.Connect(TriggerReports, this);
+			MailTrigger.SignalChanged.Connect(TriggerReports);
 		} else {
-			MailTrigger.SignalChanged.Disconnect(TriggerReports, this);
+			MailTrigger.SignalChanged.Disconnect(TriggerReports);
 		}
 	}
 
-	public function get HasReportsPending():Boolean {
+	public static function get HasReportsPending():Boolean {
 		// Does not care about mod state, only internal state
-		return IsEnabled && Queue.length > 0;
+		return IsEnabled && Config.GetValue("QueuedReports").length > 0;
 	}
 
-	public function get Config():ConfigWrapper { return _Config; }
-	public function get Queue():Array { return Config.GetValue("QueuedReports"); }
-	public function get Archive():Array { return Config.GetValue("PriorReports"); }
-
-	private var IsModActive:Boolean;
-	private var _Config:ConfigWrapper;
+	private static var IsModActive:Boolean;
+	private static var Config:ConfigWrapper;
 
 	// Mailing information
-	private var MailHeader:String;
-	private var Recipient:String;
+	private static var MailHeader:String;
+	private static var Recipient:String;
 
-	private var ReportsSent:Number = 0; // Counts the number of reports sent in the last mail
-	private var MailTrigger:DistributedValue;
+	private static var ReportsSent:Number = 0; // Counts the number of reports sent in the last mail
+	private static var MailTrigger:DistributedValue;
 
 	private static var MaxRetries = 5;
 	private static var RetryDelay = 10;

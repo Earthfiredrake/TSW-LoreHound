@@ -12,13 +12,10 @@ import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
 import com.GameInterface.Utils;
 import com.Utils.Archive;
-import com.Utils.Format;
-import com.Utils.Signal;
 import GUIFramework.SFClipLoader;
 
 import efd.LoreHound.lib.etu.MovieClipHelper;
 
-import efd.LoreHound.gui.ConfigWindowContent;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.ModIcon;
@@ -53,16 +50,23 @@ class efd.LoreHound.lib.Mod {
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		if (modInfo.Name == undefined || modInfo.Name == "") {
 			ModName = "Unnamed";
+			// Dev message, not localized
 			ChatMsg("Mod requires a name!");
 		} else { ModName = modInfo.Name; }
 		if (modInfo.Version == undefined || modInfo.Version == "") {
 			modInfo.Version = "0.0.0";
+			// Dev message, not localized
 			ChatMsg("Mod expects a version number!");
 		}
-		DebugTrace = modInfo.Trace;
 		HostMovie = hostMovie;
 
-		SystemsLoaded = { Config: false, Strings: false }
+		GlobalDebugDV = DistributedValue.Create(DVPrefix + "DebugMode");
+		GlobalDebugDV.SignalChanged.Connect(SetDebugMode, this);
+		DebugTrace = modInfo.Trace || GlobalDebugDV.GetValue();
+
+		SystemsLoaded = { Config: false, LocalizedText: false }
+		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
+		ModLoadedDV.SetValue(false);
 
 		ChatMsgS = Delegate.create(this, ChatMsg);
 		TraceMsgS = Delegate.create(this, TraceMsg);
@@ -86,15 +90,18 @@ class efd.LoreHound.lib.Mod {
 		}
 
 		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
-
-		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
-		ModLoadedDV.SetValue(false);
 	}
 
-	private function StringsLoaded():Void {
-		TraceMsg("Localized strings loaded");
-		SystemsLoaded.Strings = true;
-		CheckLoadComplete();
+	private function StringsLoaded(success:Boolean):Void {
+		if (success) {
+			TraceMsg("Localized strings loaded");
+			SystemsLoaded.LocalizedText = true;
+			CheckLoadComplete();
+		} else {
+			// Localization support unavailable, not localized
+			ChatMsg("Mod cannot be enabled", true);
+			Config.SetValue("Enabled", false);
+		}
 	}
 
 	private function InitializeModConfig(modInfo:Object):Void {
@@ -110,18 +117,22 @@ class efd.LoreHound.lib.Mod {
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
 	}
 
-	private function ConfigLoaded(initialLoad:Boolean):Void {
-		if (initialLoad) {
-			TraceMsg("Config loaded");
-			SystemsLoaded.Config = true;
-			CheckLoadComplete();
-		}
+	private function ConfigLoaded():Void {
+		TraceMsg("Config loaded");
+		SystemsLoaded.Config = true;
+		CheckLoadComplete();
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
 			case "Enabled":
-				Enabled = newValue;
+				if (newValue && SystemsLoaded != undefined) {
+					ChatMsg("Failed to load required information, and cannot be enabled");
+					for (var key:String in SystemsLoaded) {
+						if (!SystemsLoaded[key]) { ChatMsg("Missing: " + key, true); }
+					}
+					Config.SetValue("Enabled", false);
+				} else { Enabled = newValue; }
 				break;
 			default: // Setting does not push changes (is checked on demand)
 				break;
@@ -135,7 +146,7 @@ class efd.LoreHound.lib.Mod {
 				// Defer the actual binding to config until things are set up
 				ConfigWindowClip.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
 
-				var LocaleTitle:String = Format.Printf(LocaleManager.GetString("GUI", "ConfigWindowTitle"), ModName);
+				var LocaleTitle:String = LocaleManager.FormatString("GUI", "ConfigWindowTitle", ModName);
 				ConfigWindowClip.SetTitle(LocaleTitle, "left");
 				ConfigWindowClip.SetPadding(10);
 				ConfigWindowClip.SetContent(ModName + "ConfigWindowContent");
@@ -170,20 +181,16 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function ConfigWindowLoaded():Void {
-		ConfigWindowClip.m_Content.AttachConfig(Config);
-	}
+	private function ConfigWindowLoaded():Void { ConfigWindowClip.m_Content.AttachConfig(Config); }
 
 	private static function ReturnWindowToVisibleBounds(window:MovieClip, defaults:Point):Void {
 		var visibleBounds = Stage.visibleRect;
-		if (window._x < 0) {
-			window._x = 0;
-		} else if (window._x + window.m_Background._width > visibleBounds.width) {
+		if (window._x < 0) { window._x = 0; }
+		else if (window._x + window.m_Background._width > visibleBounds.width) {
 			window._x = visibleBounds.width - window.m_Background._width;
 		}
-		if (window._y < defaults.y) {
-			window._y = defaults.y;
-		} else if (window._y + window.m_Background._height > visibleBounds.height) {
+		if (window._y < defaults.y) { window._y = defaults.y; }
+		else if (window._y + window.m_Background._height > visibleBounds.height) {
 			window._y = visibleBounds.height - window.m_Background._height;
 		}
 	}
@@ -194,9 +201,7 @@ class efd.LoreHound.lib.Mod {
 		ConfigWindowClip._yscale = scale;
 	}
 
-	private function CloseConfigWindow():Void {
-		ShowConfigDV.SetValue(false);
-	}
+	private function CloseConfigWindow():Void { ShowConfigDV.SetValue(false); }
 
 	private function CheckLoadComplete():Void {
 		for (var key:String in SystemsLoaded) {
@@ -207,9 +212,9 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function LoadComplete():Void {
+		delete SystemsLoaded; // No longer required
 		UpdateInstall();
 		ModLoadedDV.SetValue(true);
-		delete SystemsLoaded; // No longer required
 	}
 
 	private function UpdateInstall():Void {
@@ -226,16 +231,16 @@ class efd.LoreHound.lib.Mod {
 		var newVersion:String = Config.GetDefault("Version");
 		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			var changeStr:String;
+			var changeTag:String;
 			if (versionChange > 0) {
-				changeStr = LocaleManager.GetString("General", "Update");
+				changeTag = "Update";
 				DoUpdate(newVersion, oldVersion);
 			} else {
-				changeStr = LocaleManager.GetString("General", "Revert");
+				changeTag = "Revert";
 			}
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
-			ChatMsg(Format.Printf(changeStr, newVersion));
+			ChatMsg(LocaleManager.FormatString("General", changeTag, newVersion));
 		}
 	}
 
@@ -287,6 +292,8 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
+	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
+
 	/// Text output utility functions
 	// Leader text should not be supressed on initial message for any particular notification, only on immediately subsequent lines
 	public function ChatMsg(message:String, suppressLeader:Boolean):Void {
@@ -299,9 +306,7 @@ class efd.LoreHound.lib.Mod {
 		if (DebugTrace) { ChatMsg("Trace - " + message, supressLeader);	}
 	}
 
-	public function LogMsg(message:String):Void {
-		Log.Error(ModName, message);
-	}
+	public function LogMsg(message:String):Void { Log.Error(ModName, message); }
 
 	// Static delegates to the ones above
 	// So other components can access them without needing a reference
@@ -314,7 +319,7 @@ class efd.LoreHound.lib.Mod {
 	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
 	// If positive, then the first version is higher, negative means first version was lower
 	// A return of 0 indicates that the versions were the same
-	public static function CompareVersions(firstVer:String, secondVer:String) : Number {
+	public static function CompareVersions(firstVer:String, secondVer:String):Number {
 		// DEPRECIATED(v0.5.0): "v" prefix on version strings
 		if (firstVer.charAt(0) == "v") { firstVer = firstVer.substr(1); }
 		if (secondVer.charAt(0) == "v") { secondVer = secondVer.substr(1); }
@@ -329,7 +334,6 @@ class efd.LoreHound.lib.Mod {
 					// One's alpha and the other is beta, all other values the same
 					return first[i] == "alpha" ? -4 : 4;
 				}
-				break;
 			}
 		}
 		// Version number is the same, but one may still have a pre-release tag
@@ -362,7 +366,7 @@ class efd.LoreHound.lib.Mod {
 	public function get ModLoadEventVar():String { return DVPrefix + ModName + "IsLoaded"; }
 	public function get ConfigWindowVar():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
 
-	 // Customize based on mod authorship
+	// Customize based on mod authorship
 	public static var DevName:String = "Peloprata";
 	public static var DVPrefix:String = "efd"; // Retain this if making a compatible fork of an existing mod
 
@@ -370,7 +374,7 @@ class efd.LoreHound.lib.Mod {
 
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data
-	private var ModLoadedDV:DistributedValue;
+	private var ModLoadedDV:DistributedValue; // Provided as a hook for any mod integration features
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
@@ -390,4 +394,5 @@ class efd.LoreHound.lib.Mod {
 	private var ViperDV:DistributedValue;
 
 	private var DebugTrace:Boolean;
+	private var GlobalDebugDV:DistributedValue; // Used to quickly toggle trace or other debug features of all efd mods
 }

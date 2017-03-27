@@ -10,9 +10,7 @@ import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
 
 class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
-	private function LoreCategorySettingGroup() {
-		super();
-	}
+	private function LoreCategorySettingGroup() { super(); } // Indirect construction only
 
 	private function configUI():Void {
 		super.configUI();
@@ -25,7 +23,7 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 
 	public function Init(loreType:Number, config:ConfigWrapper):Void {
 		Type = loreType;
-		GroupTitle.text = "SettingGroup"
+		GroupTitle.text = "SettingGroup";
 		switch(loreType) {
 		case LoreHound.ef_LoreType_Placed:
 			GroupTitle.text += "Placed";
@@ -50,7 +48,7 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 		CBChatEnabled.addEventListener("select", this, "CBChat_Select");
 	}
 
-	private function ConfigUpdated(setting:String, newValue, oldValue) {
+	private function ConfigUpdated(setting:String, newValue, oldValue):Void {
 		if (setting == "FifoLevel" || setting == undefined) {
 			CBFifoEnabled.selected = (Config.GetValue("FifoLevel") & Type) == Type;
 		}

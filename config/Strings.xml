@@ -8,7 +8,7 @@
 <!-- The mod name appearing in front of chat strings is internal to the mod, and not affected here -->
 <!-- Category names and string tags are referenced from the mod, and should not be changed -->
 <!-- Strings themselves should be compatible with boost::format for inserting further data -->
-<!-- See http://www.boost.org/doc/libs/1_63_0/libs/format/doc/format.html for details (TSW likely uses earlier version, unsure which)-->
+<!-- See http://www.boost.org/doc/libs/1_63_0/libs/format/doc/format.html#syntax for details (TSW likely uses earlier version, unsure which)-->
 <!-- For customized strings, replacement values may be skipped or duplicated without issue -->
 <!-- Adding more replacement values than provided is not reccomended (at best it would do nothing) -->
 <!-- Extra parameters are detailed after the string. Debug and trace messages are not localized -->
@@ -100,8 +100,10 @@
 				en="Invalid lore ID" /> <!-- Name used if lore could not be found with provided id -->
 		<String tag="IncompleteDynel"
 				en="Incomplete data, rescan failed" /> <!-- Name used if no id was available, and not likely to be event lore -->
+		<String tag="TimestampInfo"
+				en="[%|1$02|:%|2$02|] " /> <!-- 1$ = hours, 2$ = minutes; default string zero pads to two digits -->
 		<String tag="PositionInfo"
-				en="%1% (%2%, %4%, %3%)" /> <!-- %1% = Playfield name (translated by game); %2%,%3%,%4% = position vector x,y,z (note y is vertical) -->
+				en="%1% (%2%, %4%, %3%)" /> <!-- %1% = Playfield name (translated by game); %2%,%3%,%4% = position vector x,y,z (note values are rounded to nearest integer and y is vertical) -->
 		<String tag="CategoryInfo"
 				en="Category ID: %1% Supergroup: %2%" /> <!-- Values used in categorization, related to game's localization system -->
 		<String tag="InstanceInfo"

@@ -5,15 +5,11 @@
 import flash.filters.DropShadowFilter;
 import flash.geom.Point;
 
-import gfx.utils.Delegate;
-
 import com.GameInterface.DistributedValue;
 import com.GameInterface.Tooltip.TooltipData;
 import com.GameInterface.Tooltip.TooltipInterface;
 import com.GameInterface.Tooltip.TooltipManager;
-import com.Utils.Format;
 import com.Utils.GlobalSignal;
-import GUIFramework.SFClipLoader;
 
 import efd.LoreHound.lib.etu.GemController;
 
@@ -99,9 +95,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	public var UpdateState:Function = DefaultUpdateState;
 
-	private function DefaultUpdateState() {
-		gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive");
-	}
+	private function DefaultUpdateState():Void { gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive"); }
 
 	/// Layout and GEM handling
 	private function UpdateScale():Void {
@@ -123,9 +117,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
-	private function ChangePosition(event:Object):Void {
-		Config.SetValue("IconPosition", new Point(_x, _y));
-	}
+	private function ChangePosition(event:Object):Void { Config.SetValue("IconPosition", new Point(_x, _y)); }
 
 	private function ChangeScale(event:Object): Void {
 		var newScale:Number = Config.GetValue("IconScale") + event.delta * 5;
@@ -163,7 +155,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		data.m_MaxWidth = TooltipWidth; // The content does not affect the layout, so unless something that does (edge of screen perhaps?) gets in the way, this is how wide it will be
 
 		data.m_Title = "<font " + TooltipTitleFont + "><b>" + ModName + "</b></font>";
-		var credit:String = Format.Printf(LocaleManager.GetString("GUI", "TooltipCredit"), Config.GetValue("Version"), DevName);
+		var credit:String = LocaleManager.FormatString("GUI", "TooltipCredit", Config.GetValue("Version"), DevName);
 		data.m_SubTitle = "<font " + TooltipCreditFont + ">" + credit + "</font>";
 		data.m_Color = TooltipTitleColor;
 
@@ -191,7 +183,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	/// Trace Wrapper
-	private function TraceMsg(msg:String, supressLeader:Boolean) {
+	private function TraceMsg(msg:String, supressLeader:Boolean):Void {
 		if (!supressLeader) {
 			Mod.TraceMsgS("ModIcon - " + msg, supressLeader);
 		} else { Mod.TraceMsgS(msg, supressLeader); }

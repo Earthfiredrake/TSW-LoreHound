@@ -9,7 +9,6 @@
 import flash.geom.Point;
 
 import com.GameInterface.DistributedValue;
-import com.GameInterface.Utils;
 import com.Utils.Archive;
 import com.Utils.Signal;
 
@@ -55,7 +54,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	// Get a reference to the setting (value, defaultValue) tuple object
 	// Useful if a subcomponent needs to view but not change a small number of settings
 	// Hooking up ValueChanged event requires at least temporary access to Config object
-	public function GetSetting(key:String) {
+	public function GetSetting(key:String):Object {
 		if (Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
 		return Settings[key];
 	}
@@ -80,14 +79,14 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	// Leave state undefined to toggle a flag
-	public function SetFlagValue(key:String, flag:Number, state:Boolean) {
-		var flags = GetValue(key);
+	public function SetFlagValue(key:String, flag:Number, state:Boolean):Number {
+		var flags:Number = GetValue(key);
 		switch (state) {
 			case true: { flags |= flag; break; }
 			case false: { flags &= ~flag; break; }
 			case undefined: { flags ^= flag; break; }
 		}
-		SetValue(key, flags);
+		return SetValue(key, flags);
 	}
 
 	public function ResetValue(key:String):Void {
@@ -113,9 +112,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 			// The slightly faster reset call isn't worth two extra copies of all the defaults
 			return value;
 		}
-		if (value instanceof Point) {
-			return value.clone();
-		}
+		if (value instanceof Point) { return value.clone(); }
 		if (value instanceof Array) {
 			var clone = new Array();
 			for (var i:Number; i < value.length; ++i) {
@@ -189,7 +186,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	private function FromArchive(archive:Archive):Void {
-		var initialLoad:Boolean = !IsLoaded;
 		if (archive != undefined) {
 			for (var key:String in Settings) {
 				var element:Object = archive.FindEntry(key,null);
@@ -213,8 +209,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		} else {
 			CurrentArchive = new Archive(); // Nothing to load, but we tried
 		}
-		SignalConfigLoaded.Emit(initialLoad);
-		return;
+		SignalConfigLoaded.Emit();
 	}
 
 	private function Unpack(element:Object, key:String) {
@@ -241,8 +236,8 @@ class efd.LoreHound.lib.ConfigWrapper {
 					return value;
 				default:
 				// Archive type is not supported
-				// (Caused by reversion when a setting has had its type changed
-				//  A bit late to be working this out though)
+				//   Caused by reversion when a setting has had its type changed
+				//   A bit late to be working this out though
 					TraceMsg("Setting '" + key + "' was saved with a type not supported by this version. Default values will be used.");
 					return null;
 			}
@@ -250,7 +245,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return element; // Basic type
 	}
 
-	private function TraceMsg(msg:String, supressLeader:Boolean) {
+	private function TraceMsg(msg:String, supressLeader:Boolean):Void {
 		if (!supressLeader) {
 			Mod.TraceMsgS("Config - " + msg, supressLeader);
 		} else { Mod.TraceMsgS(msg, supressLeader); }
@@ -273,7 +268,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
-	public var SignalConfigLoaded:Signal; // (initialLoad:Boolean):Void // Parameter is true when the config is loaded for the very first time
+	public var SignalConfigLoaded:Signal;
 
  	// The distributed value archive saved into the game settings which contains this config setting
 	// Usually only has a value for the root of the config tree

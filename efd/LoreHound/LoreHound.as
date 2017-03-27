@@ -2,21 +2,20 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import flash.geom.Point;
+import flash.geom.Point; // DEPRECIATED(v0.5.0: Required for update routine from previous release
 
 import gfx.utils.Delegate;
 
-import com.GameInterface.Chat;
+import com.GameInterface.Chat; // Actually FIFO messages
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Log;
 import com.GameInterface.Lore;
 import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
-import com.GameInterface.Utils;
+import com.GameInterface.Utils; // Actually chat messages
 import com.GameInterface.VicinitySystem;
-import com.GameInterface.WaypointInterface;
-import com.Utils.Format;
+import com.GameInterface.WaypointInterface; // Playfield change notifications
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -48,7 +47,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
 	public static var ef_Details_DynelId:Number = 1 << 2;
 	public static var ef_Details_Timestamp:Number = 1 << 3;
-	private static var ef_Details_StatDump:Number = 1 << 4; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined.
+	private static var ef_Details_StatDump:Number = 1 << 4; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined
 	private static var ef_Details_All:Number = (1 << 5) - 1;
 
 	// Flags for ongoing icon states
@@ -64,14 +63,14 @@ class efd.LoreHound.LoreHound extends Mod {
 		DumpToLog = false;
 		DetailStatRange = 1; // Start with the first million
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
-		SystemsLoaded.Categories = false;
+		SystemsLoaded.CategoryIndex = false;
 
 		TrackedLore = new Object();
 		WaypointInterface.SignalPlayfieldChanged.Connect(ClearTracking, this);
 
-		ReportManager = new AutoReport(ModName, Version, DevName);
+		var arConfig:ConfigWrapper = AutoReport.Initialize(ModName, Version, DevName);
 
-		InitializeConfig();
+		InitializeConfig(arConfig);
 		LoadLoreCategories();
 
 		Icon.UpdateState = function(stateFlag:Number, enable:Boolean) {
@@ -94,7 +93,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		TraceMsg("Initialized");
 	}
 
-	private function InitializeConfig():Void {
+	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Unknown);
@@ -110,16 +109,15 @@ class efd.LoreHound.LoreHound extends Mod {
 		// - Some fields are always included when detecting Unknown category lore, to help identify it
 		Config.NewSetting("Details", ef_Details_Location);
 
-		var autoReportConfig:ConfigWrapper = ReportManager.Config;
-		autoReportConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
-		Config.NewSetting("AutoReport", autoReportConfig);
+		arConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
+		Config.NewSetting("AutoReport", arConfig);
 	}
 
 	private function AutoReportConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
 			case "Enabled":
 			case "QueuedReports":
-				Icon.UpdateState(ef_IconState_Report, ReportManager.HasReportsPending);
+				Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
 				break;
 			default: break;
 		}
@@ -157,10 +155,16 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			delete IndexFile;
 			TraceMsg("Lore category data loaded");
-			SystemsLoaded.Categories = true;
+			SystemsLoaded.CategoryIndex = true;
 			CheckLoadComplete();
 		} else {
-			TraceMsg("Failed to load category index");
+			// Loading is asynchronous, not localized
+			// Currently localization appears to load first, but I won't count on it
+			// There's also the possibility that it failed to load
+			// Could check SystemsLoaded, but seems excessive for what should be a disabled state
+			ChatMsg("Failed to load category index");
+			ChatMsg("Mod cannot be enabled", true);
+			Config.SetValue("Enabled", false);
 		}
 	}
 
@@ -176,7 +180,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
-		ReportManager.CleanupReports(IsCategorizedLore);
+		AutoReport.CleanupReports(IsCategorizedLore);
 
 		// Version specific updates
 		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
@@ -188,9 +192,9 @@ class efd.LoreHound.LoreHound extends Mod {
 			oldPoint = Config.GetValue("IconPosition");
 			Config.SetValue("IconPosition", new Point(oldPoint.x, oldPoint.y));
 		}
-		// After v0.5.0-beta: Points now saved using built in support from Archive
-		//   Should not require additional update code
 		if (CompareVersions("0.5.0.beta", oldVersion) >= 0) {
+			// Points now saved using built in support from Archive
+			//   Should not require additional update code
 			// Enabled state of autoreport system is now internal to that config group
 			if (Config.GetValue("SendReports")) {
 				Config.GetValue("AutoReport").SetValue("Enabled", true);
@@ -204,7 +208,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function Activate():Void {
-		ReportManager.IsEnabled = true; // Only updates this component's view of the mod state
+		AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
@@ -216,20 +220,20 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Detection notices between the deactivate-activate pair have a strange habit of providing the correct LoreId, but being unable to link to an actual lore object
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
-		ReportManager.IsEnabled = false; // Only updates this component's view of the mod state
+		AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 
 	private function TopbarRegistered():Void {
 		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		Icon.UpdateState(ef_IconState_Report, ReportManager.HasReportsPending);
+		Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
 	}
 
 	// Override to add timestamps before the lead text
-	private function ChatMsg(message:String, suppressLeader:Boolean, forceTimestamp:Boolean) {
+	private function ChatMsg(message:String, suppressLeader:Boolean, forceTimestamp:Boolean):Void {
 		var timestamp:String = "";
 		if (forceTimestamp) {
 			var time:Date = new Date();
-			timestamp = Format.Printf("[%02d:%02d] ", time.getHours(), time.getMinutes());
+			timestamp = LocaleManager.FormatString("LoreHound", "TimestampInfo", time.getHours(), time.getMinutes());
 		}
 		var lead:String = suppressLeader ? "" : "<font color='" + ChatLeadColor + "'>" + ModName + "</font>: ";
 		Utils.PrintChatText(timestamp + lead + message);
@@ -342,7 +346,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			return false;
 		}
 		if ((Config.GetValue("FifoLevel") & loreType) != loreType && (Config.GetValue("ChatLevel") & loreType) != loreType &&
-			(loreType != ef_LoreType_Unknown || !ReportManager.IsEnabled) && !DumpToLog) {
+			(loreType != ef_LoreType_Unknown || !AutoReport.IsEnabled) && !DumpToLog) {
 			return false; // No notification to be made, don't bother generating strings
 		}
 		return true;
@@ -357,7 +361,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		var loreId:Number = TrackedLore[despawnedId];
 		// Conform to the player's choice of notification on unclaimed lore, should they have left it unclaimed
 		if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
-			var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId); //
+			var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId);
 			DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
 		}
 		delete TrackedLore[despawnedId];
@@ -397,7 +401,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Notification and message formatting
 
-	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel) {
+	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel):Void {
 		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(e_Stats_LoreId, 2), dynel, categorizationId);
 		var detailStrings:Array = GetDetailStrings(loreType, dynel);
 		DispatchMessages(messageStrings, loreType, detailStrings, categorizationId);
@@ -423,10 +427,10 @@ class efd.LoreHound.LoreHound extends Mod {
 				typeString = "Drop";
 				break;
 			case ef_LoreType_Despawn:
-				typeString = "Despawn"
+				typeString = "Despawn";
 				break;
 			case ef_LoreType_Unknown:
-				typeString = "Unknown"
+				typeString = "Unknown";
 				break;
 			default:
 				// It should be impossible for the game data to trigger this state
@@ -434,8 +438,8 @@ class efd.LoreHound.LoreHound extends Mod {
 				TraceMsg("Error, lore type defaulted: " + loreType);
 				return;
 		}
-		messageStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", typeString + "Fifo"), loreName));
-		messageStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", typeString + "Chat"), loreName));
+		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Fifo", loreName));
+		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
 		messageStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
 		if (DumpToLog && dynel != undefined) {
 			var pos:Vector3 = dynel.GetPosition(0);
@@ -476,7 +480,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			for (var i:Number = 0; i < parentNode.m_Children.length; ++i) {
 				var childId:Number = parentNode.m_Children[i].m_Id;
 				if (childId == loreId) {
-					return Format.Printf(LocaleManager.GetString("LoreHound", "LoreName"), parentNode.m_Name, catCode, entryNumber);
+					return LocaleManager.FormatString("LoreHound", "LoreName", parentNode.m_Name, catCode, entryNumber);
 				}
 				if (Lore.GetTagViewpoint(childId) == loreSource) {
 					++entryNumber;
@@ -515,8 +519,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Y is being listed last because it's the vertical component, and most concern themselves with map coordinates (x,z)
 			var pos:Vector3 = dynel.GetPosition(0);
 			var playfield:String = LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID());
-			var posStr:String = LocaleManager.GetString("LoreHound", "PositionInfo");
-			detailStrings.push(Format.Printf(posStr, playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
+			detailStrings.push(LocaleManager.FormatString("LoreHound", "PositionInfo", playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
 		}
 		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
 			var formatStr:String = dynel.GetName();
@@ -526,10 +529,10 @@ class efd.LoreHound.LoreHound extends Mod {
 				var str = ids[i];
 				ids[i] = str.substring(str.indexOf('"') + 1, str.length - 1);
 			}
-			detailStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", "CategoryInfo"), ids[0], ids[1]));
+			detailStrings.push(LocaleManager.FormatString("LoreHound", "CategoryInfo", ids[0], ids[1]));
 		}
 		if ((details & ef_Details_DynelId) == ef_Details_DynelId) {
-			detailStrings.push(Format.Printf(LocaleManager.GetString("LoreHound", "InstanceInfo"), dynel.GetID().toString()));
+			detailStrings.push(LocaleManager.FormatString("LoreHound", "InstanceInfo", dynel.GetID().toString()));
 		}
 		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
 			// Fishing expedition, trying to find anything potentially useful
@@ -560,7 +563,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state
 			var report:String = messageStrings[2];
 			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
-			ReportManager.AddReport({ id: categorizationId, text: report });
+			AutoReport.AddReport({ id: categorizationId, text: report });
 		}
 		if (DumpToLog && messageStrings.length > 3) {
 			LogMsg(messageStrings[3]);
@@ -590,5 +593,4 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
 	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
-	private var ReportManager:AutoReport;
 }

@@ -25,7 +25,6 @@ Version next
   + Spoiler warning: Descriptive comments may ruin some surprises
 + Teach the hound a new language, or just customize what he says
   + XML file for text (strings) has been added, with some support for localization (actual localization not included)
-  + Has issues
 + Install process has recovered from amnesia, no longer forgets to save settings
 + Unknown lore id count: 7 (still)
 

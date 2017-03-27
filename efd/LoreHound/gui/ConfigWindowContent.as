@@ -2,8 +2,9 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import com.Components.WindowComponentContent;
 import gfx.controls.CheckBox;
+
+import com.Components.WindowComponentContent;
 
 import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.ConfigWrapper;
@@ -11,9 +12,7 @@ import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
 
 class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
-	public function ConfigWindowContent() {
-		super();
-	}
+	private function ConfigWindowContent() { super(); } // Indirect construction only
 
 	private function configUI():Void {
 		super.configUI();
