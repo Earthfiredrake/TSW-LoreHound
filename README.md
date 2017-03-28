@@ -31,6 +31,8 @@ All settings are saved account wide and will be shared across all characters. If
 ## Installation
 Any packaged releases can be installed by copying the contents into [Game Directory]\Data\Gui\Customized\Flash and restarting the client.
 
+When upgrading, existing .bxml files in the LoreHound directory should be deleted to ensure changes in the .xml files are loaded (whichever is newer seems to take precedence).
+
 The update system *should* carry forward settings from v0.4.0-beta onwards. However, v1.0.x will be the last release to support upgrades from the v0.x pre-release line. Starting with v1.1.0 directly upgrading from versions prior to v1.0.0 may result in settings being lost, reset, or potentially invalid.
 
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
@@ -39,16 +41,17 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 Version next
 + Options menu no longer possessed by a gaki, you can now esc from it
 + Can timestamp detections without having to timestamp all of System chat
+  + Timestamps on System chat are annoying, displays a bunch of blank lines that would otherwise be ignored
 + Despawn tracking can now be disabled independently of lore drop detection
 + Shrouded lore deemed not special enough to have a category all to itself, has been recategorized as Placed Lore
 + XML file for primary categorization, the most basic data updates no longer require a flash compiler
-  + Spoiler warning: Descriptive comments may ruin some surprises
+  + Spoiler warning: Comments describing the magic numbers may ruin some surprises
 + Teach the hound a new language, or just customize what he says
   + XML file for text (strings) has been added, with some support for localization (actual localization not included)
   + Includes format strings for almost all alerts. If you don't like my colour selection or want the mod name in FIFO alerts, that can be customized too.
 + The mod does require both xml files to run, if it cannot find them it will disable itself.
-  + It would still *work* without either of the files, a missing index file severely limits detection, and the strings file is required to display alert messages.
-+ Install process has recovered from amnesia, no longer forgets to save default settings after fresh install.
+  + It would still *work* without either of the files, but a missing index file severely limits detection, and the strings file is required to display alert messages.
++ Install process has recovered from amnesia, remembers to save default settings after fresh install without being prompted.
 + Unknown lore id count: 7 (still)
 
 Version 0.6.0-beta
@@ -91,6 +94,8 @@ The following issues are known to exist in the most recent release:
   + "Fixing" this causes cascading strange behaviours as it detects things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
 + Long label customizations are truncated by the GUI
   + If I get any translations, I'll likely have to expand the space to fit them
++ An empty archive is left in the settings file after standardizing setting names
+  + This should have no effect other than being slightly untidy and will go away after v1.1.0
 
 ## Testing and Further Developments
 Features are mostly locked down for the v1.0.0 release. Some things that may be in subsequent releases:

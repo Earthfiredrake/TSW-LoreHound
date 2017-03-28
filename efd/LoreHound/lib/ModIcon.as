@@ -43,11 +43,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		TraceMsg("Icon created");
 	}
 
-	// Reset this object's values for topbar integration
+	// Reset this icon in preperation for topbar integration
+	// Topbar handles its own layout and effects so remove the defaults
 	public function ConfigureForTopbar():Void {
 		IsTopbarIcon = true;
 		_x = 0; _y = 0;
 		filters = [];
+		// Settings are not used as long as topbar is in use, no need to save them
+		Config.DeleteSetting("IconPosition");
+		Config.DeleteSetting("IconScale");
 		GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
 		ScreenResScaleDV.SignalChanged.Disconnect(UpdateScale, this);
 		delete ScreenResScaleDV;

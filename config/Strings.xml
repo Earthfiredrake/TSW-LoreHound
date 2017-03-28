@@ -15,12 +15,12 @@
 	<Category name="General"> <!-- Used for standard messages created as part of my mod framework -->
 		<String tag="Installed"
 				en="Has been installed" />
-		<String tag="InstalledSettings"
-				en="Please take a moment to review the settings" />
 		<String tag="Update"
 				en="Updated to v%1%" /> <!-- %1% = ModVersion -->
 		<String tag="Revert"
 				en="Reverted to v%1%" /> <!-- %1% = ModVersion -->
+		<String tag="ReviewSettings"
+				en="Please take a moment to review the settings" />
 		<String tag="ModMessagePrefix"
 				en="&lt;font color='#00FFFF'&gt;%1%&lt;/font&gt;: " /> <!-- %1% = ModName; Yeah it's ugly, xml is not great for storing html -->
 		<String tag="SubsystemMessagePrefix"

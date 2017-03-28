@@ -22,6 +22,7 @@ import efd.LoreHound.lib.Mod;
 class efd.LoreHound.lib.ConfigWrapper {
 	// ArchiveName is distributed value to be saved to for top level config wrappers
 	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
+	// Also leave it undefined if loading/saving to the game's provided config.
 	public function ConfigWrapper(archiveName:String) {
 		ArchiveName = archiveName;
 		Settings = new Object();
@@ -132,8 +133,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 		return value;
 	}
 
+	// Should almost always have an archive parameter,
+	// But a specified ArchiveName overrides the provided source
 	public function LoadConfig(archive:Archive):Void {
-		if (archive == undefined) { archive = DistributedValue.GetDValue(ArchiveName); }
+		if (ArchiveName != undefined) { archive = DistributedValue.GetDValue(ArchiveName); }
 		FromArchive(archive);
 	}
 

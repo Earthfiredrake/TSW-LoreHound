@@ -32,9 +32,9 @@ import efd.LoreHound.lib.ModIcon;
 class efd.LoreHound.lib.Mod {
 	// Mod info flags for GUI elements that are not provided
 	// Passed as GuiFlags member
-	public static var ef_ModInfo_Gui_NoIcon = 1 << 0;
-	public static var ef_ModInfo_Gui_NoConfigWindow = 1 << 1;
-	public static var ef_ModInfo_Gui_None = (1 << 2) - 1;
+	public static var ef_ModInfo_Gui_NoIcon:Number = 1 << 0;
+	public static var ef_ModInfo_Gui_NoConfigWindow:Number = 1 << 1;
+	public static var ef_ModInfo_Gui_None:Number = (1 << 2) - 1;
 
 	// The new archive loading scheme delays the loading of config settings until the activation stage
 	//   Config object definition can now be spread between the base and subclass constructors
@@ -259,7 +259,7 @@ class efd.LoreHound.lib.Mod {
 			Config.SetValue("Installed", true);
 			ChatMsg(LocaleManager.GetString("General", "Installed"));
 			if (ShowConfigDV != undefined) {
-				ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), { noPrefix : true });
+				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
 				// Decided against having the options menu auto open here
 				// Users might not realize that it's a one off event, and consider it a bug
 			}
@@ -273,6 +273,9 @@ class efd.LoreHound.lib.Mod {
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
 			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
+			if (ShowConfigDV != undefined) {
+				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
+			}
 		}
 	}
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <Root>
   <Value name="efdReleaseTheLoreHound" value="true"/>
+  <Archive name="efdLoreHoundConfig"/>
   <Archive name="LoreHoundConfig"/>
 </Root>
