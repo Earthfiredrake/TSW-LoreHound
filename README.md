@@ -2,31 +2,31 @@
 Notifications for lore drops in The Secret World, even if they're not visible.
 
 ## Overview
-Will detect and attempt to identify lore pickups when they enter or spawn within a ~20m radius around the player. Lore pickups have been roughly categorized into four groups.
+Will detect and attempt to identify lore pickups when they enter or spawn within a 20m radius around the player. Lore pickups have been roughly categorized into four groups.
 + Placed: Basic placed lore. Usually always available but also includes most event lore and a few that require extra work to reveal.
   + Lore for inactive events will not be fully identified and is excluded from detections by default. I'm hopeful that it will work with no changes when the related event is running.
   + Some event lore appears to have been removed from the game entirely rather than just disabled, and cannot be detected at all.
 + Triggered: Requires a particular condition to spawn but doesn't despawn (as far as I know).
-  + Commonly in instances that don't permit MUs, such as dungeons or replayable mission instances.
+  + Commonly in instances that don't permit MUs, such as dungeons or replayable mission areas.
 + Dropped: Mostly bestiary lore drops from monsters and triggered spawns. Will time out after a short period of time.
-  + A tracking option can inform you when these despawn, as long as you stay in the vicinity (unsure on exact range, though it's significantly larger than the initial detection radius).
+  + A tracking option can inform you when these despawn, as long as you stay in the vicinity (larger than the initial detection radius, likely over 100m).
     + Bestiary lore has a 5min timeout.
 	+ KD rare spawn drops have a 1min timeout.
 + Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
   + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble.
 
-Each group can independently have notifications output to either chat (System channel), or as FIFO alerts. By default, if it is able to precisely identify a lore that the character has not picked up, it will ignore it. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
+Each category can independently have notifications output to either chat (System channel) or as FIFO alerts. By default, if it is able to precisely identify a lore that the character has not picked up, it will ignore it. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
 + Timestamp: Puts a timestamp on detections, so you can know when the drop was without having to timestamp all of the System channel (revealing the mysteriously blank lines that it otherwise hides).
 + Location*: Map name and coordinate vector for the lore
   + The vector has been swizzled into [x,z,y] format, where y is the vertical coordinate
 + Category IDs*: Identifying information that is used to confirm and categorize detected objects.
   + Officially these have no relevance to the lore's behaviour; unofficially it's too conveniently coincidental.
 + Instance IDs: Identifier values for the particular pickup object in the world.
-  + Questionably useful, but staying in for the moment.
+  + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects.
 
 To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. If it fails to detect something that it should, particularly if the developers have added new content, the "New Game Content" option will activate additional testing on objects that would otherwise be ignored.
 
-All settings are saved account wide and will be shared across all characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this. It will not be able to transfer existing settings anyway.
+All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
 ## Installation
 Any packaged releases can be installed by copying the contents into [Game Directory]\Data\Gui\Customized\Flash and restarting the client.
@@ -38,7 +38,8 @@ The update system *should* carry forward settings from v0.4.0-beta onwards. Howe
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version next
+Version 1.0.0
++ An actual release version!
 + Options menu no longer possessed by a gaki, you can now esc from it
 + Can timestamp detections without having to timestamp all of System chat
   + Timestamps on System chat are annoying, displays a bunch of blank lines that would otherwise be ignored
@@ -98,7 +99,7 @@ The following issues are known to exist in the most recent release:
   + This should have no effect other than being slightly untidy and will go away after v1.1.0
 
 ## Testing and Further Developments
-Features are mostly locked down for the v1.0.0 release. Some things that may be in subsequent releases:
+This release is currently feature complete, but some things may arrive in subsequent releases:
 + Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations.
 + Depreciated features of the config system retained to permit smooth upgrades from pre-release versions will be removed starting with v1.1.0.
 + A second project is in the preliminary stages of development, and may have some integration possibilities with this one.
@@ -106,7 +107,7 @@ Features are mostly locked down for the v1.0.0 release. Some things that may be 
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
-There have been several significant changes since the previous version, and only limited testing. Defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata in game (by mail or pm), or submitted via the project page (Issues) or official forum post.
+As always, defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata in game (by mail or pm), via the github issues system, or in the official forum post.
 
 Source Repository: https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -117,7 +118,7 @@ Requires copies of the TSW and Scaleform CLIK APIs. Existing project files are c
 
 Master/Head is the most recent packaged release. Develop/Head is usually a commit or two behind my current test build. As much as possible I try to avoid regressions or unbuildable commits but new features may be incomplete and unstable and there may be additional debug code that will be removed or disabled prior to release.
 
-Once built, 'LoreHound.swf' and the contents of 'config' should be copied to the directory 'LoreHound' in the game's mod directory. '/reloadui' is sufficient to force the game to load an updated swf or mod data file, but changes to the game config files (LoginPrefs.xml and Modules.xml) will require a restart of the client.
+Once built, 'LoreHound.swf' and the contents of 'config' should be copied to the directory 'LoreHound' in the game's mod directory. '/reloadui' is sufficient to force the game to load an updated swf or mod data file, but changes to the game config files (LoginPrefs.xml and Modules.xml) will require a restart of the client and possible deletion of .bxml caches from the mod directory.
 
 ## License and Attribution
 Copyright (c) 2017 Earthfiredrake<br/>

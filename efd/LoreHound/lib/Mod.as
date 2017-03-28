@@ -113,9 +113,7 @@ class efd.LoreHound.lib.Mod {
 		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
 	}
 
-	private function ChangeModEnabled(dv:DistributedValue) {
-		Config.SetValue("Enabled", dv.GetValue());
-	}
+	private function ChangeModEnabled(dv:DistributedValue) { Config.SetValue("Enabled", dv.GetValue()); }
 
 	private function StringsLoaded(success:Boolean):Void {
 		if (success) {
@@ -136,9 +134,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 
-		if (ShowConfigDV != undefined) {
-			Config.NewSetting("ConfigWindowPosition", new Point(20, 30));
-		}
+		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
@@ -312,6 +308,10 @@ class efd.LoreHound.lib.Mod {
 			Icon = Icon.CopyToTopbar(HostMovie.Icon);
 			IsTopbarRegistered = true;
 			TopbarRegistered();
+			// Once registered, topbar DVs are no longer required
+			// If discrimination between Viper and Meeehr is needed, consider expanding TopbarRegistered to be an enum
+			delete MeeehrDV;
+			delete ViperDV;
 			TraceMsg("Topbar registration complete");
 		}
 		return IsTopbarRegistered;
@@ -319,14 +319,14 @@ class efd.LoreHound.lib.Mod {
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
 	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
-		EnabledByGame = state;
-		Enabled = state;
 		if (!state) {
 			CloseConfigWindow();
 			return Config.SaveConfig();
 		} else {
 			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
 		}
+		EnabledByGame = state;
+		Enabled = state;
 	}
 
 	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
@@ -466,7 +466,7 @@ class efd.LoreHound.lib.Mod {
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
-	private var ModEnabledDV:DistributedValue;
+	private var ModEnabledDV:DistributedValue; // Only reflects the player's setting, doesn't toggle everytime the game triggers it
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;

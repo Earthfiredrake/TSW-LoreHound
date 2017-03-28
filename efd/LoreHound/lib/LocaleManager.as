@@ -64,9 +64,9 @@ class efd.LoreHound.lib.LocaleManager {
 		SignalStringsLoaded.Emit(success);
 	}
 
+	private static var StringFile:XML;
 	public static var SignalStringsLoaded:Signal; // (success:Boolean):Void
 
 	private static var CurrentLocale:String;  // de, en, fr
-	private static var StringFile:XML;
 	private static var StringDict:Object;
 }

@@ -28,7 +28,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "0.8.0.alpha",
+		Version : "1.0.0",
 		ArchiveName : "LoreHoundConfig" // DEPRECIATED(v0.8.0): Renaming settings archive
 	}
 
@@ -93,9 +93,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	// DEPRECIATED(v0.8.0): Used to tweak ArchiveName in config wrapper for attempted upgrade without adding to the library interface
 	// A hack to circumvent private visibility at compile time
-	private static function ForceDirectSet(target:Object, property:String, value):Void {
-		target[property] = value;
-	}
+	private static function ForceDirectSet(target:Object, property:String, value):Void { target[property] = value; }
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
@@ -145,6 +143,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
+				break;
 		}
 	}
 
@@ -386,16 +385,18 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function LoreDespawned(type:Number, instance:Number):Void {
 		var despawnedId:String = new ID32(type, instance).toString();
 		var loreId:Number = TrackedLore[despawnedId];
-		// Conform to the player's choice of notification on unclaimed lore, should they have left it unclaimed
-		if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
-			var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId);
-			DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
+		if (loreId != undefined) { // Ensure the despawned dynel was tracked by this mod
+			// Conform to the player's choice of notification on unclaimed lore, should they have left it unclaimed
+			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
+				var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId);
+				DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
+			}
+			delete TrackedLore[despawnedId];
+			for (var key:String in TrackedLore) {
+				return; // There's still at least one lore being tracked, don't clear the icon
+			}
+			Icon.UpdateState(ef_IconState_Alert, false);
 		}
-		delete TrackedLore[despawnedId];
-		for (var key:String in TrackedLore) {
-			return; // There's still at least one lore being tracked, don't clear the icon
-		}
-		Icon.UpdateState(ef_IconState_Alert, false);
 	}
 
 	private function ClearTracking():Void {
