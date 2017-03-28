@@ -30,6 +30,12 @@ import efd.LoreHound.lib.ModIcon;
 //   "IconScale": Only used if topbar is not handling icon layout
 //   "ConfigWindowPosition"
 class efd.LoreHound.lib.Mod {
+	// Mod info flags for GUI elements that are not provided
+	// Passed as GuiFlags member
+	public static var ef_ModInfo_Gui_NoIcon = 1 << 0;
+	public static var ef_ModInfo_Gui_NoConfigWindow = 1 << 1;
+	public static var ef_ModInfo_Gui_None = (1 << 2) - 1;
+
 	// The new archive loading scheme delays the loading of config settings until the activation stage
 	//   Config object definition can now be spread between the base and subclass constructors
 	// The modData object has the following fields:
@@ -42,9 +48,14 @@ class efd.LoreHound.lib.Mod {
 	//     Enables debug trace messages
 	//   ArchiveName (optional, default undefined)
 	//     Name of archive to use for main config if overriding the one provided by the game
+	//   GuiFlags (optional, default undefined)
+	//     Set of flags to disable certain types of gui element. Valid flags are:
+	//       ef_ModInfo_Gui_NoIcon: Display no mod or topbar icon
+	//       ef_ModInfo_Gui_NoConfigWindow: Do not use a config window,
+	//         topbar integration will use tne ModEnabledDV as config target
+	//       ef_ModInfo_Gui_None: Same as setting all of the above, additionally removes HostMovie variable
 	//   IconName (optional, default Name + "Icon")
-	//     Library resource id to use as an icon
-	//     An empty string can be used if a mod doesn't wish to have an icon (or related settings)
+	//     Library resource id to use as an icon if not disabled
 	//   NoTopbar (optional, default false)
 	//     Disable integration with a VTIO compatible topbar mod (Viper's or Meeehr's)
 	//     Also useful for testing
@@ -54,6 +65,10 @@ class efd.LoreHound.lib.Mod {
 		ErrorMsg = Delegate.create(this, _ErrorMsg);
 		TraceMsg = Delegate.create(this, _TraceMsg);
 		LogMsg = Delegate.create(this, _LogMsg);
+
+		GlobalDebugDV = DistributedValue.Create(DVPrefix + "DebugMode");
+		GlobalDebugDV.SignalChanged.Connect(SetDebugMode, this);
+		DebugTrace = modInfo.Trace || GlobalDebugDV.GetValue();
 
 		if (modInfo.Name == undefined || modInfo.Name == "") {
 			ModName = "Unnamed";
@@ -65,34 +80,41 @@ class efd.LoreHound.lib.Mod {
 			// Dev message, not localized
 			ErrorMsg("Mod expects a version number");
 		}
-		HostMovie = hostMovie;
-
-		GlobalDebugDV = DistributedValue.Create(DVPrefix + "DebugMode");
-		GlobalDebugDV.SignalChanged.Connect(SetDebugMode, this);
-		DebugTrace = modInfo.Trace || GlobalDebugDV.GetValue();
 
 		SystemsLoaded = { Config: false, LocalizedText: false }
-		ModLoadedDV = DistributedValue.Create(ModLoadEventVar);
+		ModLoadedDV = DistributedValue.Create(ModLoadedVarName);
 		ModLoadedDV.SetValue(false);
+		ModEnabledDV = DistributedValue.Create(ModEnabledVarName);
+		ModEnabledDV.SetValue(true);
+		ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
 
 		LocaleManager.Initialize(ModName + "/Strings.xml");
 		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
 
-		EscStackTrigger = new EscapeStackNode();
-		ShowConfigDV = DistributedValue.Create(ConfigWindowVar);
-		ShowConfigDV.SetValue(false);
-		ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
-		ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
+		if (modInfo.GuiFlags != ef_ModInfo_Gui_None) {
+			HostMovie = hostMovie; // Only needed to support GUI elements
+		}
+
+		if ((modInfo.GuiFlags & ef_ModInfo_Gui_NoConfigWindow) != ef_ModInfo_Gui_NoConfigWindow) {
+			EscStackTrigger = new EscapeStackNode();
+			ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
+			ShowConfigDV.SetValue(false);
+			ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
+			ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
+		}
 		InitializeModConfig(modInfo);
 
-		var iconName = modInfo.IconName;
-		if (iconName != "") {
-			if (iconName == undefined) { iconName = ModName + "Icon"; }
+		if ((modInfo.GuiFlags & ef_ModInfo_Gui_NoIcon) != ef_ModInfo_Gui_NoIcon) {
+			var iconName:String = modInfo.IconName ? modInfo.IconName : ModName + "Icon";
 			Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
 				{ ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: ShowConfigDV }));
 		}
 
 		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
+	}
+
+	private function ChangeModEnabled(dv:DistributedValue) {
+		Config.SetValue("Enabled", dv.GetValue());
 	}
 
 	private function StringsLoaded(success:Boolean):Void {
@@ -114,7 +136,9 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
 
-		Config.NewSetting("ConfigWindowPosition", new Point(20, 30));
+		if (ShowConfigDV != undefined) {
+			Config.NewSetting("ConfigWindowPosition", new Point(20, 30));
+		}
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
@@ -136,7 +160,15 @@ class efd.LoreHound.lib.Mod {
 						if (!SystemsLoaded[key]) { ErrorMsg("Missing: " + key, { noPrefix : true }); }
 					}
 					Config.SetValue("Enabled", false);
-				} else { Enabled = newValue; }
+				} else {
+					Enabled = newValue;
+					ModEnabledDV.SetValue(newValue);
+					if (Icon == undefined) {
+						// No Icon, probably means it's a console style mod
+						// Provide alternate notification
+						ChatMsg(LocaleManager.GetString("General", newValue ? "Enabled" : "Disabled"));
+					}
+				}
 				break;
 			default: // Setting does not push changes (is checked on demand)
 				break;
@@ -226,25 +258,21 @@ class efd.LoreHound.lib.Mod {
 			DoInstall();
 			Config.SetValue("Installed", true);
 			ChatMsg(LocaleManager.GetString("General", "Installed"));
-			ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), { noPrefix : true });
-			// Decided against having the options menu auto open here
-			// Users might not realize that it's a one off event, and consider it a bug
+			if (ShowConfigDV != undefined) {
+				ChatMsg(LocaleManager.GetString("General", "InstalledSettings"), { noPrefix : true });
+				// Decided against having the options menu auto open here
+				// Users might not realize that it's a one off event, and consider it a bug
+			}
 			return; // No existing version to update
 		}
 		var oldVersion:String = Config.GetValue("Version");
 		var newVersion:String = Config.GetDefault("Version");
 		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			var changeTag:String;
-			if (versionChange > 0) {
-				changeTag = "Update";
-				DoUpdate(newVersion, oldVersion);
-			} else {
-				changeTag = "Revert";
-			}
+			if (versionChange > 0) { DoUpdate(newVersion, oldVersion); }
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
-			ChatMsg(LocaleManager.FormatString("General", changeTag, newVersion));
+			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
 		}
 	}
 
@@ -272,7 +300,9 @@ class efd.LoreHound.lib.Mod {
 			}
 			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
 			//       Both are capable of handling "undefined" or otherwise invalid icon names
-			DistributedValue.SetDValue("VTIO_RegisterAddon", ModName + "|" + DevName + "|" + Version + "|" + ConfigWindowVar + "|" + Icon.toString());
+			var topbarInfo:Array = new Array(ModName, DevName, Version, undefined, Icon.toString());
+			topbarInfo[3] = ShowConfigDV != undefined ? ConfigWindowVarName : ModEnabledVarName;
+			DistributedValue.SetDValue("VTIO_RegisterAddon", topbarInfo.join('|'));
 			// Topbar creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, Meeehr's redirects event handling oddly
 			// (It calls back to the original clip, using the new clip as the "this" instance)
@@ -419,19 +449,21 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	public function get ModLoadEventVar():String { return DVPrefix + ModName + "IsLoaded"; }
-	public function get ConfigWindowVar():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
+	public function get ModLoadedVarName():String { return DVPrefix + ModName + "Loaded"; }
+	public function get ModEnabledVarName():String { return DVPrefix + ModName + "Enabled"; }
+	public function get ConfigWindowVarName():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
 
 	// Customize based on mod authorship
 	public static var DevName:String = "Peloprata";
 	public static var DVPrefix:String = "efd"; // Retain this if making a compatible fork of an existing mod
 
 	public var ModName:String;
-	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data
+	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
 	private var ModLoadedDV:DistributedValue; // Provided as a hook for any mod integration features
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
+	private var ModEnabledDV:DistributedValue;
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;

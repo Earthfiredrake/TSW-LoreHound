@@ -21,7 +21,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	/// Initialization
 	public function ModIcon() {
 		super();
-		TraceMsg("Creating mod icon");
 		_x = 10; _y = 80;
 		filters = [new DropShadowFilter(50, 1, 0, 0.8, 8, 8, 1, 3, false, false, false)];
 
@@ -37,6 +36,11 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		// UpdateState customization won't be completed anyway
 		// If custom state could persist between sessions, the mod should confirm it on load
 		DefaultUpdateState();
+
+		if (LeftAction == undefined && ShowConfigDV != undefined) { LeftAction = ToggleConfigWindow; }
+		if (RightAction == undefined) { RightAction = ToggleModEnabled; }
+
+		TraceMsg("Icon created");
 	}
 
 	// Reset this object's values for topbar integration
@@ -49,9 +53,19 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		delete ScreenResScaleDV;
 	}
 
-	// Copy needed properties and functions to the topbar's copy of the icon
+	// Copy addtional properties and functions to the topbar's copy of the icon
 	public function CopyToTopbar(copy:ModIcon):ModIcon {
-		// Topbar handles all layout and GEM related properties itself
+		// Topbar copies the clip, so all the basic movie clip stuff is moved over by itself
+		//   - The current frame is reset to 0 though
+		// Topbar handles all layout so GEM system is not needed
+		// Topbar also copies most of the event handlers (in one way or another)
+		//   - onReleaseOutsideAux (for non-left mouse releases off the icon) are not copied by either topbar
+		//   - Viper's simply copies them
+		//   - Meeehr gets tricky and delegates to the original's function with the copy's data
+		//   - Meeehr also adds their own wrapper on top of the onRollover/onRolloff pair (but misses the ReleaseOutside side effect)
+		//     - These two in particular could make further customizing icon behaviour after registration risky
+
+		// Required variables
 		copy.ModName = ModName;
 		copy.DevName = DevName;
 		copy.Config = Config;
@@ -59,13 +73,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.IsTopbarIcon = true;
 		copy.Tooltip = Tooltip;
 
+		// Required functions (and function variables)
+		copy.TraceMsg = TraceMsg;
 		copy.UpdateState = UpdateState;
-		copy.DefaultUpdateState = DefaultUpdateState;
-		copy.onReleaseOutsideAux = onReleaseOutsideAux; // Not copied by either Meeehr or Viper
 		copy.GetTooltipData = GetTooltipData;
 		copy.OpenTooltip = OpenTooltip;
 		copy.CloseTooltip = CloseTooltip;
-		copy.TraceMsg = TraceMsg;
+		copy.LeftAction = LeftAction;
+		copy.RightAction = RightAction;
+		copy.onReleaseOutsideAux = onReleaseOutsideAux; // Not copied by either Meeehr or Viper
 
 		Config.SignalValueChanged.Connect(ConfigChanged, copy);
 
@@ -130,10 +146,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private function onMousePress(buttonID:Number):Void {
 		switch(buttonID) {
 			case 1: // Left mouse button
-				ShowConfigDV.SetValue(!ShowConfigDV.GetValue());
+				LeftAction();
 				break;
 			case 2: // Right mouse button
-				Config.SetValue("Enabled", !Config.GetValue("Enabled"));
+				RightAction();
 				break;
 			default:
 				TraceMsg("Unexpected mouse button press: " + buttonID);
@@ -141,12 +157,23 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
+	// These actions can be specified (or disabled with null) as part of the clip loading
+	// If left undefined, the following two functions will be used as defaults
+	private var LeftAction:Function;
+	private var RightAction:Function;
+
+	 // Default left, unless ConfigDV is undefined
+	private function ToggleConfigWindow():Void { ShowConfigDV.SetValue(!ShowConfigDV.GetValue()); }
+	// Default right
+	private function ToggleModEnabled():Void {	Config.SetValue("Enabled", !Config.GetValue("Enabled")); }
+
 	private function onRollOver():Void { OpenTooltip(); }
 	private function onRollOut():Void { CloseTooltip(); }
 	private function onReleaseOutside():Void { CloseTooltip(); }
 	private function onReleaseOutsideAux():Void { CloseTooltip(); }
 
 	/// Tooltip
+	// Tooltip data can be overriden, but localization support allows the default to be customized significantly
 	public var GetTooltipData:Function = GetDefaultTooltipData;
 
 	private function GetDefaultTooltipData():TooltipData {
@@ -161,9 +188,11 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// The internal newline reduces the spacing between lines compared to two seperate description strings
 		// It's a bit tight like this, but the spacing was excessive the other way
-		var lText:String = LocaleManager.GetString("GUI", "TooltipLeft");
-		var rText:String = LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipRightDisable" : "TooltipRightEnable");
-		data.AddDescription("<font " + TooltipTextFont + ">" + lText + "\n" + rText + "</font>");
+		// The array.join makes it easy to skip the \n if there are less than two lines
+		var tooltipStrings:Array = new Array();
+		if (LeftAction) { tooltipStrings.push(LocaleManager.GetString("GUI", "TooltipLeft")); }
+		if (RightAction) { tooltipStrings.push(LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipRightDisable" : "TooltipRightEnable")); }
+		data.AddDescription("<font " + TooltipTextFont + ">" + tooltipStrings.join('\n') + "</font>");
 
 		return data;
 	}

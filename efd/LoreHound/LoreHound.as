@@ -2,13 +2,12 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import flash.geom.Point; // DEPRECIATED(v0.5.0: Required for update routine from previous release
+import flash.geom.Point; // DEPRECIATED(v0.5.0): Required for update routine from previous release
 
 import gfx.utils.Delegate;
 
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Dynel;
-import com.GameInterface.Log;
 import com.GameInterface.Lore;
 import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
@@ -83,15 +82,15 @@ class efd.LoreHound.LoreHound extends Mod {
 				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
 				if ((this.StateFlags & LoreHound.ef_IconState_Report) == LoreHound.ef_IconState_Report) { this.gotoAndStop("reporting"); return; }
 				this.gotoAndStop("active");
-			} else {
-				this.gotoAndStop("inactive");
-			}
+			} else { this.gotoAndStop("inactive"); }
 		};
 
 		TraceMsg("Initialized");
 	}
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
+		// TODO: I want to go ahead with the plan to rename the archive on this to include the efd prefix before release
+		//       Need to look into if it's possible to copy the settings over, or if I'm going to have to bite the bullet and do a reset
 		// Notification types
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Unknown);
@@ -181,7 +180,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		AutoReport.CleanupReports(IsCategorizedLore);
 
 		// Version specific updates
-		// Note: v0.1.x-alpha did not have the version tag, and so can't be detected
+		//   v0.1.x-alpha did not have the version tag, and so can't be detected
+		//   Some referenced versions refer to internal builds rather than release versions
 		if (oldVersion == "v0.4.0.beta") {
 			// Point support added to ConfigWrapper, and position settings were updated accordingly
 			// Also the last version to have the "v" embedded in the version string
@@ -281,7 +281,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
 
 	/// Lore detection and sorting
-	private function LoreSniffer(dynelId:ID32, repeat:Number):Void {
+	private function LoreSniffer(dynelId:ID32):Void {
 		if (dynelId.m_Type != e_DynelType_Object) { return; } // Dynel is not of supertype associated with lore
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
@@ -373,6 +373,8 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function ClearTracking():Void {
 		for (var key:String in TrackedLore) {
 			var id:Array = key.split(":");
+			// Probably don't *have* to unregister, the dynel is most likely about to be destroyed anyway
+			// This is more for cleaning up my end of things
 			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
 		}
 		delete TrackedLore;
@@ -560,6 +562,11 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 		}
 		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state
+			// When compiling reports for the automated report system consider the following options for IDs
+			// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
+			// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
+			// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
+			// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
 			var report:String = messageStrings[2];
 			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
 			AutoReport.AddReport({ id: categorizationId, text: report });
@@ -586,10 +593,4 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private var CategoryIndex:Array;
 	private var TrackedLore:Object;
-
-	// When compiling reports for the automated report system consider the following options for IDs
-	// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
-	// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
-	// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
-	// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
 }

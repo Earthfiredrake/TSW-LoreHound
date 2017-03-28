@@ -5,7 +5,6 @@
 
 <!-- The attributes "de", and "fr" can be used for translations of each string, if needed -->
 <!-- They can also be customized as desired, though GUI elements do not expand to fit them -->
-<!-- The mod name appearing in front of chat strings is internal to the mod, and not affected here -->
 <!-- Category names and string tags are referenced from the mod, and should not be changed -->
 <!-- Strings themselves should be compatible with boost::format for inserting further data -->
 <!-- See http://www.boost.org/doc/libs/1_63_0/libs/format/doc/format.html#syntax for details (TSW likely uses earlier version, unsure which)-->
@@ -16,7 +15,7 @@
 	<Category name="General"> <!-- Used for standard messages created as part of my mod framework -->
 		<String tag="Installed"
 				en="Has been installed" />
-		<String tag="IntalledSettings"
+		<String tag="InstalledSettings"
 				en="Please take a moment to review the settings" />
 		<String tag="Update"
 				en="Updated to v%1%" /> <!-- %1% = ModVersion -->
@@ -35,6 +34,11 @@
 				en="%1%" /> <!-- Minimalist output, no non-standard parameters available -->
 		<String tag="ChatMessage"
 				en="%4%%2%%3%%1%" /> <!-- %4% = timestamp (as defined in LoreHound category or "" if not provided); By default formats as "[hh:mm] LoreHound: subsys - message" unless some parts are excluded -->
+		 <!-- Used by console style mods that lack icon notification -->
+		<String tag="Enabled"
+				en="Has been enabled" />
+		<String tag="Disabled"
+				en="Has been disabled" />
 	</Category>
 	<Category name="GUI"> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
 		<String tag="ConfigWindowTitle"
