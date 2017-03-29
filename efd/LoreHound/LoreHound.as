@@ -470,8 +470,15 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Fifo", loreName));
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
-		messageStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
-		if (DumpToLog && dynel != undefined) {
+		if (loreType == ef_LoreType_Unknown) {
+			var reportStrings:Array = new Array();
+			reportStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
+			var pos:Vector3 = dynel.GetPosition(0);
+			reportStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + ")");
+			reportStrings.push("Category ID: " + categorizationId);
+			messageStrings.push(reportStrings.join('\n'));
+		}
+		if (DumpToLog && dynel != undefined) { // No Dynel on despawns
 			var pos:Vector3 = dynel.GetPosition(0);
 			var posStr:String = "[" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + "]";
 			messageStrings.push("C:" + loreType + ";ID:" + loreId + ";PF:" + dynel.GetPlayfieldID() + ";" + posStr);
@@ -596,12 +603,13 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
 			// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 			// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
-			var report:String = messageStrings[2];
-			if (detailStrings.length > 0) {	report += "\n" + detailStrings.join("\n"); }
-			AutoReport.AddReport({ id: categorizationId, text: report });
+			AutoReport.AddReport({ id: categorizationId, text: messageStrings[2] });
+			// Relevant details are already embedded
 		}
-		if (DumpToLog && messageStrings.length > 3) {
-			LogMsg(messageStrings[3]);
+		if (DumpToLog && messageStrings.length > 2) {
+			// Situations where a log dump was not possible (despawns) would also not generate a report
+			// If generated report will always be in index 2, and log dump will always be in the last slot (either 2 or 3)
+			LogMsg(messageStrings[messageStrings.length - 1]);
 			// Relevant details are already embedded
 		}
 	}

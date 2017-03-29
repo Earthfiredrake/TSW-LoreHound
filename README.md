@@ -104,6 +104,9 @@ This release is currently feature complete, but some things may arrive in subseq
 + Depreciated features of the config system retained to permit smooth upgrades from pre-release versions will be removed starting with v1.1.0.
 + A second project is in the preliminary stages of development, and may have some integration possibilities with this one.
 + Maintenance updates will be made as needed to fix bugs or add updates to the data files.
++ Some form of whitelisting is a possibility: (1.1.0?)
+  + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
+  + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
