@@ -2,5 +2,4 @@
 <Root>
   <Value name="efdReleaseTheLoreHound" value="true"/>
   <Archive name="efdLoreHoundConfig"/>
-  <Archive name="LoreHoundConfig"/>
 </Root>

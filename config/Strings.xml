@@ -19,6 +19,8 @@
 				en="Updated to v%1%" /> <!-- %1% = ModVersion -->
 		<String tag="Revert"
 				en="Reverted to v%1%" /> <!-- %1% = ModVersion -->
+		<String tag="NoMigration"
+				en="Setting migration from %1% is not possible, settings will be reset to defaults." /> <!-- %1% = PriorVersion -->
 		<String tag="ReviewSettings"
 				en="Please take a moment to review the settings" />
 		<String tag="ModMessagePrefix"

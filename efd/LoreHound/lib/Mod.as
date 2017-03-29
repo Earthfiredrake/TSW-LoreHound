@@ -44,6 +44,9 @@ class efd.LoreHound.lib.Mod {
 	//   Version (required, placeholder default "0.0.0")
 	//     Current build version
 	//     Expects "#.#.#[.alpha|.beta]" format but does not verify
+	//   MinUpgradableVersion (optional, default "0.0.0")
+	//     The earliest version from which the current build supports direct update with setting migration
+	//     If a prior version upgrades, settings will be reset to defaults to protect against invalid values
 	//   Trace (optional, default false)
 	//     Enables debug trace messages
 	//   ArchiveName (optional, default undefined)
@@ -80,6 +83,7 @@ class efd.LoreHound.lib.Mod {
 			// Dev message, not localized
 			ErrorMsg("Mod expects a version number");
 		}
+		MinUpgradableVersion = modInfo.MinUpgradableVersion ? modInfo.MinUpgradableVersion : "0.0.0";
 
 		SystemsLoaded = { Config: false, LocalizedText: false }
 		ModLoadedDV = DistributedValue.Create(ModLoadedVarName);
@@ -265,7 +269,15 @@ class efd.LoreHound.lib.Mod {
 		var newVersion:String = Config.GetDefault("Version");
 		var versionChange:Number = CompareVersions(newVersion, oldVersion);
 		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) { DoUpdate(newVersion, oldVersion); }
+			if (versionChange > 0) {
+				// Verify upgrade restrictions
+				if (CompareVersions(MinUpgradableVersion, oldVersion) > 0) {
+					ChatMsg(LocaleManager.FormatString("General", "NoMigration", oldVersion));
+					Config.ResetAll();
+				} else {
+					DoUpdate(newVersion, oldVersion);
+				}
+			}
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
 			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
@@ -273,6 +285,7 @@ class efd.LoreHound.lib.Mod {
 				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
 			}
 		}
+		delete MinUpgradableVersion; // No longer required
 	}
 
 	// MeeehrUI is legacy compatible with the VTIO interface,
@@ -409,10 +422,6 @@ class efd.LoreHound.lib.Mod {
 	// If positive, then the first version is higher, negative means first version was lower
 	// A return of 0 indicates that the versions were the same
 	public static function CompareVersions(firstVer:String, secondVer:String):Number {
-		// DEPRECIATED(v0.5.0): "v" prefix on version strings
-		if (firstVer.charAt(0) == "v") { firstVer = firstVer.substr(1); }
-		if (secondVer.charAt(0) == "v") { secondVer = secondVer.substr(1); }
-
 		var first:Array = firstVer.split(".");
 		var second:Array = secondVer.split(".");
 		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
@@ -462,6 +471,7 @@ class efd.LoreHound.lib.Mod {
 
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
+	private var MinUpgradableVersion:String; // Minimum installed version for setting migration during update; Discarded after update
 	private var ModLoadedDV:DistributedValue; // Provided as a hook for any mod integration features
 
 	private var _Enabled:Boolean = false;

@@ -2,11 +2,8 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import flash.geom.Point; // DEPRECIATED(v0.5.0): Required for update routine from previous release
-
 import gfx.utils.Delegate;
 
-import com.GameInterface.DistributedValue; // DEPRECIATED(v0.8.0): Renaming settings archive
 import com.GameInterface.Dynels;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Lore;
@@ -14,7 +11,6 @@ import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
 import com.GameInterface.VicinitySystem;
 import com.GameInterface.WaypointInterface; // Playfield change notifications
-import com.Utils.Archive; // DEPRECIATED(v0.8.0): Renaming settings archive
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -28,9 +24,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.0.0",
-		ArchiveName : "LoreHoundConfig" // DEPRECIATED(v0.8.0): Renaming settings archive
-	}
+		Version : "1.1.0.alpha",
+		MinUpgradableVersion : "1.0.0"
+	};
 
 	// Category flags for identifiable lore types
 	private static var ef_LoreType_None:Number = 0;
@@ -91,10 +87,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		TraceMsg("Initialized");
 	}
 
-	// DEPRECIATED(v0.8.0): Used to tweak ArchiveName in config wrapper for attempted upgrade without adding to the library interface
-	// A hack to circumvent private visibility at compile time
-	private static function ForceDirectSet(target:Object, property:String, value):Void { target[property] = value; }
-
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
 		Config.NewSetting("FifoLevel", ef_LoreType_None);
@@ -103,7 +95,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
 		Config.NewSetting("TrackDespawns", true); // Track lore drops for when they despawn
-		Config.NewSetting("SendReports", false); // DEPRECIATED(v0.6.0): Setting removed
 		Config.NewSetting("CheckNewContent", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 
 		// Extended information, regardless of this setting:
@@ -113,16 +104,6 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		arConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
 		Config.NewSetting("AutoReport", arConfig);
-
-		// DEPRECIATED(v0.8.0): Archive name upgrade
-		// Attempt to determine whether we're a fresh install, pre-upgrade or post-upgrade
-		var oldArchive:Archive = DistributedValue.GetDValue("LoreHoundConfig");
-		if (oldArchive.FindEntry("Installed", undefined) == undefined) {
-			// Old archive did not include an installed setting
-			// Either we have a fresh install, or it's properly cleared after the upgrade
-			// In both cases we should load from the new archive
-			ForceDirectSet(Config, "ArchiveName", undefined);
-		}
 	}
 
 	private function AutoReportConfigChanged(setting:String, newValue, oldValue):Void {
@@ -186,50 +167,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
 	}
 
-	private function LoadComplete():Void {
-		super.LoadComplete();
-		Config.DeleteSetting("SendReports"); // DEPRECIATED(v0.6.0): Setting removed
-	}
-
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
 		AutoReport.CleanupReports(IsCategorizedLore);
 
 		// Version specific updates
-		//   v0.1.x-alpha did not have the version tag, and so can't be detected
-		//   Some referenced versions refer to internal builds rather than release versions
-		if (oldVersion == "v0.4.0.beta") {
-			TraceMsg("Update for v0.4.0");
-			// Point support added to ConfigWrapper, and position settings were updated accordingly
-			// Also the last version to have the "v" embedded in the version string
-			var oldPoint = Config.GetValue("ConfigWindowPosition");
-			Config.SetValue("ConfigWindowPosition", new Point(oldPoint.x, oldPoint.y));
-			oldPoint = Config.GetValue("IconPosition");
-			Config.SetValue("IconPosition", new Point(oldPoint.x, oldPoint.y));
-		}
-		if (CompareVersions("0.5.0.beta", oldVersion) >= 0) {
-			TraceMsg("Update for v0.5.0");
-			// Points now saved using built in support from Archive
-			//   Should not require additional update code
-			// Enabled state of autoreport system is now internal to that config group
-			if (Config.GetValue("SendReports")) {
-				Config.GetValue("AutoReport").SetValue("Enabled", true);
-			}
-		}
-		if (CompareVersions("0.6.5.alpha", oldVersion) >=0) {
-			TraceMsg("Update for v0.6.5");
-			// Removed "Unusual" lore category, value now occupied by "Despawn" special flag
-			Config.SetFlagValue("FifoLevel", ef_LoreType_Despawn, false);
-			Config.SetFlagValue("ChatLevel", ef_LoreType_Despawn, false);
-		}
-		if (CompareVersions("0.7.0.alpha", oldVersion) >=0) {
-			TraceMsg("Update for v0.7.0");
-			// Attempting to rename settings archive
-			// Loaded the old settings from the original archive
-			// Direct the save to the new archive and clear the old one
-			ForceDirectSet(Config, "ArchiveName", undefined);
-			DistributedValue.SetDValue("LoreHoundConfig", new Archive());
-		}
+		//   Some upgrades may reflect unreleased builds, for consistency on develop branch
 	}
 
 	private function Activate():Void {

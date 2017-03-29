@@ -226,8 +226,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 					// Have to use the existing config, as it has the field names defined
 					GetValue(key).FromArchive(element);
 					return null;
-				case "Point": // DEPRECIATED:(v0.5.0) storage method, retained for backwards compatibility
-					return new Point(element.FindEntry("X"), element.FindEntry("Y"));
 				case "Array":
 				case "Object": // Serialized unspecified type
 					var value = type == "Array" ? new Array() : new Object();
