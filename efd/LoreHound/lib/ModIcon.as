@@ -35,10 +35,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		UpdateScale();
 		// UpdateState customization won't be completed anyway
 		// If custom state could persist between sessions, the mod should confirm it on load
-		DefaultUpdateState();
-
-		if (LeftAction == undefined && ShowConfigDV != undefined) { LeftAction = ToggleConfigWindow; }
-		if (RightAction == undefined) { RightAction = ToggleModEnabled; }
+		UpdateState();
 
 		TraceMsg("Icon created");
 	}
@@ -73,7 +70,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.ModName = ModName;
 		copy.DevName = DevName;
 		copy.Config = Config;
-		copy.ShowConfigDV = ShowConfigDV;
 		copy.IsTopbarIcon = true;
 		copy.Tooltip = Tooltip;
 
@@ -82,9 +78,11 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.UpdateState = UpdateState;
 		copy.GetTooltipData = GetTooltipData;
 		copy.OpenTooltip = OpenTooltip;
+		copy.RefreshTooltip = RefreshTooltip;
 		copy.CloseTooltip = CloseTooltip;
-		copy.LeftAction = LeftAction;
-		copy.RightAction = RightAction;
+		copy.LeftMouseInfo = LeftMouseInfo;
+		copy.RightMouseInfo = RightMouseInfo;
+		copy.ExtraTooltipInfo = ExtraTooltipInfo;
 		copy.onReleaseOutsideAux = onReleaseOutsideAux; // Not copied by either Meeehr or Viper
 
 		Config.SignalValueChanged.Connect(ConfigChanged, copy);
@@ -95,10 +93,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	/// Config and state changes
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
-		if (setting == "Enabled") {
-			UpdateState();
-			if (Tooltip != undefined) {OpenTooltip(); }
-		}
+		if (setting == "Enabled") { UpdateState(); }
 		if (!IsTopbarIcon) {
 			switch (setting) {
 				case "IconPosition":
@@ -113,9 +108,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
-	public var UpdateState:Function = DefaultUpdateState;
-
-	private function DefaultUpdateState():Void { gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive"); }
+	public function UpdateState():Void {
+		gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive");
+		RefreshTooltip();
+	}
 
 	/// Layout and GEM handling
 	private function UpdateScale():Void {
@@ -150,10 +146,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private function onMousePress(buttonID:Number):Void {
 		switch(buttonID) {
 			case 1: // Left mouse button
-				LeftAction();
+				LeftMouseInfo.Action();
 				break;
 			case 2: // Right mouse button
-				RightAction();
+				RightMouseInfo.Action();
 				break;
 			default:
 				TraceMsg("Unexpected mouse button press: " + buttonID);
@@ -161,26 +157,20 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
-	// These actions can be specified (or disabled with null) as part of the clip loading
-	// If left undefined, the following two functions will be used as defaults
-	private var LeftAction:Function;
-	private var RightAction:Function;
-
-	 // Default left, unless ConfigDV is undefined
-	private function ToggleConfigWindow():Void { ShowConfigDV.SetValue(!ShowConfigDV.GetValue()); }
-	// Default right
-	private function ToggleModEnabled():Void {	Config.SetValue("Enabled", !Config.GetValue("Enabled")); }
-
 	private function onRollOver():Void { OpenTooltip(); }
 	private function onRollOut():Void { CloseTooltip(); }
 	private function onReleaseOutside():Void { CloseTooltip(); }
 	private function onReleaseOutsideAux():Void { CloseTooltip(); }
 
-	/// Tooltip
-	// Tooltip data can be overriden, but localization support allows the default to be customized significantly
-	public var GetTooltipData:Function = GetDefaultTooltipData;
+	// Tuples of an Action to call on mouse click, and a Tooltip returning a descriptive string
+	// The Mod class will assign defaults based on the type of the mod, but they can be overriden if desired
+	private var LeftMouseInfo:Object;
+	private var RightMouseInfo:Object;
+	private var ExtraTooltipInfo:Function; // Slot to insert any additional tooltip stuff
 
-	private function GetDefaultTooltipData():TooltipData {
+	/// Tooltip
+	// Tooltip data can be overriden entirely, but is easiset to do with customization of mouse actions and extra info
+	private function GetTooltipData():TooltipData {
 		var data:TooltipData = new TooltipData();
 		data.m_Padding = TooltipPadding;
 		data.m_MaxWidth = TooltipWidth; // The content does not affect the layout, so unless something that does (edge of screen perhaps?) gets in the way, this is how wide it will be
@@ -194,8 +184,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		// It's a bit tight like this, but the spacing was excessive the other way
 		// The array.join makes it easy to skip the \n if there are less than two lines
 		var tooltipStrings:Array = new Array();
-		if (LeftAction) { tooltipStrings.push(LocaleManager.GetString("GUI", "TooltipLeft")); }
-		if (RightAction) { tooltipStrings.push(LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipRightDisable" : "TooltipRightEnable")); }
+		if (LeftMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipLeft", LeftMouseInfo.Tooltip())); }
+		if (RightMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipRight", RightMouseInfo.Tooltip())); }
+		var extra:String = ExtraTooltipInfo();
+		if (extra) { tooltipStrings.push(extra); }
 		data.AddDescription("<font " + TooltipTextFont + ">" + tooltipStrings.join('\n') + "</font>");
 
 		return data;
@@ -203,11 +195,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	private function OpenTooltip():Void {
 		var delay:Number = -1; // Negative, causes manager to use game setting to create delay
-		if (Tooltip != undefined) { // Replacing existing, remove delay
+		if (Tooltip) { // Replacing existing, remove delay
 			CloseTooltip();
 			delay = 0;
 		}
 		Tooltip = TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, delay, GetTooltipData());
+	}
+
+	public function RefreshTooltip():Void {
+		if (Tooltip) { OpenTooltip(); }
 	}
 
 	private function CloseTooltip():Void {
@@ -234,7 +230,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private var DevName:String;
 
 	private var Config:ConfigWrapper;
-	private var ShowConfigDV:DistributedValue;
 	private var IsTopbarIcon:Boolean = false;
 
 	// GUI layout variables do not need to be copied for topbar icon

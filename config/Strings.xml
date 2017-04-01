@@ -80,15 +80,25 @@
 		<String tag="OtherSettingReporting"
 				en="Automated Reports" />
 		<String tag="OtherSettingExtraTest"
-				en="New Game Content" />
+				en="Extended Testing" />
 		<String tag="TooltipCredit"
 				en="v%1% by %2%" /> <!-- %1% = ModVersion; %2% = DevName -->
 		<String tag="TooltipLeft"
-				en="Left Click: Show Options" />
-		<String tag="TooltipRightEnable"
-				en="Right Click: Enable Mod" />
-		<String tag="TooltipRightDisable"
-				en="Right Click: Disable Mod" />
+				en="Left Click: %1%" /> <!-- %1% = Tooltip for bound action -->
+		<String tag="TooltipRight"
+				en="Right Click: %1%" /> <!-- %1% = Tooltip for bound action -->
+		<String tag="TooltipModOn"
+				en="Enable Mod" />
+		<String tag="TooltipModOff"
+				en="Disable Mod" />
+		<String tag="TooltipShowSettings"
+				en="Show Options" />
+		<String tag="TooltipShowInterface"
+				en="[Display Interface]" />
+		<String tag="TooltipTracking"
+				en="Tracking Drops:" />
+		<String tag="TooltipReports"
+				en="Reports Pending: %1%" /> <!-- %1% = Number of pending reports -->
 	</Category>
 	<Category name="AutoReport"> <!-- Only used for player notifications, report content is internal -->
 		<String tag="ReportQueued"

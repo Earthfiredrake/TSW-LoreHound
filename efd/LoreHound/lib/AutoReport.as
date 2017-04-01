@@ -189,9 +189,9 @@ class efd.LoreHound.lib.AutoReport {
 		}
 	}
 
-	public static function get HasReportsPending():Boolean {
+	public static function get NumReportsPending():Number {
 		// Does not care about mod state, only internal state
-		return IsEnabled && Config.GetValue("QueuedReports").length > 0;
+		return IsEnabled ? Config.GetValue("QueuedReports").length : 0;
 	}
 
 	private static var IsModActive:Boolean;

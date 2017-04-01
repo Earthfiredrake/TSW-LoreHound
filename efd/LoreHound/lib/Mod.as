@@ -30,38 +30,68 @@ import efd.LoreHound.lib.ModIcon;
 //   "IconScale": Only used if topbar is not handling icon layout
 //   "ConfigWindowPosition"
 class efd.LoreHound.lib.Mod {
-	// Mod info flags for GUI elements that are not provided
+	// Mod info flags for disabling certain gui elements
 	// Passed as GuiFlags member
-	public static var ef_ModInfo_Gui_NoIcon:Number = 1 << 0;
-	public static var ef_ModInfo_Gui_NoConfigWindow:Number = 1 << 1;
-	public static var ef_ModInfo_Gui_None:Number = (1 << 2) - 1;
+	public static var ef_ModGui_NoIcon:Number = 1 << 0;
+	public static var ef_ModGui_NoConfigWindow:Number = 1 << 1;
+	public static var ef_ModGui_Console:Number = ef_ModGui_NoIcon | ef_ModGui_NoConfigWindow;
+	public static var ef_ModGui_NoTopbar:Number = 1 << 2;
+	public static var ef_ModGui_None:Number = (1 << 3) - 1;
+
+	//   Mod provides a interface on request which does minimal background processing (ex: Fashionista, UC)
+	//   Standard icon behaviours are open the interface on left, advanced options menu on right
+	//   Not sure what this would look like as a console style mod... some sort of DV triggered effect I suppose
+	//   Topbar settings icon will open config window if available
+	public static var e_ModType_Interface:Number = 1;
+	//   Mod hooks to game notifications and responds when triggered (ex: LoreHound, NBG)
+	//   Provides option to be toggled between enabled/disbled states
+	//   Standard icon behaviours are options window on left and toggle mod on right
+	//   Topbar settings icon will open config window, or toggle state if no window is specified
+	public static var e_ModType_Reactive:Number = 2;
 
 	// The new archive loading scheme delays the loading of config settings until the activation stage
 	//   Config object definition can now be spread between the base and subclass constructors
 	// The modData object has the following fields:
-	//   Name (required, placeholder default "Unnamed")
+	//   Name:String (required, placeholder default "Unnamed")
 	//     The name of the mod, for display and used to generate a variety of default identifiers
-	//   Version (required, placeholder default "0.0.0")
+	//   Version:String (required, placeholder default "0.0.0")
 	//     Current build version
 	//     Expects "#.#.#[.alpha|.beta]" format but does not verify
-	//   MinUpgradableVersion (optional, default "0.0.0")
+	//   Type:e_ModType (optional, default e_ModType_Interface)
+	//     Values described above
+	//   ArchiveName (optional, default undefined (uses parameter passed by game))
+	//     Name of archive to use for main config if overriding the one provided by the game
+	//   MinUpgradableVersion:String (optional, default "0.0.0")
 	//     The earliest version from which the current build supports direct update with setting migration
 	//     If a prior version upgrades, settings will be reset to defaults to protect against invalid values
+	//   GuiFlags:ef_ModGui (optional, default undefined)
+	//     Set flags to disable certain gui elements. Valid flags are:
+	//       ef_ModGui_NoIcon: Display no mod or topbar icon
+	//       ef_ModGui_NoConfigWindow: Do not use a config window,
+	//         topbar integration will use tne ModEnabledDV as config target
+	//       ef_ModGui_Console: (NoIcon | NoConfigWindow) also removes HostMovie variable
+	//       ef_ModGui_NoTopbar: Disable VTIO compatible topbar integration
+	//         also useful for testing how it behaves without one
+	//       ef_ModGui_None: Disables all gui elements
+	//   IconData:Object (optional, any undefined sub-values will use their own defaults)
+	//     ResName:String (optional, default ModName + "Icon")
+	//       The name of the library resource to use as graphical elements to the icon.
+	//     Above values are removed prior to initialization of the ModIcon
+	//     Any overiden functions are wrapped in a Delegate(this) before being passed along
+	//       They unfortunately cannot be wrapped in delegates in advance, as initialization requires compile constants
+	//     Remaining values are applied as initializers prior to construction
+	//	   The following values are added to it and should not be overriden or conflicted with:
+	//       ModName, DevName, HostMovie, Config
+	//     Values which may be overriden by the mod:
+	//	     UpdateState:Function Sets the icon frame to be displayed based on current mod state
+	//       LeftMouseInfo:Object Mouse handler as described below
+	//       RightMouseInfo:Object Mouse handler as described below
+	//         A mouse handler object defines two functions, neither of which should specify which mouse button was involved:
+	//           Action: which implements the action taken when that mouse button is pressed on the icon
+	//           Tooltip: which returns a string describing that action for display as part of the tooltip
+	//       ExtraTooltipInfo:Function returning a string of additional tooltip info to display below the basic usage info
 	//   Trace (optional, default false)
 	//     Enables debug trace messages
-	//   ArchiveName (optional, default undefined)
-	//     Name of archive to use for main config if overriding the one provided by the game
-	//   GuiFlags (optional, default undefined)
-	//     Set of flags to disable certain types of gui element. Valid flags are:
-	//       ef_ModInfo_Gui_NoIcon: Display no mod or topbar icon
-	//       ef_ModInfo_Gui_NoConfigWindow: Do not use a config window,
-	//         topbar integration will use tne ModEnabledDV as config target
-	//       ef_ModInfo_Gui_None: Same as setting all of the above, additionally removes HostMovie variable
-	//   IconName (optional, default Name + "Icon")
-	//     Library resource id to use as an icon if not disabled
-	//   NoTopbar (optional, default false)
-	//     Disable integration with a VTIO compatible topbar mod (Viper's or Meeehr's)
-	//     Also useful for testing
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		FifoMsg = Delegate.create(this, _FifoMsg);
 		ChatMsg = Delegate.create(this, _ChatMsg);
@@ -83,23 +113,26 @@ class efd.LoreHound.lib.Mod {
 			// Dev message, not localized
 			ErrorMsg("Mod expects a version number");
 		}
+		if (!modInfo.Type) { modInfo.Type = e_ModType_Interface; }
 		MinUpgradableVersion = modInfo.MinUpgradableVersion ? modInfo.MinUpgradableVersion : "0.0.0";
 
 		SystemsLoaded = { Config: false, LocalizedText: false }
 		ModLoadedDV = DistributedValue.Create(ModLoadedVarName);
 		ModLoadedDV.SetValue(false);
-		ModEnabledDV = DistributedValue.Create(ModEnabledVarName);
-		ModEnabledDV.SetValue(true);
-		ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
+		if (modInfo.Type == e_ModType_Reactive) {
+			ModEnabledDV = DistributedValue.Create(ModEnabledVarName);
+			ModEnabledDV.SetValue(true);
+			ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
+		}
 
 		LocaleManager.Initialize(ModName + "/Strings.xml");
 		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
 
-		if (modInfo.GuiFlags != ef_ModInfo_Gui_None) {
-			HostMovie = hostMovie; // Only needed to support GUI elements
+		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
+			HostMovie = hostMovie; // Not needed for console style mods
 		}
 
-		if ((modInfo.GuiFlags & ef_ModInfo_Gui_NoConfigWindow) != ef_ModInfo_Gui_NoConfigWindow) {
+		if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
 			EscStackTrigger = new EscapeStackNode();
 			ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
 			ShowConfigDV.SetValue(false);
@@ -108,16 +141,10 @@ class efd.LoreHound.lib.Mod {
 		}
 		InitializeModConfig(modInfo);
 
-		if ((modInfo.GuiFlags & ef_ModInfo_Gui_NoIcon) != ef_ModInfo_Gui_NoIcon) {
-			var iconName:String = modInfo.IconName ? modInfo.IconName : ModName + "Icon";
-			Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(),
-				{ ModName: ModName, DevName: DevName, HostMovie: HostMovie, Config: Config, ShowConfigDV: ShowConfigDV }));
-		}
+		if (!(modInfo.GuiFlags & ef_ModGui_NoIcon)) { CreateIcon(modInfo); }
 
-		if (!modInfo.NoTopbar) { RegisterWithTopbar(); }
+		if (!(modInfo.GuiFlags & ef_ModGui_NoTopbar)) { RegisterWithTopbar(); }
 	}
-
-	private function ChangeModEnabled(dv:DistributedValue) { Config.SetValue("Enabled", dv.GetValue()); }
 
 	private function StringsLoaded(success:Boolean):Void {
 		if (success) {
@@ -136,7 +163,7 @@ class efd.LoreHound.lib.Mod {
 
 		Config.NewSetting("Version", modInfo.Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
-		Config.NewSetting("Enabled", true); // Whether mod is enabled by the player
+		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
 		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
@@ -174,6 +201,63 @@ class efd.LoreHound.lib.Mod {
 				break;
 		}
 	}
+
+	private function CreateIcon(modInfo:Object):Void {
+		var iconData:Object = modInfo.IconData ? modInfo.IconData : new Object();
+		var iconName:String = iconData.ResName ? iconData.ResName : ModName + "Icon";
+		delete iconData.ResName;
+
+		iconData.ModName = ModName;
+		iconData.DevName = DevName;
+		iconData.HostMovie = HostMovie;
+		iconData.Config = Config;
+
+		if (iconData.UpdateState) {
+			iconData.UpdateState = Delegate.create(this, iconData.UpdateState);
+		}
+
+		if (!iconData.LeftMouseInfo) {
+			if (modInfo.Type == e_ModType_Interface) {
+				iconData.LeftMouseInfo = { Action : Delegate.create(this, ToggleInterface), Tooltip : ToggleInterfaceTooltip };
+			} else if (modInfo.Type == e_ModType_Reactive && ShowConfigDV != undefined) {
+				iconData.LeftMouseInfo = { Action : Delegate.create(this, ToggleConfigWindow), Tooltip : ToggleConfigTooltip };
+			}
+		} else {
+			iconData.LeftMouseInfo.Action = Delegate.create(this, iconData.LeftMouseInfo.Action);
+			iconData.LeftMouseInfo.Tooltip = Delegate.create(this, iconData.LeftMouseInfo.Tooltip);
+		}
+		if (!iconData.RightMouseInfo) {
+			if (modInfo.Type == e_ModType_Reactive) {
+				iconData.RightMouseInfo = { Action : Delegate.create(this, ChangeModEnabled), Tooltip : Delegate.create(this, ToggleModTooltip) };
+			} else if (modInfo.Type == e_ModType_Interface && ShowConfigDV != undefined) {
+				iconData.RightMouseInfo = { Action : Delegate.create(this, ToggleConfigWindow), Tooltip : ToggleConfigTooltip };
+			}
+		}  else {
+			iconData.RightMouseInfo.Action = Delegate.create(this, iconData.LeftMouseInfo.Action);
+			iconData.RightMouseInfo.Tooltip = Delegate.create(this, iconData.LeftMouseInfo.Tooltip);
+		}
+		if (iconData.ExtraTooltipInfo) { iconData.ExtraTooltipInfo = Delegate.create(this, iconData.ExtraTooltipInfo); }
+
+		Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(), iconData));
+	}
+
+	private function ChangeModEnabled(dv:DistributedValue):Void {
+		var value:Boolean = dv != undefined ? dv.GetValue() : !Config.GetValue("Enabled");
+		Config.SetValue("Enabled", value);
+	}
+
+	private function ToggleModTooltip():String {
+		return LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipModOff" : "TooltipModOn");
+	}
+
+	private function ToggleConfigWindow():Void { ShowConfigDV.SetValue(!ShowConfigDV.GetValue()); }
+	private static function ToggleConfigTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
+
+	private function ToggleInterface():Void {
+		// TODO: Decide how to trigger an interface display
+	}
+
+	private static function ToggleInterfaceTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
 
 	private function ShowConfigWindow(dv:DistributedValue):Void {
 		if (dv.GetValue()) { // Open window
@@ -249,6 +333,7 @@ class efd.LoreHound.lib.Mod {
 
 	private function LoadComplete():Void {
 		delete SystemsLoaded; // No longer required
+		Icon.UpdateState();
 		UpdateInstall();
 		ModLoadedDV.SetValue(true);
 	}
@@ -274,9 +359,7 @@ class efd.LoreHound.lib.Mod {
 				if (CompareVersions(MinUpgradableVersion, oldVersion) > 0) {
 					ChatMsg(LocaleManager.FormatString("General", "NoMigration", oldVersion));
 					Config.ResetAll();
-				} else {
-					DoUpdate(newVersion, oldVersion);
-				}
+				} else { DoUpdate(newVersion, oldVersion); }
 			}
 			// Reset the version number to the new version
 			Config.ResetValue("Version");
@@ -296,9 +379,17 @@ class efd.LoreHound.lib.Mod {
 		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
 		// Try to register now, in case they loaded first, otherwise signup to detect if they load
 		if (!(DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV))) {
-			MeeehrDV.SignalChanged.Connect(DoTopbarRegistration, this);
-			ViperDV.SignalChanged.Connect(DoTopbarRegistration, this);
+			MeeehrDV.SignalChanged.Connect(DeferRegistration, this);
+			ViperDV.SignalChanged.Connect(DeferRegistration, this);
 		}
+	}
+	
+	private function DeferRegistration(dv:DistributedValue) {
+		// Running multiple mods based on this framework was causing other mods (TSWACT) to fail topbar registration
+		// Current theory is there's some type of process time limiter on callbacks before they get discarded
+		// As this framework does some potentially heavy lifting during this stage (adjusting clip layer)
+		// Defer it slightly to give the program more time to deal with other mods
+		setTimeout(Delegate.create(this, DoTopbarRegistration), 1, dv);
 	}
 
 	private function DoTopbarRegistration(dv:DistributedValue):Boolean {
@@ -476,11 +567,13 @@ class efd.LoreHound.lib.Mod {
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
+	// Player enable/disable only applies to reactive mods at this point
+	// DV and related config setting will be undefined for interface mods
 	private var ModEnabledDV:DistributedValue; // Only reflects the player's setting, doesn't toggle everytime the game triggers it
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;
-	private var ShowConfigDV:DistributedValue; // Used by topbars to provide setting shortcut buttons
+	private var ShowConfigDV:DistributedValue; // Needs to be DV as topbars use it for providing settings from the mod list; if undefined, no config window is available
 	private var ResolutionScaleDV:DistributedValue;
 	private var ConfigWindowClip:MovieClip = null;
 	private var EscStackTrigger:EscapeStackNode;

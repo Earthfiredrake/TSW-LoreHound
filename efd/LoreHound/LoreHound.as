@@ -20,12 +20,15 @@ import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.LoreHound extends Mod {
-	private static var ModInfo:Object = {
+	private var ModInfo:Object = {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
 		Version : "1.1.0.alpha",
-		MinUpgradableVersion : "1.0.0"
+		Type : e_ModType_Reactive,
+		MinUpgradableVersion : "1.0.0",
+		IconData : { UpdateState : UpdateIcon,
+					 ExtraTooltipInfo : IconTooltip }
 	};
 
 	// Category flags for identifiable lore types
@@ -69,21 +72,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		InitializeConfig(arConfig);
 		LoadLoreCategories();
 
-		Icon.UpdateState = function(stateFlag:Number, enable:Boolean) {
-			if (stateFlag != undefined) {
-				switch (enable) {
-					case true: { this.StateFlags |= stateFlag; break; }
-					case false: { this.StateFlags &= ~stateFlag; break; }
-					case undefined: { this.StateFlags ^= stateFlag; break; }
-				}
-			}
-			if (Config.GetValue("Enabled")) { // If game disables mod, it isn't visible at all, so only user disables matter
-				if ((this.StateFlags & LoreHound.ef_IconState_Alert) == LoreHound.ef_IconState_Alert) { this.gotoAndStop("alerted"); return; }
-				if ((this.StateFlags & LoreHound.ef_IconState_Report) == LoreHound.ef_IconState_Report) { this.gotoAndStop("reporting"); return; }
-				this.gotoAndStop("active");
-			} else { this.gotoAndStop("inactive"); }
-		};
-
 		TraceMsg("Initialized");
 	}
 
@@ -110,7 +98,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		switch(setting) {
 			case "Enabled":
 			case "QueuedReports":
-				Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
+				UpdateIcon();
 				break;
 			default: break;
 		}
@@ -193,7 +181,32 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function TopbarRegistered():Void {
 		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
+		// Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
+	}
+
+	private function UpdateIcon():Void {
+		Icon.RefreshTooltip();
+		if (Config.GetValue("Enabled")) { // If game disables mod, it isn't visible at all, so only user disables matter
+			for (var id:String in TrackedLore) {
+				Icon.gotoAndStop("alerted");
+				return;
+			}
+			if (AutoReport.NumReportsPending > 0) {
+				Icon.gotoAndStop("reporting");
+				return;
+			}
+			Icon.gotoAndStop("active");
+		} else { Icon.gotoAndStop("inactive"); }
+	}
+
+	private function IconTooltip():String {
+		var strings:Array = new Array();
+		for (var id:String in TrackedLore) {
+			if (strings.length == 0) { strings.push(LocaleManager.GetString("GUI", "TooltipTracking")); }
+			strings.push("  " + AttemptIdentification(TrackedLore[id], ef_LoreType_Despawn));
+		}
+		if (AutoReport.NumReportsPending > 0) { strings.push(LocaleManager.FormatString("GUI", "TooltipReports", AutoReport.NumReportsPending)); }
+		return strings.length > 0 ? strings.join('\n') : undefined;
 	}
 
 	// Override to add timestamps
@@ -305,7 +318,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Don't care about the value, but the request is required to get DynelGone events
 					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
 					TrackedLore[dynelId.toString()] = loreId;
-					Icon.UpdateState(ef_IconState_Alert, true);
+					UpdateIcon();
 				}
 			}
 		}
@@ -338,7 +351,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			for (var key:String in TrackedLore) {
 				return; // There's still at least one lore being tracked, don't clear the icon
 			}
-			Icon.UpdateState(ef_IconState_Alert, false);
+			UpdateIcon();
 		}
 	}
 
@@ -351,7 +364,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		delete TrackedLore;
 		TrackedLore = new Object();
-		Icon.UpdateState(ef_IconState_Alert, false);
+		UpdateIcon();
 	}
 
 	/// Lore identification

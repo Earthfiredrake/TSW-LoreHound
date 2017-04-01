@@ -38,6 +38,10 @@ The update system *should* carry forward settings from v0.4.0-beta onwards. Howe
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version next
++ Setting migration from versions prior to v1.0.0 no longer supported
++ Tooltip now provides listing of tracked lore and pending reports
+
 Version 1.0.0
 + An actual release version!
 + Options menu no longer possessed by a gaki, you can now esc from it
@@ -101,12 +105,13 @@ The following issues are known to exist in the most recent release:
 ## Testing and Further Developments
 This release is currently feature complete, but some things may arrive in subsequent releases:
 + Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations.
-+ Depreciated features of the config system retained to permit smooth upgrades from pre-release versions will be removed starting with v1.1.0.
++ Am finding the coordinate based reporting slightly difficult to parse at times, will be looking into some form of onscreen waypoint or flag. (1.1.0+)
 + A second project is in the preliminary stages of development, and may have some integration possibilities with this one.
 + Maintenance updates will be made as needed to fix bugs or add updates to the data files.
-+ Some form of whitelisting is a possibility: (1.1.0?)
++ Some form of whitelisting is a possibility: (1.1.0+)
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
++ It's still a bit spammy with messages. Perhaps an extension of the lore tracking system would be useful to limit how frequently a particular dynel is detected? (1.1.0)
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
