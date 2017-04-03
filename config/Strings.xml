@@ -75,6 +75,8 @@
 				en="Ignore Unclaimed Lore" /> <!-- Tag is not a typo, honest -->
 		<String tag="OtherSettingInactive"
 				en="Ignore Off Season Lore" />
+		<String tag="OtherSettingWaypoint"
+				en="Show Waypoints" />
 		<String tag="OtherSettingDespawn"
 				en="Track Despawns" />
 		<String tag="OtherSettingReporting"
@@ -158,5 +160,9 @@
 				en="Uncategorized lore (%1%) found!" />
 		<String tag="UnknownChat"
 				en="Uncategorized lore (%1%) found! Please submit for cataloguing" />
+	</Category>
+	<Category name="Patch">
+		<String tag="AutoReportRepair"
+				en="Auto report settings were not saving, this has been fixed and they have been reset to defaults." />
 	</Category>
 </StringCategories>

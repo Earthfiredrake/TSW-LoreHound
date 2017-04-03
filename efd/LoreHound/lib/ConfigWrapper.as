@@ -141,7 +141,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	public function SaveConfig():Archive {
-		if (IsDirty) {
+		if (IsDirty || !IsLoaded) {
 			UpdateCachedArchive();
 			if (ArchiveName != undefined) { DistributedValue.SetDValue(ArchiveName, CurrentArchive); }
 		}
@@ -211,6 +211,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 			DirtyFlag = false;
 		} else {
 			CurrentArchive = new Archive(); // Nothing to load, but we tried
+			CurrentArchive.AddEntry("ArchiveType", "Config"); // Remember to flag this as a config archive, in case we get saved as an invalid setting
 		}
 		SignalConfigLoaded.Emit();
 	}

@@ -24,7 +24,7 @@ Each category can independently have notifications output to either chat (System
 + Instance IDs: Identifier values for the particular pickup object in the world.
   + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects.
 
-To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. If it fails to detect something that it should, particularly if the developers have added new content, the "New Game Content" option will activate additional testing on objects that would otherwise be ignored.
+To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. If it fails to detect something that it should have the "Extra Testing" option will activate additional testing on objects that would otherwise be ignored.
 
 All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
@@ -38,9 +38,13 @@ The update system *should* carry forward settings from v0.4.0-beta onwards. Howe
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version next
+Version 1.1.0
 + Setting migration from versions prior to v1.0.0 no longer supported
++ Onscreen flags at detected lore locations!
+  + It's a rather ugly hack at the moment, the occasional ak'ab may request hugs
 + Tooltip now provides listing of tracked lore and pending reports
++ Fixed a bug with auto report setting corruption that was causing the system to fail
+  + During the update a chat message will be issued if you were affected, and that setting will be reset
 
 Version 1.0.0
 + An actual release version!
@@ -95,23 +99,20 @@ Version 0.1.1-alpha
 The following issues are known to exist in the most recent release:
 + There appear to be seven uncategorized lore IDs somewhere in the game
   + Three of these are believed to be event related and unavailable at the moment
-+ Misses lore pickups already within the detection range when zoning into a new map
++ Sometimes misses lore pickups already within the detection range when zoning into a new map
   + "Fixing" this causes cascading strange behaviours as it detects things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
 + Long label customizations are truncated by the GUI
   + If I get any translations, I'll likely have to expand the space to fit them
-+ An empty archive is left in the settings file after standardizing setting names
-  + This should have no effect other than being slightly untidy and will go away after v1.1.0
++ A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
+  + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
 ## Testing and Further Developments
-This release is currently feature complete, but some things may arrive in subsequent releases:
-+ Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations.
-+ Am finding the coordinate based reporting slightly difficult to parse at times, will be looking into some form of onscreen waypoint or flag. (1.1.0+)
-+ A second project is in the preliminary stages of development, and may have some integration possibilities with this one.
-+ Maintenance updates will be made as needed to fix bugs or add updates to the data files.
-+ Some form of whitelisting is a possibility: (1.1.0+)
+I'm relatively satisfied with the features that exist, and will continue providing basic support for bug fixes and updates to files if needed. However, due to the current situation, I am unlikely to get around to implementing the remaining features or attempting to port to SWL until more information is available:
++ Some form of whitelisting to further filter the accepted values:
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
-+ It's still a bit spammy with messages. Perhaps an extension of the lore tracking system would be useful to limit how frequently a particular dynel is detected? (1.1.0)
++ Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
++ My previously mentioned second project is currently on hold. While I still think it has value, I am not likely to develop it further until I have had a chance to look at SWL and decide which, if either, I will be playing.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 

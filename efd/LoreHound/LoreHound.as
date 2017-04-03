@@ -2,15 +2,21 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.geom.Point;
+
 import gfx.utils.Delegate;
 
 import com.GameInterface.Dynels;
+import com.GameInterface.Game.Character;
 import com.GameInterface.Game.Dynel;
 import com.GameInterface.Lore;
 import com.GameInterface.LoreNode;
 import com.GameInterface.MathLib.Vector3;
 import com.GameInterface.VicinitySystem;
-import com.GameInterface.WaypointInterface; // Playfield change notifications
+import com.GameInterface.Waypoint;
+import com.GameInterface.WaypointInterface;
+import GUI.Waypoints.CustomWaypoint;
+import com.Utils.Archive; //DEPRECIATED(v1.1.0.alpha): Required for bugfix that corrects forgetting AutoReport settings
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -24,7 +30,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.1.0.alpha",
+		Version : "1.1.0",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -64,7 +70,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		SystemsLoaded.CategoryIndex = false;
 
+		RecentLore = new Object();
 		TrackedLore = new Object();
+		WaypointSystem = _root.waypoints;
 		WaypointInterface.SignalPlayfieldChanged.Connect(ClearTracking, this);
 
 		var arConfig:ConfigWrapper = AutoReport.Initialize(ModName, Version, DevName);
@@ -83,7 +91,9 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
 		Config.NewSetting("TrackDespawns", true); // Track lore drops for when they despawn
-		Config.NewSetting("CheckNewContent", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
+		Config.NewSetting("ShowWaypoints", true); // Show onscreen waypoints for any reported lores
+		Config.NewSetting("CheckNewContent", false); // DEPRECIATED(v1.1.0.alpha): Renamed
+		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
@@ -108,7 +118,18 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
 			case "TrackDespawns":
-				if (!newValue) { ClearTracking(); }
+				if (!newValue) { ClearDespawnTracking(); }
+				break;
+			case "ShowWaypoints":
+				if (newValue) {
+					for (var key:String in RecentLore) {
+						var dynel:Dynel = RecentLore[key];
+						// TODO: This is a bit of a hack, it'll do slightly odd things if people toggle it around incomplete dynels (like inactive event lore)
+						//   Still is quicker than doing a full identification and reasonably accurate
+						CreateWaypoint(dynel, AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2)));
+					}
+				}
+				else { ClearWaypoints(); }
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
@@ -161,10 +182,25 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Version specific updates
 		//   Some upgrades may reflect unreleased builds, for consistency on develop branch
+		if (CompareVersions("1.1.0.alpha", oldVersion) >= 0) {
+			// Renaming setting due to recent events
+			Config.SetValue("ExtraTesting", Config.GetValue("CheckNewContent"));
+			// May have lost the config settings for the auto report system :(
+			if (Config.GetValue("AutoReport") instanceof Archive) {
+				Config.SetValue("AutoReport", Config.GetDefault("AutoReport"));
+				ChatMsg(LocaleManager.GetString("Patch", "AutoReportRepair"));
+			}
+		}
+	}
+
+	private function LoadComplete():Void {
+		super.LoadComplete();
+		Config.DeleteSetting("CheckNewContent"); // DEPRECIATED(v1.1.0.alpha): Renamed
 	}
 
 	private function Activate():Void {
 		AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
+		HostMovie.onEnterFrame = Delegate.create(this, UpdateWaypoints);
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
@@ -176,12 +212,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Detection notices between the deactivate-activate pair have a strange habit of providing the correct LoreId, but being unable to link to an actual lore object
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
+		delete HostMovie.onEnterFrame;
 		AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
-	}
-
-	private function TopbarRegistered():Void {
-		// Topbar icon does not copy custom state variable, so needs explicit refresh
-		// Icon.UpdateState(ef_IconState_Report, AutoReport.HasReportsPending);
 	}
 
 	private function UpdateIcon():Void {
@@ -232,9 +264,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     category: The string table to pull from? Constantly 50200 whenever I've checked
 	//     key: Some sort of hash? May vary by id# or string content (shrouded and regular lore have different values), but seems constant within a group
 	//     knubot: No idea at all. Always seems to be 0 for what it's worth.
-	//   GetID() - The ID type seems to be constant (51320) for all lore, but is shared with a wide variety of other props
+	//   GetID() - The ID type seems to be constant (51320) for all lore, but is shared with a wide variety of other props (simple dynels)
 	//       Other types:
 	//         50000 - used by all creatures (players, pets, npcs, monsters, etc.)
+	//         51321 - destructibles (according to global enums)
 	//         51322 - loot bags
 	//       As a note for later, the other category uses a different GetName() system (is pre-localized, rather than the xml tag used by objects)
 	//     Instance ids of fixed lore may vary slightly between sessions, seemingly depending on load orders or caching of map info.
@@ -265,7 +298,8 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Lore detection and sorting
 	private function LoreSniffer(dynelId:ID32):Void {
-		if (dynelId.m_Type != e_DynelType_Object) { return; } // Dynel is not of supertype associated with lore
+		if (dynelId.m_Type != _global.Enums.TypeID.e_Type_GC_SimpleDynel) { return; } // Dynel is not of supertype associated with lore
+		if (RecentLore[dynelId.toString()]) { return; } // Lore has already been reported recently
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
 		var dynelName:String = dynel.GetName();
@@ -278,7 +312,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == ef_LoreType_None) {
-			if (Config.GetValue("CheckNewContent") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
+			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
 			else { return; }
 		}
 
@@ -289,6 +323,15 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function ProcessAndNotify(dynel:Dynel, loreType:Number, categorizationId:Number, repeat:Number):Void {
 		if (ProcessLore(dynel, loreType, categorizationId, repeat)) {
 			SendLoreNotifications(loreType, categorizationId, dynel);
+			var dynelId:ID32 = dynel.GetID();
+			RecentLore[dynelId.toString()] = dynel;
+			// Used to register for RecentLore system...
+			// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, and returns the same value :(
+			// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
+			Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+			if (Config.GetValue("ShowWaypoints")) {
+				CreateWaypoint(dynel, AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), loreType, categorizationId));
+			}
 		}
 	}
 
@@ -353,18 +396,33 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			UpdateIcon();
 		}
+		if (RecentLore[despawnedId]) {
+			if (Config.GetValue("ShowWaypoints")) {
+				delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[despawnedId];
+				WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(new ID32(type, instance));
+			}
+			delete RecentLore[despawnedId];
+		}
 	}
 
 	private function ClearTracking():Void {
-		for (var key:String in TrackedLore) {
-			var id:Array = key.split(":");
-			// Probably don't *have* to unregister, the dynel is most likely about to be destroyed anyway
-			// This is more for cleaning up my end of things
-			Dynels.UnregisterProperty(id[0], id[1], _global.enums.Property.e_ObjPos);
-		}
+		ClearDespawnTracking();
+		// Don't need to clear waypoints, as the playfield change will reset the waypoint interface
+		delete RecentLore;
+		RecentLore = new Object();
+	}
+
+	private function ClearDespawnTracking():Void {
 		delete TrackedLore;
 		TrackedLore = new Object();
 		UpdateIcon();
+	}
+
+	private function ClearWaypoints():Void {
+		for (var key:String in RecentLore) {
+			delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[key];
+			WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(RecentLore[key].GetID());
+		}
 	}
 
 	/// Lore identification
@@ -386,7 +444,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	/// Notification and message formatting
-
 	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel):Void {
 		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(e_Stats_LoreId, 2), dynel, categorizationId);
 		var detailStrings:Array = GetDetailStrings(loreType, dynel);
@@ -570,8 +627,53 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 	}
 
+	/// Waypoint rendering
+	private function CreateWaypoint(dynel:Dynel, loreName:String):Void {
+		var waypoint:Waypoint = new Waypoint();
+		waypoint.m_Id = dynel.GetID();
+		waypoint.m_WaypointType = _global.Enums.WaypointType.e_RMWPScannerBlip;
+		waypoint.m_WaypointState = _global.Enums.QuestWaypointState.e_WPStateActive;
+		waypoint.m_Label = loreName;
+		waypoint.m_IsScreenWaypoint = true;
+		waypoint.m_IsStackingWaypoint = true;
+		waypoint.m_Radius = 0;
+		waypoint.m_Color = 0xF6D600;
+		waypoint.m_WorldPosition = dynel.GetPosition(0);
+		var scrPos:Point = dynel.GetScreenPosition();
+		waypoint.m_ScreenPositionX = scrPos.x;
+		waypoint.m_ScreenPositionY = scrPos.y;
+		waypoint.m_CollisionOffsetX = 0;
+		waypoint.m_CollisionOffsetY = 0;
+		waypoint.m_DistanceToCam = dynel.GetCameraDistance(0);
+		waypoint.m_MinViewDistance = 0;
+		waypoint.m_MaxViewDistance = 50;
+
+		WaypointSystem.m_CurrentPFInterface.m_Waypoints[waypoint.m_Id.toString()] = waypoint;
+		WaypointSystem.m_CurrentPFInterface.SignalWaypointAdded.Emit(waypoint.m_Id);
+	}
+
+	// Ugly, but I don't really see any alternative to doing a per/frame update
+	private function UpdateWaypoints():Void {
+		if (Config.GetValue("ShowWaypoints")) {
+			for (var key:String in RecentLore) {
+				// The waypoints that are added to the PFInterface are constantly stomped by the C++ side.
+				// So I'm updating the data held by the rendered copy, and then forcing it to redo the layout before it gets stomped again.
+				// As long as the mod is updated after the main interface, this should work.
+				// To do this properly, I'd have to implement my own waypoint system, which just isn't worth it at this point.
+				var dynel:Dynel = RecentLore[key];
+				var scrPos:Point = dynel.GetScreenPosition();
+				var waypoint:CustomWaypoint = WaypointSystem.m_RenderedWaypoints[key];
+				waypoint.m_Waypoint.m_ScreenPositionX = scrPos.x;
+				waypoint.m_Waypoint.m_ScreenPositionY = scrPos.y;
+				waypoint.m_Waypoint.m_DistanceToCam = dynel.GetCameraDistance(0);
+
+				waypoint.Update(Stage.visibleRect.width);
+				waypoint = undefined;
+			}
+		}
+	}
+
 	/// Variables
-	private static var e_DynelType_Object:Number = 51320; // All known lore shares this dynel type with a wide variety of other props
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
@@ -585,5 +687,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	private var IndexFile:XML;
 
 	private var CategoryIndex:Array;
+	private var RecentLore:Object;
 	private var TrackedLore:Object;
+	private var WaypointSystem:Object;
 }

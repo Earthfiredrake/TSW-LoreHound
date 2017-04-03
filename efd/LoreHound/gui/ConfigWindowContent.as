@@ -20,9 +20,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBModEnabled.disableFocus = true;
 		CBIgnoreUnclaimedLore.disableFocus = true;
 		CBIgnoreOffSeasonLore.disableFocus = true;
+		CBWaypoints.disableFocus = true;
 		CBTrackDespawns.disableFocus = true;
 		CBErrorReports.disableFocus = true;
-		CBNewContent.disableFocus = true;
+		CBExtraTests.disableFocus = true;
 		CBDetailTimestamp.disableFocus = true;
 		CBDetailLocation.disableFocus = true;
 		CBDetailCategory.disableFocus = true;
@@ -37,9 +38,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		LocaleManager.ApplyLabel(LBEnable);
 		LocaleManager.ApplyLabel(LBUnclaimed);
 		LocaleManager.ApplyLabel(LBInactive);
+		LocaleManager.ApplyLabel(LBWaypoints);
 		LocaleManager.ApplyLabel(LBDespawn);
 		LocaleManager.ApplyLabel(LBAutoReport);
-		LocaleManager.ApplyLabel(LBNewContent);
+		LocaleManager.ApplyLabel(LBExtraTests);
 	}
 
 	public function AttachConfig(config:ConfigWrapper):Void {
@@ -52,9 +54,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
 		CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
 		CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
+		CBWaypoints.addEventListener("select", this, "CBWaypoints_Select");
 		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
 		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
-		CBNewContent.addEventListener("select", this, "CBNewContent_Select");
+		CBExtraTests.addEventListener("select", this, "CBExtraTests_Select");
 		CBDetailTimestamp.addEventListener("select", this, "CBDetailTimestamp_Select");
 		CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
 		CBDetailCategory.addEventListener("select", this, "CBDetailCategory_Select");
@@ -77,11 +80,14 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
 		}
+		if (setting == "ShowWaypoints" || setting == undefined) {
+			CBWaypoints.selected = Config.GetValue("ShowWaypoints");
+		}
 		if (setting == "TrackDespawns" || setting == undefined) {
 			CBTrackDespawns.selected = Config.GetValue("TrackDespawns");
 		}
-		if (setting == "CheckNewContent" || setting == undefined) {
-			CBNewContent.selected = Config.GetValue("CheckNewContent");
+		if (setting == "ExtraTesting" || setting == undefined) {
+			CBExtraTests.selected = Config.GetValue("ExtraTesting");
 		}
 		if (setting == "Details" || setting == undefined) {
 			var details = Config.GetValue("Details");
@@ -111,6 +117,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("IgnoreOffSeasonLore", event.selected);
 	}
 
+	private function CBWaypoints_Select(event:Object):Void {
+		Config.SetValue("ShowWaypoints", event.selected);
+	}
+
 	private function CBTrackDespawns_Select(event:Object):Void {
 		Config.SetValue("TrackDespawns", event.selected);
 	}
@@ -119,8 +129,8 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.GetValue("AutoReport").SetValue("Enabled", event.selected);
 	}
 
-	private function CBNewContent_Select(event:Object):Void {
-		Config.SetValue("CheckNewContent", event.selected);
+	private function CBExtraTests_Select(event:Object):Void {
+		Config.SetValue("ExtraTesting", event.selected);
 	}
 
 	private function CBDetailTimestamp_Select(event:Object):Void {
@@ -149,17 +159,19 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var LBEnable:TextField;
 	private var LBUnclaimed:TextField;
 	private var LBInactive:TextField;
+	private var LBWaypoints:TextField;
 	private var LBDespawn:TextField;
 	private var LBAutoReport:TextField;
-	private var LBNewContent:TextField;
+	private var LBExtraTests:TextField;
 
 	// Checkboxes
 	private var CBModEnabled:CheckBox;
 	private var CBIgnoreUnclaimedLore:CheckBox;
 	private var CBIgnoreOffSeasonLore:CheckBox;
+	private var CBWaypoints:CheckBox;
 	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
-	private var CBNewContent:CheckBox;
+	private var CBExtraTests:CheckBox;
 
 	private var CBDetailTimestamp:CheckBox;
 	private var CBDetailLocation:CheckBox;
