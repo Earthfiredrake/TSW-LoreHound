@@ -396,6 +396,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			UpdateIcon();
 		}
+		// TODO: This needs to be above the return^
+		//       Might just be better to unify the tracking systems and various data
 		if (RecentLore[despawnedId]) {
 			if (Config.GetValue("ShowWaypoints")) {
 				delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[despawnedId];
@@ -485,6 +487,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
 		if (loreType == ef_LoreType_Unknown) {
 			var reportStrings:Array = new Array();
+			// TODO: Strip customization/localization from debug systems
+			//   loreName still uses custom strings
 			reportStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
 			var pos:Vector3 = dynel.GetPosition(0);
 			reportStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + ")");

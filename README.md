@@ -99,10 +99,13 @@ Version 0.1.1-alpha
 The following issues are known to exist in the most recent release:
 + There appear to be seven uncategorized lore IDs somewhere in the game
   + Three of these are believed to be event related and unavailable at the moment
++ Occasionally partially forgets that it's tracking lore drops, any waypoints remain but despawn notifications and the tooltip tracking list lose track of it.
+  + Only noticed this with a particularly drop heavy padurii farm. Fairly unimportant, particularly as the waypoints make despawn tracking less vital.
 + Sometimes misses lore pickups already within the detection range when zoning into a new map
   + "Fixing" this causes cascading strange behaviours as it detects things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
-+ Long label customizations are truncated by the GUI
-  + If I get any translations, I'll likely have to expand the space to fit them
++ Text field labels are truncated to fixed sizes
+  + Lore topics may cause waypoint labels to be trunctated, hiding the #
+  + Customization or translation of labels in the options menu will likely require some tweaking to allow for the extra space
 + A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
