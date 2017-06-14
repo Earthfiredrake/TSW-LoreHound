@@ -67,7 +67,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		PlacedLoreGroup.Init(LoreHound.ef_LoreType_Placed, config);
 		TriggerLoreGroup.Init(LoreHound.ef_LoreType_Trigger, config);
 		DropLoreGroup.Init(LoreHound.ef_LoreType_Drop, config);
-		UnknownLoreGroup.Init(LoreHound.ef_LoreType_Unknown, config);
+		UncategorizedLoreGroup.Init(LoreHound.ef_LoreType_Uncategorized, config);
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue):Void {
@@ -182,7 +182,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var PlacedLoreGroup:LoreCategorySettingGroup;
 	private var TriggerLoreGroup:LoreCategorySettingGroup;
 	private var DropLoreGroup:LoreCategorySettingGroup;
-	private var UnknownLoreGroup:LoreCategorySettingGroup;
+	private var UncategorizedLoreGroup:LoreCategorySettingGroup;
 
 	private var Config:ConfigWrapper;
 }

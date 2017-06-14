@@ -34,8 +34,8 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 		case LoreHound.ef_LoreType_Drop:
 			GroupTitle.text += "Drop";
 			break;
-		case LoreHound.ef_LoreType_Unknown:
-			GroupTitle.text += "Unknown";
+		case LoreHound.ef_LoreType_Uncategorized:
+			GroupTitle.text += "Uncategorized";
 			break;
 		}
 		LocaleManager.ApplyLabel(GroupTitle);

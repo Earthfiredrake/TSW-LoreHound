@@ -51,7 +51,7 @@
 				en="Triggered Lore" />
 		<String tag="SettingGroupDrop"
 				en="Dropped Lore" />
-		<String tag="SettingGroupUnknown"
+		<String tag="SettingGroupUncategorized"
 				en="Uncategorized Lore" />
 		<String tag="LoreSettingFifo"
 				en="FIFO Alerts" />
@@ -156,12 +156,12 @@
 				en="Lore (%1%) despawned" />
 		<String tag="DespawnChat"
 				en="Lore despawned or out of range (%1%)" />
-		<String tag="UnknownFifo"
+		<String tag="UncategorizedFifo"
 				en="Uncategorized lore (%1%) found!" />
-		<String tag="UnknownChat"
+		<String tag="UncategorizedChat"
 				en="Uncategorized lore (%1%) found! Please submit for cataloguing" />
 	</Category>
-	<Category name="Patch">
+	<Category name="Patch"> <!-- Update notes if a patch resulted in unexpected settings changed -->
 		<String tag="AutoReportRepair"
 				en="Auto report settings were not saving, this has been fixed and they have been reset to defaults." />
 	</Category>

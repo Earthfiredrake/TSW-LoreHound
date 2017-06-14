@@ -111,11 +111,15 @@ The following issues are known to exist in the most recent release:
 
 ## Testing and Further Developments
 I'm relatively satisfied with the features that exist, and will continue providing basic support for bug fixes and updates to files if needed. However, due to the current situation, I am unlikely to get around to implementing the remaining features or attempting to port to SWL until more information is available:
++ More flexible alert settings, at the category level
+  + Known|unknown filter
+  + Waypoints by category
 + Some form of whitelisting to further filter the accepted values:
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
 + Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
 + My previously mentioned second project is currently on hold. While I still think it has value, I am not likely to develop it further until I have had a chance to look at SWL and decide which, if either, I will be playing.
++ As SWL is likely to have slightly different mod interface requirements, am considering changes to the framework design to make it easier to port|back-port my mods. Thinking of using dependency injection, instead of inheritance, of the framework.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 

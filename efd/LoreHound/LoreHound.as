@@ -30,7 +30,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Debug settings at top so that commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.1.0",
+		Version : "1.1.1",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -43,7 +43,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	public static var ef_LoreType_Trigger:Number = 1 << 1; // Lore with triggered spawn conditions, seems to stay spawned once triggered (often after dungeon bosses)
 	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
 	private static var ef_LoreType_Despawn:Number = 1 << 3; // Special type for generating despawn messages (will be output as Drop lore)
-	public static var ef_LoreType_Unknown:Number = 1 << 4; // Newly detected lore, will need to be catalogued
+	public static var ef_LoreType_Uncategorized:Number = 1 << 4; // Newly detected lore, will need to be catalogued
 	private static var ef_LoreType_All:Number = (1 << 5) - 1;
 
 	// Category flags for extended information
@@ -85,8 +85,8 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
-		Config.NewSetting("FifoLevel", ef_LoreType_None);
-		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Unknown);
+		Config.NewSetting("FifoLevel", ef_LoreType_None); // DEPRECIATED(v1.2.0) : Renamed
+		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Uncategorized); // DEPRECIATED(v1.2.0) : Renamed
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
@@ -97,7 +97,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
-		// - Some fields are always included when detecting Unknown category lore, to help identify it
+		// - Some fields are always included when detecting uncategorized lore, to help identify it
 		Config.NewSetting("Details", ef_Details_Location);
 
 		arConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
@@ -173,7 +173,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function IsCategorizedLore(categoryId:Number):Boolean {
 		var category:Number = ClassifyID(categoryId);
-		return category != ef_LoreType_Unknown && category != ef_LoreType_None;
+		return category != ef_LoreType_Uncategorized && category != ef_LoreType_None;
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
@@ -182,7 +182,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Version specific updates
 		//   Some upgrades may reflect unreleased builds, for consistency on develop branch
-		if (CompareVersions("1.1.0.alpha", oldVersion) >= 0) {
+		if (CompareVersions("1.1.0.alpha", oldVersion) > 0) {
 			// Renaming setting due to recent events
 			Config.SetValue("ExtraTesting", Config.GetValue("CheckNewContent"));
 			// May have lost the config settings for the auto report system :(
@@ -312,7 +312,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == ef_LoreType_None) {
-			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Unknown; } // It's so new it hasn't been added to the index list yet
+			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
 			else { return; }
 		}
 
@@ -347,7 +347,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		if (loreType != ef_LoreType_Placed) {
 			// Lore spawned without a valid loreId should correct itself quickly, retest after a short delay
-			// Also including Unknown lore as it may be uncategorized drop lore
+			// Also including uncategorized possibly dropped lore
 			if (loreId == 0 && repeat < 5) {
 				TraceMsg("Spawned lore required repeat: " + (repeat + 1));
 				setTimeout(Delegate.create(this, ProcessAndNotify), 1, dynel, loreType, categorizationId, repeat + 1);
@@ -365,13 +365,13 @@ class efd.LoreHound.LoreHound extends Mod {
 				}
 			}
 		}
-		if (Config.GetValue("IgnoreUnclaimedLore") && loreId != 0 && Lore.IsLocked(loreId) && loreType != ef_LoreType_Unknown) {
+		if (Config.GetValue("IgnoreUnclaimedLore") && loreId != 0 && Lore.IsLocked(loreId) && loreType != ef_LoreType_Uncategorized) {
 			// Ignoring unclaimed lore
 			// Do this after the tracking hook, as the user is likely to claim the lore
 			return false;
 		}
 		if ((Config.GetValue("FifoLevel") & loreType) != loreType && (Config.GetValue("ChatLevel") & loreType) != loreType &&
-			(loreType != ef_LoreType_Unknown || !AutoReport.IsEnabled) && !DumpToLog) {
+			(loreType != ef_LoreType_Uncategorized || !AutoReport.IsEnabled) && !DumpToLog) {
 			return false; // No notification to be made, don't bother generating strings
 		}
 		return true;
@@ -474,8 +474,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			case ef_LoreType_Despawn:
 				typeString = "Despawn";
 				break;
-			case ef_LoreType_Unknown:
-				typeString = "Unknown";
+			case ef_LoreType_Uncategorized:
+				typeString = "Uncategorized";
 				break;
 			default:
 				// It should be impossible for the game data to trigger this state
@@ -485,7 +485,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		}
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Fifo", loreName));
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
-		if (loreType == ef_LoreType_Unknown) {
+		if (loreType == ef_LoreType_Uncategorized) {
 			var reportStrings:Array = new Array();
 			// TODO: Strip customization/localization from debug systems
 			//   loreName still uses custom strings
@@ -561,12 +561,12 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	// This info is ommitted from FIFO messages
-	// Unknown lore always requests some info for identification purposes
+	// Uncategorized lore always requests some info for identification purposes
 	private function GetDetailStrings(loreType:Number, dynel:Dynel):Array {
 		var details:Number = Config.GetValue("Details");
 		var detailStrings:Array = new Array();
 
-		if (loreType == ef_LoreType_Unknown || (details & ef_Details_Location) == ef_Details_Location) {
+		if (loreType == ef_LoreType_Uncategorized || (details & ef_Details_Location) == ef_Details_Location) {
 			// Not entirely clear on what the "attractor" parameter is for
 			// Current hypothesis is that it's related to focusing on different parts of a dynel ie: hands may have different coordinates from face
 			// Leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
@@ -575,7 +575,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			var playfield:String = LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID());
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "PositionInfo", playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
 		}
-		if (loreType == ef_LoreType_Unknown || (details & ef_Details_FormatString) == ef_Details_FormatString) {
+		if (loreType == ef_LoreType_Uncategorized || (details & ef_Details_FormatString) == ef_Details_FormatString) {
 			var formatStr:String = dynel.GetName();
 			// Strip off (seemingly) unimportant info and reformat to something more meaningful in this context
 			var ids:Array = formatStr.substring(formatStr.indexOf('id="')).split(' ', 2);
@@ -614,9 +614,9 @@ class efd.LoreHound.LoreHound extends Mod {
 				ChatMsg(detailStrings[i], { noPrefix : true });
 			}
 		}
-		if (loreType == ef_LoreType_Unknown) { // Auto report handles own enabled state
+		if (loreType == ef_LoreType_Uncategorized) { // Auto report handles own enabled state
 			// When compiling reports for the automated report system consider the following options for IDs
-			// Categorization ID: This one is currently being used to report on unknown lore groups (Range estimated to be [7...10] million)
+			// Categorization ID: This one is currently being used to report on uncategorized lore groups (Range estimated to be [7...10] million)
 			// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
 			// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 			// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
