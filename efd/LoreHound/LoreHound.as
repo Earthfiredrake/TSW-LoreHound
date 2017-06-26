@@ -16,7 +16,7 @@ import com.GameInterface.VicinitySystem;
 import com.GameInterface.Waypoint;
 import com.GameInterface.WaypointInterface;
 import GUI.Waypoints.CustomWaypoint;
-import com.Utils.Archive; //DEPRECIATED(v1.1.0.alpha): Required for bugfix that corrects forgetting AutoReport settings
+import com.Utils.Archive; //DEPRECATED(v1.1.0.alpha): Required for bugfix that corrects forgetting AutoReport settings
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -25,12 +25,14 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
+import efd.LoreHound.LoreData;
+
 class efd.LoreHound.LoreHound extends Mod {
 	private var ModInfo:Object = {
-		// Debug settings at top so that commenting out leaves no hanging ','
+		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.1.1",
+		Version : "1.1.2",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -70,7 +72,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		SystemsLoaded.CategoryIndex = false;
 
-		RecentLore = new Object();
 		TrackedLore = new Object();
 		WaypointSystem = _root.waypoints;
 		WaypointInterface.SignalPlayfieldChanged.Connect(ClearTracking, this);
@@ -85,14 +86,14 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
-		Config.NewSetting("FifoLevel", ef_LoreType_None); // DEPRECIATED(v1.2.0) : Renamed
-		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Uncategorized); // DEPRECIATED(v1.2.0) : Renamed
+		Config.NewSetting("FifoLevel", ef_LoreType_None); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
 		Config.NewSetting("TrackDespawns", true); // Track lore drops for when they despawn
 		Config.NewSetting("ShowWaypoints", true); // Show onscreen waypoints for any reported lores
-		Config.NewSetting("CheckNewContent", false); // DEPRECIATED(v1.1.0.alpha): Renamed
+		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
 		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 
 		// Extended information, regardless of this setting:
@@ -117,16 +118,13 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// Mod framework extensions and overrides
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
-			case "TrackDespawns":
-				if (!newValue) { ClearDespawnTracking(); }
-				break;
 			case "ShowWaypoints":
 				if (newValue) {
-					for (var key:String in RecentLore) {
-						var dynel:Dynel = RecentLore[key];
+					for (var key:String in TrackedLore) {
+						var lore:LoreData = TrackedLore[key];
 						// TODO: This is a bit of a hack, it'll do slightly odd things if people toggle it around incomplete dynels (like inactive event lore)
 						//   Still is quicker than doing a full identification and reasonably accurate
-						CreateWaypoint(dynel, AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2)));
+						CreateWaypoint(lore.DynelInst, AttemptIdentification(lore));
 					}
 				}
 				else { ClearWaypoints(); }
@@ -195,7 +193,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function LoadComplete():Void {
 		super.LoadComplete();
-		Config.DeleteSetting("CheckNewContent"); // DEPRECIATED(v1.1.0.alpha): Renamed
+		Config.DeleteSetting("CheckNewContent"); // DEPRECATED(v1.1.0.alpha): Renamed
 	}
 
 	private function Activate():Void {
@@ -219,9 +217,13 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function UpdateIcon():Void {
 		Icon.RefreshTooltip();
 		if (Config.GetValue("Enabled")) { // If game disables mod, it isn't visible at all, so only user disables matter
-			for (var id:String in TrackedLore) {
-				Icon.gotoAndStop("alerted");
-				return;
+			if (Config.GetValue("TrackDespawns")) {
+				for (var id:String in TrackedLore) {
+					if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) {
+						Icon.gotoAndStop("alerted");
+						return;
+					}
+				}
 			}
 			if (AutoReport.NumReportsPending > 0) {
 				Icon.gotoAndStop("reporting");
@@ -233,9 +235,13 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function IconTooltip():String {
 		var strings:Array = new Array();
-		for (var id:String in TrackedLore) {
-			if (strings.length == 0) { strings.push(LocaleManager.GetString("GUI", "TooltipTracking")); }
-			strings.push("  " + AttemptIdentification(TrackedLore[id], ef_LoreType_Despawn));
+		if (Config.GetValue("TrackDespawns")) {
+			for (var id:String in TrackedLore) {
+				if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) {
+					if (strings.length == 0) { strings.push(LocaleManager.GetString("GUI", "TooltipTracking")); }
+					strings.push("  " + AttemptIdentification(TrackedLore[id]));
+				}
+			}
 		}
 		if (AutoReport.NumReportsPending > 0) { strings.push(LocaleManager.FormatString("GUI", "TooltipReports", AutoReport.NumReportsPending)); }
 		return strings.length > 0 ? strings.join('\n') : undefined;
@@ -298,132 +304,103 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Lore detection and sorting
 	private function LoreSniffer(dynelId:ID32):Void {
-		if (dynelId.m_Type != _global.Enums.TypeID.e_Type_GC_SimpleDynel) { return; } // Dynel is not of supertype associated with lore
-		if (RecentLore[dynelId.toString()]) { return; } // Lore has already been reported recently
+		if (dynelId.m_Type != _global.Enums.TypeID.e_Type_GC_SimpleDynel) { return; } // Dynel is not of supertype associated with lore combs
+		if (TrackedLore[dynelId.toString()]) { return; }
 
 		var dynel:Dynel = Dynel.GetDynel(dynelId);
-		var dynelName:String = dynel.GetName();
-
-		// Extract the format string ID number from the xml tag
-		var formatStrId:String = dynelName.substring(dynelName.indexOf('id="') + 4);
-		formatStrId = formatStrId.substring(0, formatStrId.indexOf('"'));
-		var categorizationId:Number = Number(formatStrId);
+		var categorizationId:Number = LoreData.GetFormatStrID(dynel);
 
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == ef_LoreType_None) {
 			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
-			else { return; }
+			else { return; } // Dynel is not lore
 		}
 
-		ProcessAndNotify(dynel, loreType, categorizationId, 0);
+		ProcessAndNotify(new LoreData(dynel, categorizationId, loreType), 0);
 	}
 
 	// Callback for timeout delegate if loreId is uninitialized
-	private function ProcessAndNotify(dynel:Dynel, loreType:Number, categorizationId:Number, repeat:Number):Void {
-		if (ProcessLore(dynel, loreType, categorizationId, repeat)) {
-			SendLoreNotifications(loreType, categorizationId, dynel);
-			var dynelId:ID32 = dynel.GetID();
-			RecentLore[dynelId.toString()] = dynel;
-			// Used to register for RecentLore system...
-			// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, and returns the same value :(
-			// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
-			Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-			if (Config.GetValue("ShowWaypoints")) {
-				CreateWaypoint(dynel, AttemptIdentification(dynel.GetStat(e_Stats_LoreId, 2), loreType, categorizationId));
-			}
+	private function ProcessAndNotify(lore:LoreData, repeat:Number):Void {
+		if (TryConfirmLoreID(lore, repeat) && FilterLore(lore)) {
+			SendLoreNotifications(lore);
 		}
+		var dynelId:ID32 = lore.DynelID;
+		TrackedLore[dynelId.toString()] = lore;
+		// Registers despawn callback for lore tracking systems (spam reduction, waypoint cleanup and despawn notifications)
+		// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, and returns the same value :(
+		// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
+		Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+		UpdateIcon();
 	}
 
-	private function ProcessLore(dynel:Dynel, loreType:Number, categorizationId:Number, repeat:Number):Boolean {
-		// Type based filtering and preprocessing
-		// Attempts to ensure that a lore has a valid loreId, and starts tracking of dropped lores
-		// Also filters out the various "Ignore" settings
-		var loreId:Number = dynel.GetStat(e_Stats_LoreId, 2);
-		if (Config.GetValue("IgnoreOffSeasonLore") && loreId == 0 && loreType == ef_LoreType_Placed) {
-			return false; // Ignoring offseason lore
-		}
-		// dynelId, loreType, categorizationId, dynel, loreId
-
-		if (loreType != ef_LoreType_Placed) {
-			// Lore spawned without a valid loreId should correct itself quickly, retest after a short delay
-			// Also including uncategorized possibly dropped lore
-			if (loreId == 0 && repeat < 5) {
-				TraceMsg("Spawned lore required repeat: " + (repeat + 1));
-				setTimeout(Delegate.create(this, ProcessAndNotify), 1, dynel, loreType, categorizationId, repeat + 1);
-				return false; // The retries will eventually deal with notification
-			}
-			// Track dropped lore so that notifications can be made on despawn
-			// While could hook to the DynelLeave proximity detector, this method should be more efficient
-			if (loreType == ef_LoreType_Drop && Config.GetValue("TrackDespawns")) {
-				var dynelId:ID32 = dynel.GetID();
-				if (TrackedLore[dynelId.toString()] == undefined) {
-					// Don't care about the value, but the request is required to get DynelGone events
-					Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-					TrackedLore[dynelId.toString()] = loreId;
-					UpdateIcon();
-				}
-			}
-		}
-		if (Config.GetValue("IgnoreUnclaimedLore") && loreId != 0 && Lore.IsLocked(loreId) && loreType != ef_LoreType_Uncategorized) {
-			// Ignoring unclaimed lore
-			// Do this after the tracking hook, as the user is likely to claim the lore
-			return false;
-		}
-		if ((Config.GetValue("FifoLevel") & loreType) != loreType && (Config.GetValue("ChatLevel") & loreType) != loreType &&
-			(loreType != ef_LoreType_Uncategorized || !AutoReport.IsEnabled) && !DumpToLog) {
-			return false; // No notification to be made, don't bother generating strings
-		}
-		return true;
+	private function TryConfirmLoreID(lore:LoreData, repeat:Number):Boolean {
+		// Passthrough on valid lore ID, placed event lore, or if several retries all fail
+		if (lore.LoreID ||
+			lore.Type == LoreData.ef_LoreType_Placed ||
+			repeat > 5) { return true; }
+		setTimeout(Delegate.create(this, ProcessAndNotify), 1, lore, repeat + 1);
+		return false;
 	}
 
-	/// Dropped lore despawn tracking
+	private function FilterLore(lore:LoreData):Boolean {
+		// Filters lore based on user notification settings
+		if (lore.LoreID == 0) {
+			if (lore.Type == LoreData.ef_LoreType_Placed) { // Most likely inactive event lore
+				if (Config.GetValue("IgnoreOffSeasonLore")) { return false; }
+			} else { // Persisting partial initialization
+				TraceMsg("LoreID not available, limiting analysis");
+			}
+		} else { // Tests require a valid LoreID
+			if (Config.GetValue("IgnoreUnclaimedLore") && !lore.IsKnown() && lore.Type != ef_LoreType_Uncategorized) { return false; }
+		}
+		// Pass conditions
+		if ((Config.GetValue("FifoLevel") & lore.Type) ||
+			(Config.GetValue("ChatLevel") & lore.Type) ||
+			(lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
+			DumpToLog){ return true; }
+
+		// No notifications are to be made
+		return false;
+	}
+
+	/// Lore proximity tracking
 
 	// Triggers when the lore dynel is removed from the client, either because it has despawned or the player has moved too far away
 	// With no dynel to query, all required info has to be known values or cached
 	private function LoreDespawned(type:Number, instance:Number):Void {
 		var despawnedId:String = new ID32(type, instance).toString();
-		var loreId:Number = TrackedLore[despawnedId];
-		if (loreId != undefined) { // Ensure the despawned dynel was tracked by this mod
-			// Conform to the player's choice of notification on unclaimed lore, should they have left it unclaimed
-			if (loreId == 0 || !(Lore.IsLocked(loreId) && Config.GetValue("IgnoreUnclaimedLore"))) {
-				var messageStrings:Array = GetMessageStrings(ef_LoreType_Despawn, loreId);
-				DispatchMessages(messageStrings, ef_LoreType_Drop); // No details or raw categorizationID
-			}
-			delete TrackedLore[despawnedId];
-			for (var key:String in TrackedLore) {
-				return; // There's still at least one lore being tracked, don't clear the icon
-			}
-			UpdateIcon();
-		}
-		// TODO: This needs to be above the return^
-		//       Might just be better to unify the tracking systems and various data
-		if (RecentLore[despawnedId]) {
+		var lore:LoreData = TrackedLore[despawnedId];
+		if (lore) { // Ensure the despawned dynel was tracked by this mod
+			lore.Type |= LoreData.ef_LoreType_Despawn;
+			// Remove lore waypoint
 			if (Config.GetValue("ShowWaypoints")) {
 				delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[despawnedId];
-				WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(new ID32(type, instance));
+				WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(lore.DynelID);
 			}
-			delete RecentLore[despawnedId];
+			// Despawn notification
+			if ((lore.Type & LoreData.ef_LoreType_Drop) && Config.GetValue("TrackDespawns")) {
+				if (FilterLore(lore)) { // Despawn notifications are subject to same filters as regular ones
+					var messageStrings:Array = GetMessageStrings(lore);
+					DispatchMessages(messageStrings, lore); // No details or raw categorizationID
+				}
+			}
+			delete TrackedLore[despawnedId];
+			UpdateIcon(); // May have removed last despawn tracking lore
 		}
 	}
 
 	private function ClearTracking():Void {
-		ClearDespawnTracking();
-		// Don't need to clear waypoints, as the playfield change will reset the waypoint interface
-		delete RecentLore;
-		RecentLore = new Object();
-	}
-
-	private function ClearDespawnTracking():Void {
+		// Don't need to clear waypoints, playfield change resets waypoint interface
 		delete TrackedLore;
 		TrackedLore = new Object();
 		UpdateIcon();
 	}
 
 	private function ClearWaypoints():Void {
-		for (var key:String in RecentLore) {
+		for (var key:String in TrackedLore) {
 			delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[key];
-			WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(RecentLore[key].GetID());
+			WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(TrackedLore[key].DynelID);
 		}
 	}
 
@@ -446,10 +423,10 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	/// Notification and message formatting
-	private function SendLoreNotifications(loreType:Number, categorizationId:Number, dynel:Dynel):Void {
-		var messageStrings:Array = GetMessageStrings(loreType, dynel.GetStat(e_Stats_LoreId, 2), dynel, categorizationId);
-		var detailStrings:Array = GetDetailStrings(loreType, dynel);
-		DispatchMessages(messageStrings, loreType, detailStrings, categorizationId);
+	private function SendLoreNotifications(lore:LoreData):Void {
+		var messageStrings:Array = GetMessageStrings(lore);
+		var detailStrings:Array = GetDetailStrings(lore);
+		DispatchMessages(messageStrings, lore, detailStrings);
 	}
 
 	// Index:
@@ -457,48 +434,55 @@ class efd.LoreHound.LoreHound extends Mod {
 	// 1: System chat message
 	// 2: Mail report
 	// 3: Log encoding
-	private function GetMessageStrings(loreType:Number, loreId:Number, dynel:Dynel, categorizationId:Number):Array {
-		var loreName:String = AttemptIdentification(loreId, loreType, categorizationId);
+	private function GetMessageStrings(lore:LoreData):Array {
+		var loreName:String = AttemptIdentification(lore);
 		var messageStrings:Array = new Array();
 		var typeString:String;
-		switch (loreType) {
-			case ef_LoreType_Placed:
-				typeString = "Placed";
-				break;
-			case ef_LoreType_Trigger:
-				typeString = "Trigger";
-				break;
-			case ef_LoreType_Drop:
-				typeString = "Drop";
-				break;
-			case ef_LoreType_Despawn:
-				typeString = "Despawn";
-				break;
-			case ef_LoreType_Uncategorized:
-				typeString = "Uncategorized";
-				break;
-			default:
-				// It should be impossible for the game data to trigger this state
-				// This message probably indicates a logical failure in the mod
-				TraceMsg("Error, lore type defaulted: " + loreType);
-				return;
+		if (lore.Type & LoreData.ef_LoreType_Despawn) {
+			typeString = "Despawn";
+		} else {
+			switch (lore.Type) {
+				case LoreData.ef_LoreType_Placed:
+					typeString = "Placed";
+					break;
+				case LoreData.ef_LoreType_Trigger:
+					typeString = "Trigger";
+					break;
+				case LoreData.ef_LoreType_Drop:
+					typeString = "Drop";
+					break;
+				case LoreData.ef_LoreType_Uncategorized:
+					typeString = "Uncategorized";
+					break;
+				default:
+					// It should be impossible for the game data to trigger this state
+					// This message probably indicates a logical failure in the mod
+					TraceMsg("Error, lore type defaulted: " + lore.Type);
+					return;
+			}
 		}
+		messageStrings.push(loreName); // For waypoints
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Fifo", loreName));
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
-		if (loreType == ef_LoreType_Uncategorized) {
-			var reportStrings:Array = new Array();
-			// TODO: Strip customization/localization from debug systems
-			//   loreName still uses custom strings
-			reportStrings.push("Category: " + loreType + " (" + loreName + ")"); // Report string
-			var pos:Vector3 = dynel.GetPosition(0);
-			reportStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + ")");
-			reportStrings.push("Category ID: " + categorizationId);
-			messageStrings.push(reportStrings.join('\n'));
-		}
-		if (DumpToLog && dynel != undefined) { // No Dynel on despawns
-			var pos:Vector3 = dynel.GetPosition(0);
-			var posStr:String = "[" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + "]";
-			messageStrings.push("C:" + loreType + ";ID:" + loreId + ";PF:" + dynel.GetPlayfieldID() + ";" + posStr);
+		if (!(lore.Type & LoreData.ef_LoreType_Despawn)) {
+		// No Dynel data on despawn, and initial detection should have left a record
+			if (lore.Type == ef_LoreType_Uncategorized) {
+				var reportStrings:Array = new Array();
+				// TODO: Strip customization/localization from debug systems
+				//   loreName still uses custom strings
+				reportStrings.push("Category: " + lore.Type + " (" + loreName + ")"); // Report string
+				var dynel:Dynel = lore.DynelInst;
+				var pos:Vector3 = dynel.GetPosition(0);
+				reportStrings.push(LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID()) + " (" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + ")");
+				reportStrings.push("Category ID: " + lore.CategorizationID);
+				messageStrings.push(reportStrings.join('\n'));
+			}
+			if (DumpToLog) {
+				var dynel:Dynel = lore.DynelInst;
+				var pos:Vector3 = dynel.GetPosition(0);
+				var posStr:String = "[" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + "]";
+				messageStrings.push("C:" + lore.Type + ";ID:" + lore.LoreID + ";PF:" + dynel.GetPlayfieldID() + ";" + posStr);
+			}
 		}
 		return messageStrings;
 	}
@@ -510,12 +494,16 @@ class efd.LoreHound.LoreHound extends Mod {
 	// m_Parent/m_Children: Navigate the lore tree
 	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
 	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
-	private static function AttemptIdentification(loreId:Number, loreType:Number, categorizationId:Number):String {
-		if (loreId != 0) {
-			var loreNode:LoreNode = Lore.GetDataNodeById(loreId);
-			var loreSource:Number = Lore.GetTagViewpoint(loreId);
+	private static function AttemptIdentification(lore:LoreData):String {
+		if (lore.LoreID) {
+			var topic:String = lore.Topic;
+			var index:Number = lore.Index;
+			if (!(topic && index)) {
+				TraceMsg("Unknown topic or entry #, malformed lore ID: " + lore.LoreID);
+				return LocaleManager.GetString("LoreHound", "InvalidLoreID");
+			}
 			var catCode:String;
-			switch (loreSource) {
+			switch (lore.Source) {
 				case 0: // Buzzing
 					catCode = LocaleManager.GetString("LoreHound", "BuzzingSource");
 					break;
@@ -526,25 +514,14 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Consider setting up a report here, with LoreID as tag
 					// Low probability of it actually occuring, but knowing sooner rather than later might be nice
 					catCode = LocaleManager.GetString("LoreHound", "UnknownSource");
-					TraceMsg("Lore has unknown source: " + loreSource);
+					TraceMsg("Lore has unknown source: " + lore.Source);
 					break;
 			}
-			var parentNode:LoreNode = loreNode.m_Parent;
-			var entryNumber:Number = 1; // Most people number based on type and from a base of 1
-			for (var i:Number = 0; i < parentNode.m_Children.length; ++i) {
-				var childId:Number = parentNode.m_Children[i].m_Id;
-				if (childId == loreId) {
-					return LocaleManager.FormatString("LoreHound", "LoreName", parentNode.m_Name, catCode, entryNumber);
-				}
-				if (Lore.GetTagViewpoint(childId) == loreSource) {
-					++entryNumber;
-				}
-			}
-			TraceMsg("Unknown topic or entry #, malformed lore ID: " + loreId);
-			return LocaleManager.GetString("LoreHound", "InvalidLoreID");
+			return LocaleManager.FormatString("LoreHound", "LoreName", topic, catCode, index);
 		}
-		// Deal with any that are missing data
-		switch (loreType) {
+
+		// Deal with missing IDs
+		switch (lore.Type) {
 			case ef_LoreType_Placed:
 				// All the unidentified common lore I ran into matched up with event/seasonal lore
 				// Though not all the event/seasonal lore exists in this disabled state
@@ -552,7 +529,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				// - Samhain lores seem to be mostly absent (double checked in light of Polaris drone... really seems to be absent)
 				// - Other event lores seem to be mostly present
 				// (There are, of course, exceptions)
-				return LocaleManager.GetString("LoreHound", categorizationId == c_ShroudedLoreCategory ? "InactiveShrouded" : "InactiveEvent");
+				return LocaleManager.GetString("LoreHound", lore.CategorizationID == c_ShroudedLoreCategory ? "InactiveShrouded" : "InactiveEvent");
 			default:
 				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
 				// The only reason to see this now is if the automatic redetection system failed
@@ -562,11 +539,15 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	// This info is ommitted from FIFO messages
 	// Uncategorized lore always requests some info for identification purposes
-	private function GetDetailStrings(loreType:Number, dynel:Dynel):Array {
+	private function GetDetailStrings(lore:LoreData):Array {
 		var details:Number = Config.GetValue("Details");
+		if (lore.Type == LoreData.ef_LoreType_Uncategorized) {
+			details |= ef_Details_Location | ef_Details_FormatString;
+		}
 		var detailStrings:Array = new Array();
 
-		if (loreType == ef_LoreType_Uncategorized || (details & ef_Details_Location) == ef_Details_Location) {
+		var dynel:Dynel = lore.DynelInst;
+		if (details & ef_Details_Location) {
 			// Not entirely clear on what the "attractor" parameter is for
 			// Current hypothesis is that it's related to focusing on different parts of a dynel ie: hands may have different coordinates from face
 			// Leaving it at 0 causes results to match world coordinates reported through other means (shift F9, topbars)
@@ -575,7 +556,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			var playfield:String = LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID());
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "PositionInfo", playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
 		}
-		if (loreType == ef_LoreType_Uncategorized || (details & ef_Details_FormatString) == ef_Details_FormatString) {
+		if (details & ef_Details_FormatString) {
 			var formatStr:String = dynel.GetName();
 			// Strip off (seemingly) unimportant info and reformat to something more meaningful in this context
 			var ids:Array = formatStr.substring(formatStr.indexOf('id="')).split(' ', 2);
@@ -585,10 +566,10 @@ class efd.LoreHound.LoreHound extends Mod {
 			}
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "CategoryInfo", ids[0], ids[1]));
 		}
-		if ((details & ef_Details_DynelId) == ef_Details_DynelId) {
+		if (details & ef_Details_DynelId) {
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "InstanceInfo", dynel.GetID().toString()));
 		}
-		if ((details & ef_Details_StatDump) == ef_Details_StatDump) {
+		if (details & ef_Details_StatDump) {
 			// Fishing expedition, trying to find anything potentially useful
 			// Dev/debug only, does not need localization
 			detailStrings.push("Stat Dump: Mode " + DetailStatMode);
@@ -604,28 +585,31 @@ class efd.LoreHound.LoreHound extends Mod {
 		return detailStrings;
 	}
 
-	private function DispatchMessages(messageStrings:Array, loreType:Number, detailStrings:Array, categorizationId:Number):Void {
-		if ((Config.GetValue("FifoLevel") & loreType) == loreType) {
-			FifoMsg(messageStrings[0]);
+	private function DispatchMessages(messageStrings:Array, lore:LoreData, detailStrings:Array):Void {
+		if (Config.GetValue("ShowWaypoints") && !(lore.Type & LoreData.ef_LoreType_Despawn)) {
+			CreateWaypoint(lore.DynelInst, messageStrings[0]);
 		}
-		if ((Config.GetValue("ChatLevel") & loreType) == loreType) {
-			ChatMsg(messageStrings[1], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) == ef_Details_Timestamp });
+		if (Config.GetValue("FifoLevel") & lore.Type) {
+			FifoMsg(messageStrings[1]);
+		}
+		if (Config.GetValue("ChatLevel") & lore.Type) {
+			ChatMsg(messageStrings[2], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) });
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
 				ChatMsg(detailStrings[i], { noPrefix : true });
 			}
 		}
-		if (loreType == ef_LoreType_Uncategorized) { // Auto report handles own enabled state
+		if (lore.Type == ef_LoreType_Uncategorized) { // Auto report handles own enabled state
 			// When compiling reports for the automated report system consider the following options for IDs
 			// Categorization ID: This one is currently being used to report on uncategorized lore groups (Range estimated to be [7...10] million)
 			// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])
 			// Dynel ID: Not ideal, range is all over the place, doesn't uniquely identify a specific entry
 			// Playfield ID and location: Good for non-drop lores (and not terrible for them as the drop locations are usually predictible), formatting as an id might be a bit tricky
-			AutoReport.AddReport({ id: categorizationId, text: messageStrings[2] });
+			AutoReport.AddReport({ id: lore.CategorizationID, text: messageStrings[3] });
 			// Relevant details are already embedded
 		}
-		if (DumpToLog && messageStrings.length > 2) {
+		if (DumpToLog && messageStrings.length > 3) {
 			// Situations where a log dump was not possible (despawns) would also not generate a report
-			// If generated report will always be in index 2, and log dump will always be in the last slot (either 2 or 3)
+			// If generated report will always be in index 3, and log dump will always be in the last slot (either 3 or 4)
 			LogMsg(messageStrings[messageStrings.length - 1]);
 			// Relevant details are already embedded
 		}
@@ -659,12 +643,12 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Ugly, but I don't really see any alternative to doing a per/frame update
 	private function UpdateWaypoints():Void {
 		if (Config.GetValue("ShowWaypoints")) {
-			for (var key:String in RecentLore) {
+			for (var key:String in TrackedLore) {
 				// The waypoints that are added to the PFInterface are constantly stomped by the C++ side.
 				// So I'm updating the data held by the rendered copy, and then forcing it to redo the layout before it gets stomped again.
 				// As long as the mod is updated after the main interface, this should work.
 				// To do this properly, I'd have to implement my own waypoint system, which just isn't worth it at this point.
-				var dynel:Dynel = RecentLore[key];
+				var dynel:Dynel = TrackedLore[key].DynelInst;
 				var scrPos:Point = dynel.GetScreenPosition();
 				var waypoint:CustomWaypoint = WaypointSystem.m_RenderedWaypoints[key];
 				waypoint.m_Waypoint.m_ScreenPositionX = scrPos.x;
@@ -691,7 +675,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	private var IndexFile:XML;
 
 	private var CategoryIndex:Array;
-	private var RecentLore:Object;
 	private var TrackedLore:Object;
 	private var WaypointSystem:Object;
 }

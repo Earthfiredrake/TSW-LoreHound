@@ -38,6 +38,9 @@ The update system *should* carry forward settings from v0.4.0-beta onwards. Howe
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version 1.1.2
++ Unifies lore tracking and waypoints, should no longer forget to provide despawn notifications
+
 Version 1.1.0
 + Setting migration from versions prior to v1.0.0 no longer supported
 + Onscreen flags at detected lore locations!
@@ -99,8 +102,6 @@ Version 0.1.1-alpha
 The following issues are known to exist in the most recent release:
 + There appear to be seven uncategorized lore IDs somewhere in the game
   + Three of these are believed to be event related and unavailable at the moment
-+ Occasionally partially forgets that it's tracking lore drops, any waypoints remain but despawn notifications and the tooltip tracking list lose track of it.
-  + Only noticed this with a particularly drop heavy padurii farm. Fairly unimportant, particularly as the waypoints make despawn tracking less vital.
 + Sometimes misses lore pickups already within the detection range when zoning into a new map
   + "Fixing" this causes cascading strange behaviours as it detects things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
 + Text field labels are truncated to fixed sizes
@@ -108,6 +109,10 @@ The following issues are known to exist in the most recent release:
   + Customization or translation of labels in the options menu will likely require some tweaking to allow for the extra space
 + A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
+
+This version of the mod has been lightly tested in SWL and found to work with the following known caveats:
++ It does not integrate with the default top-bar
++ GUI editing is not currently working, so the icon cannot be moved or resized
 
 ## Testing and Further Developments
 I'm relatively satisfied with the features that exist, and will continue providing basic support for bug fixes and updates to files if needed. However, due to the current situation, I am unlikely to get around to implementing the remaining features or attempting to port to SWL until more information is available:
