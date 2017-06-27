@@ -1,5 +1,6 @@
 # TSW-LoreHound
 Notifications for lore drops in The Secret World, even if they're not visible.
+Mostly compatible with SWL, with limitations on GUI customization.
 
 ## Overview
 Will detect and attempt to identify lore pickups when they enter or spawn within a 20m radius around the player. Lore pickups have been roughly categorized into four groups.
@@ -15,7 +16,7 @@ Will detect and attempt to identify lore pickups when they enter or spawn within
 + Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
   + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble.
 
-Each category can independently have notifications output to either chat (System channel) or as FIFO alerts. By default, if it is able to precisely identify a lore that the character has not picked up, it will ignore it. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
+Each category can independently have notifications output to either chat (System channel), as FIFO alerts, or with ingame waypoints. By default, if it is able to precisely identify a lore that the character has not picked up, it will ignore it. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
 + Timestamp: Puts a timestamp on detections, so you can know when the drop was without having to timestamp all of the System channel (revealing the mysteriously blank lines that it otherwise hides).
 + Location*: Map name and coordinate vector for the lore
   + The vector has been swizzled into [x,z,y] format, where y is the vertical coordinate
@@ -29,16 +30,20 @@ To improve efficiency and reduce false-positives, it only checks against the exi
 All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
 ## Installation
-Any packaged releases can be installed by copying the contents into [Game Directory]\Data\Gui\Customized\Flash and restarting the client.
+The packaged release should be unzipped into the appropriate folder and the client restarted.
+TSW: [TSW Directory]\Data\Gui\Customized\Flash.
+SWL: [SWL Directory]\Data\Gui\Custom\Flash.
 
 When upgrading, existing .bxml files in the LoreHound directory should be deleted to ensure changes in the .xml files are loaded (whichever is newer seems to take precedence).
 
-The update system *should* carry forward settings from v0.4.0-beta onwards. However, v1.0.x will be the last release to support upgrades from the v0.x pre-release line. Starting with v1.1.0 directly upgrading from versions prior to v1.0.0 may result in settings being lost, reset, or potentially invalid.
+An internal update system *should* carry forward settings from previous versions. To simplify the system, major versions will be used as thresholds, v1.0.x will upgrade from any v0.y, but later versions require a staged upgrade through v1.0. Starting with v1.1.0 directly upgrading from versions prior to v1.0.0 may result in settings being lost, reset, or potentially invalid.
 
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version 1.1.2
+Version 1.2.0
++ Expanded options for tracking known/unkown lore
++ Expanded options for waypoint notifications
 + Unifies lore tracking and waypoints, should no longer forget to provide despawn notifications
 
 Version 1.1.0
@@ -110,21 +115,16 @@ The following issues are known to exist in the most recent release:
 + A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
-This version of the mod has been lightly tested in SWL and found to work with the following known caveats:
-+ It does not integrate with the default top-bar
+SWL compatibility issues:
 + GUI editing is not currently working, so the icon cannot be moved or resized
 
 ## Testing and Further Developments
-I'm relatively satisfied with the features that exist, and will continue providing basic support for bug fixes and updates to files if needed. However, due to the current situation, I am unlikely to get around to implementing the remaining features or attempting to port to SWL until more information is available:
-+ More flexible alert settings, at the category level
-  + Known|unknown filter
-  + Waypoints by category
+This continues to be something of a work in progress, though I'm mostly satisfied that it achives the objectives. I am considering:
 + Some form of whitelisting to further filter the accepted values:
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
 + Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
-+ My previously mentioned second project is currently on hold. While I still think it has value, I am not likely to develop it further until I have had a chance to look at SWL and decide which, if either, I will be playing.
-+ As SWL is likely to have slightly different mod interface requirements, am considering changes to the framework design to make it easier to port|back-port my mods. Thinking of using dependency injection, instead of inheritance, of the framework.
++ Was considering a map replacement mod that would permit more extensive custom markings, and could tie in with LoreHound to populate the lore locations. This was placed on hiatus due to the SWL release, and is not yet in development.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 

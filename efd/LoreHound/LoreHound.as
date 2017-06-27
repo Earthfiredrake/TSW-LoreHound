@@ -32,7 +32,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.1.2",
+		Version : "1.2.0",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -89,10 +89,17 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("FifoLevel", ef_LoreType_None); // DEPRECATED(v1.2.0.alpha) : Renamed
 		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
 
-		Config.NewSetting("IgnoreUnclaimedLore", true); // Ignore lore if the player hasn't picked it up already
+		// Renaming and expanding options for v1.2
+		Config.NewSetting("FifoAlerts", ef_LoreType_None); // FIFO onscreen alerts
+		Config.NewSetting("ChatAlerts", ef_LoreType_Drop | ef_LoreType_Uncategorized); // System chat alerts
+		Config.NewSetting("WaypointAlerts", ef_LoreType_Drop | ef_LoreType_Uncategorized); // Display onscreen waypoints for lore
+		Config.NewSetting("AlertForCollected", ef_LoreType_Drop | ef_LoreType_Uncategorized); // Alert the player for lore they already have
+		Config.NewSetting("AlertForUncollected", ef_LoreType_Uncategorized); // Alert the player for lore they haven't picked up yet
+
+		Config.NewSetting("IgnoreUnclaimedLore", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
-		Config.NewSetting("TrackDespawns", true); // Track lore drops for when they despawn
-		Config.NewSetting("ShowWaypoints", true); // Show onscreen waypoints for any reported lores
+		Config.NewSetting("TrackDespawns", true); // Track timed lore comb drops, and notify when they despawn
+		Config.NewSetting("ShowWaypoints", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
 		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 
@@ -118,16 +125,20 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// Mod framework extensions and overrides
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
-			case "ShowWaypoints":
+			case "WaypointAlerts":
 				if (newValue) {
+					var addedTypes:Number = newValue & ~oldValue;
+					var removedTypes:Number = oldValue & ~newValue;
 					for (var key:String in TrackedLore) {
 						var lore:LoreData = TrackedLore[key];
-						// TODO: This is a bit of a hack, it'll do slightly odd things if people toggle it around incomplete dynels (like inactive event lore)
-						//   Still is quicker than doing a full identification and reasonably accurate
-						CreateWaypoint(lore.DynelInst, AttemptIdentification(lore));
+						if (addedTypes & lore.Type) {
+							// TODO: This is a bit of a hack, it may do slightly odd things if people toggle it around incomplete dynels (like inactive event lore)
+							//   Still is quicker than doing a full identification and reasonably accurate
+							CreateWaypoint(lore.DynelInst, AttemptIdentification(lore));
+						}
+						if (removedTypes & lore.Type) { RemoveWaypoint(lore); }
 					}
-				}
-				else { ClearWaypoints(); }
+				} else { ClearWaypoints(); }
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
@@ -189,11 +200,25 @@ class efd.LoreHound.LoreHound extends Mod {
 				ChatMsg(LocaleManager.GetString("Patch", "AutoReportRepair"));
 			}
 		}
+		if (CompareVersions("1.2.0.alpha", oldVersion) > 0) {
+			// Rename *level settings to *alert
+			Config.SetValue("FifoAlerts", Config.GetValue("FifoLevel"));
+			Config.SetValue("ChatAlerts", Config.GetValue("ChatLevel"));
+			// Copy waypoint settings to new per-category setting
+			var existingAlerts = Config.GetValue("FifoLevel") | Config.GetValue("ChatLevel");
+			Config.SetValue("WaypointAlerts", (Config.GetValue("ShowWaypoints") ? existingAlerts : ef_LoreType_None));
+			// Copy unclaimed lore to per-category setting (no existing setting for claimed lore)
+			Config.SetValue("AlertForUncollected", (Config.GetValue("IgnoreUnclaimedLore") ? ef_LoreType_Uncategorized : ef_LoreType_All - ef_LoreType_Despawn));
+		}
 	}
 
 	private function LoadComplete():Void {
 		super.LoadComplete();
 		Config.DeleteSetting("CheckNewContent"); // DEPRECATED(v1.1.0.alpha): Renamed
+		Config.DeleteSetting("FifoLevel"); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.DeleteSetting("ChatLevel"); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.DeleteSetting("ShowWaypoints"); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.DeleteSetting("IgnoreUnclaimedLore"); // DEPRECATED(v1.2.0.alpha) : Renamed
 	}
 
 	private function Activate():Void {
@@ -352,11 +377,16 @@ class efd.LoreHound.LoreHound extends Mod {
 				TraceMsg("LoreID not available, limiting analysis");
 			}
 		} else { // Tests require a valid LoreID
-			if (Config.GetValue("IgnoreUnclaimedLore") && !lore.IsKnown() && lore.Type != ef_LoreType_Uncategorized) { return false; }
+			if (lore.IsKnown) {
+				if (!(lore.Type & Config.GetValue("AlertForCollected"))) { return false; }
+			} else {
+				if (!(lore.Type & Config.GetValue("AlertForUncollected"))) { return false; }
+			}
 		}
 		// Pass conditions
-		if ((Config.GetValue("FifoLevel") & lore.Type) ||
-			(Config.GetValue("ChatLevel") & lore.Type) ||
+		if ((Config.GetValue("FifoAlerts") & lore.Type) ||
+			(Config.GetValue("ChatAlerts") & lore.Type) ||
+			(Config.GetValue("WaypointAlerts") & lore.Type) ||
 			(lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
 			DumpToLog){ return true; }
 
@@ -372,13 +402,10 @@ class efd.LoreHound.LoreHound extends Mod {
 		var despawnedId:String = new ID32(type, instance).toString();
 		var lore:LoreData = TrackedLore[despawnedId];
 		if (lore) { // Ensure the despawned dynel was tracked by this mod
-			lore.Type |= LoreData.ef_LoreType_Despawn;
-			// Remove lore waypoint
-			if (Config.GetValue("ShowWaypoints")) {
-				delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[despawnedId];
-				WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(lore.DynelID);
-			}
-			// Despawn notification
+			lore.Type |= LoreData.ef_LoreType_Despawn; // Set the despawn flag
+
+			if (Config.GetValue("WaypointAlerts") & lore.Type) { RemoveWaypoint(lore); }
+			// Despawn notifications
 			if ((lore.Type & LoreData.ef_LoreType_Drop) && Config.GetValue("TrackDespawns")) {
 				if (FilterLore(lore)) { // Despawn notifications are subject to same filters as regular ones
 					var messageStrings:Array = GetMessageStrings(lore);
@@ -395,13 +422,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		delete TrackedLore;
 		TrackedLore = new Object();
 		UpdateIcon();
-	}
-
-	private function ClearWaypoints():Void {
-		for (var key:String in TrackedLore) {
-			delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[key];
-			WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(TrackedLore[key].DynelID);
-		}
 	}
 
 	/// Lore identification
@@ -586,13 +606,13 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function DispatchMessages(messageStrings:Array, lore:LoreData, detailStrings:Array):Void {
-		if (Config.GetValue("ShowWaypoints") && !(lore.Type & LoreData.ef_LoreType_Despawn)) {
+		if ((Config.GetValue("WaypointAlerts") & lore.Type) && !(lore.Type & LoreData.ef_LoreType_Despawn)) {
 			CreateWaypoint(lore.DynelInst, messageStrings[0]);
 		}
-		if (Config.GetValue("FifoLevel") & lore.Type) {
+		if (Config.GetValue("FifoAlerts") & lore.Type) {
 			FifoMsg(messageStrings[1]);
 		}
-		if (Config.GetValue("ChatLevel") & lore.Type) {
+		if (Config.GetValue("ChatAlerts") & lore.Type) {
 			ChatMsg(messageStrings[2], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) });
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
 				ChatMsg(detailStrings[i], { noPrefix : true });
@@ -640,15 +660,25 @@ class efd.LoreHound.LoreHound extends Mod {
 		WaypointSystem.m_CurrentPFInterface.SignalWaypointAdded.Emit(waypoint.m_Id);
 	}
 
+	private function RemoveWaypoint(lore:LoreData):Void {
+		delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[lore.DynelID.toString()];
+		WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(lore.DynelID);
+	}
+
+	private function ClearWaypoints():Void {
+		for (var key:String in TrackedLore) { RemoveWaypoint(TrackedLore[key]); }
+	}
+
 	// Ugly, but I don't really see any alternative to doing a per/frame update
 	private function UpdateWaypoints():Void {
-		if (Config.GetValue("ShowWaypoints")) {
-			for (var key:String in TrackedLore) {
+		for (var key:String in TrackedLore) {
+			var lore:LoreData = TrackedLore[key];
+			if (Config.GetValue("WaypointAlerts") & lore.Type) {
 				// The waypoints that are added to the PFInterface are constantly stomped by the C++ side.
 				// So I'm updating the data held by the rendered copy, and then forcing it to redo the layout before it gets stomped again.
 				// As long as the mod is updated after the main interface, this should work.
 				// To do this properly, I'd have to implement my own waypoint system, which just isn't worth it at this point.
-				var dynel:Dynel = TrackedLore[key].DynelInst;
+				var dynel:Dynel = lore.DynelInst;
 				var scrPos:Point = dynel.GetScreenPosition();
 				var waypoint:CustomWaypoint = WaypointSystem.m_RenderedWaypoints[key];
 				waypoint.m_Waypoint.m_ScreenPositionX = scrPos.x;

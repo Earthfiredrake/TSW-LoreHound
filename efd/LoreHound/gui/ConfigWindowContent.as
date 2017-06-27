@@ -18,9 +18,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		super.configUI();
 		// Disable focus to prevent selections from locking user input until the window closes
 		CBModEnabled.disableFocus = true;
-		CBIgnoreUnclaimedLore.disableFocus = true;
 		CBIgnoreOffSeasonLore.disableFocus = true;
-		CBWaypoints.disableFocus = true;
 		CBTrackDespawns.disableFocus = true;
 		CBErrorReports.disableFocus = true;
 		CBExtraTests.disableFocus = true;
@@ -36,9 +34,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		LocaleManager.ApplyLabel(LBInstance);
 		LocaleManager.ApplyLabel(LBOtherGroupTitle);
 		LocaleManager.ApplyLabel(LBEnable);
-		LocaleManager.ApplyLabel(LBUnclaimed);
 		LocaleManager.ApplyLabel(LBInactive);
-		LocaleManager.ApplyLabel(LBWaypoints);
 		LocaleManager.ApplyLabel(LBDespawn);
 		LocaleManager.ApplyLabel(LBAutoReport);
 		LocaleManager.ApplyLabel(LBExtraTests);
@@ -52,9 +48,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.GetValue("AutoReport").SignalValueChanged.Connect(AutoReportConfigUpdated, this);
 
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
-		CBIgnoreUnclaimedLore.addEventListener("select", this, "CBIgnoreUnclaimedLore_Select");
 		CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
-		CBWaypoints.addEventListener("select", this, "CBWaypoints_Select");
 		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
 		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
 		CBExtraTests.addEventListener("select", this, "CBExtraTests_Select");
@@ -74,14 +68,8 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "Enabled" || setting == undefined) {
 			CBModEnabled.selected = Config.GetValue("Enabled");
 		}
-		if (setting == "IgnoreUnclaimedLore" || setting == undefined) {
-			CBIgnoreUnclaimedLore.selected = Config.GetValue("IgnoreUnclaimedLore");
-		}
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
-		}
-		if (setting == "ShowWaypoints" || setting == undefined) {
-			CBWaypoints.selected = Config.GetValue("ShowWaypoints");
 		}
 		if (setting == "TrackDespawns" || setting == undefined) {
 			CBTrackDespawns.selected = Config.GetValue("TrackDespawns");
@@ -109,16 +97,8 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("Enabled", event.selected);
 	}
 
-	private function CBIgnoreUnclaimedLore_Select(event:Object):Void {
-		Config.SetValue("IgnoreUnclaimedLore", event.selected);
-	}
-
 	private function CBIgnoreOffSeasonLore_Select(event:Object):Void {
 		Config.SetValue("IgnoreOffSeasonLore", event.selected);
-	}
-
-	private function CBWaypoints_Select(event:Object):Void {
-		Config.SetValue("ShowWaypoints", event.selected);
 	}
 
 	private function CBTrackDespawns_Select(event:Object):Void {
@@ -157,18 +137,14 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var LBInstance:TextField;
 	private var LBOtherGroupTitle:TextField;
 	private var LBEnable:TextField;
-	private var LBUnclaimed:TextField;
 	private var LBInactive:TextField;
-	private var LBWaypoints:TextField;
 	private var LBDespawn:TextField;
 	private var LBAutoReport:TextField;
 	private var LBExtraTests:TextField;
 
 	// Checkboxes
 	private var CBModEnabled:CheckBox;
-	private var CBIgnoreUnclaimedLore:CheckBox;
 	private var CBIgnoreOffSeasonLore:CheckBox;
-	private var CBWaypoints:CheckBox;
 	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
 	private var CBExtraTests:CheckBox;
