@@ -32,7 +32,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.2.0",
+		Version : "1.2.1",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -131,14 +131,24 @@ class efd.LoreHound.LoreHound extends Mod {
 					var removedTypes:Number = oldValue & ~newValue;
 					for (var key:String in TrackedLore) {
 						var lore:LoreData = TrackedLore[key];
-						if (addedTypes & lore.Type) {
-							// TODO: This is a bit of a hack, it may do slightly odd things if people toggle it around incomplete dynels (like inactive event lore)
-							//   Still is quicker than doing a full identification and reasonably accurate
-							CreateWaypoint(lore.DynelInst, AttemptIdentification(lore));
-						}
-						if (removedTypes & lore.Type) { RemoveWaypoint(lore); }
+						if (addedTypes & lore.Type) { CreateWaypoint(lore.DynelInst, AttemptIdentification(lore)); }
+						if (removedTypes & lore.Type) { RemoveWaypoint(lore.DynelID); }
 					}
 				} else { ClearWaypoints(); }
+				break;
+			case "AlertForCollected":
+			case "AlertForUncollected":
+				var addedTypes:Number = newValue & ~oldValue;
+				// var removedTypes:Number = oldValue & ~newValue;
+				for (var key:String in TrackedLore) {
+					var lore:LoreData = TrackedLore[key];
+					if (lore.IsKnown == (setting == "AlertForCollected")
+						&& Config.GetValue("WaypointAlerts") & lore.Type) {
+							if (addedTypes & lore.Type) { CreateWaypoint(lore.DynelInst, AttemptIdentification(lore)); }
+							// if (removedTypes & lore.Type) { RemoveWaypoint(lore.DynelID); }
+							// Waypoints to remove should automatically do so during the next refresh cycle
+					}
+				}
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
@@ -404,7 +414,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (lore) { // Ensure the despawned dynel was tracked by this mod
 			lore.Type |= LoreData.ef_LoreType_Despawn; // Set the despawn flag
 
-			if (Config.GetValue("WaypointAlerts") & lore.Type) { RemoveWaypoint(lore); }
+			if (Config.GetValue("WaypointAlerts") & lore.Type) { RemoveWaypoint(lore.DynelID); }
 			// Despawn notifications
 			if ((lore.Type & LoreData.ef_LoreType_Drop) && Config.GetValue("TrackDespawns")) {
 				if (FilterLore(lore)) { // Despawn notifications are subject to same filters as regular ones
@@ -654,19 +664,22 @@ class efd.LoreHound.LoreHound extends Mod {
 		waypoint.m_CollisionOffsetY = 0;
 		waypoint.m_DistanceToCam = dynel.GetCameraDistance(0);
 		waypoint.m_MinViewDistance = 0;
-		waypoint.m_MaxViewDistance = 50;
+		waypoint.m_MaxViewDistance = c_MaxWaypointRange;
 
 		WaypointSystem.m_CurrentPFInterface.m_Waypoints[waypoint.m_Id.toString()] = waypoint;
 		WaypointSystem.m_CurrentPFInterface.SignalWaypointAdded.Emit(waypoint.m_Id);
 	}
 
-	private function RemoveWaypoint(lore:LoreData):Void {
-		delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[lore.DynelID.toString()];
-		WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(lore.DynelID);
+	private function RemoveWaypoint(dynelID:ID32):Void {
+		var key:String = dynelID.toString();
+		if (WaypointSystem.m_CurrentPFInterface.m_Waypoints[key]) {
+			delete WaypointSystem.m_CurrentPFInterface.m_Waypoints[key];
+			WaypointSystem.m_CurrentPFInterface.SignalWaypointRemoved.Emit(dynelID);
+		}
 	}
 
 	private function ClearWaypoints():Void {
-		for (var key:String in TrackedLore) { RemoveWaypoint(TrackedLore[key]); }
+		for (var key:String in TrackedLore) { RemoveWaypoint(TrackedLore[key].DyenlID); }
 	}
 
 	// Ugly, but I don't really see any alternative to doing a per/frame update
@@ -674,10 +687,14 @@ class efd.LoreHound.LoreHound extends Mod {
 		for (var key:String in TrackedLore) {
 			var lore:LoreData = TrackedLore[key];
 			if (Config.GetValue("WaypointAlerts") & lore.Type) {
+				if (!FilterLore(lore)) { // If not notifying for a particular lore, clear the waypoint if any (clears waypoint when picking up lore)
+					RemoveWaypoint(lore.DynelID);
+					continue;
+				}
 				// The waypoints that are added to the PFInterface are constantly stomped by the C++ side.
 				// So I'm updating the data held by the rendered copy, and then forcing it to redo the layout before it gets stomped again.
-				// As long as the mod is updated after the main interface, this should work.
-				// To do this properly, I'd have to implement my own waypoint system, which just isn't worth it at this point.
+				// As long as the mod updates after the main interface, this should work.
+				// To do this properly, I'd have to implement my own waypoint system, which just isn't worth it yet.
 				var dynel:Dynel = lore.DynelInst;
 				var scrPos:Point = dynel.GetScreenPosition();
 				var waypoint:CustomWaypoint = WaypointSystem.m_RenderedWaypoints[key];
@@ -694,6 +711,8 @@ class efd.LoreHound.LoreHound extends Mod {
 	/// Variables
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
+
+	private static var c_MaxWaypointRange = 50; // Maximum display range for waypoints, in metres
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided

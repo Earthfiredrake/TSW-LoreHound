@@ -13,7 +13,7 @@
 	<Category name="Trigger"> <!-- Will spawn after a certain condition is met -->
 		<!-- Unknown if they despawn, most are in instances that don't permit MUs -->
 		<ID value="7648084" /> <!-- Pol (Hidden zombie after Pol1) -->
-		<ID value="7648085" /> <!-- Pol (Drone spawn after Pol3) (missing from string table) -->
+		<ID value="7648085" /> <!-- Pol (Drone spawn after Pol3) (missing from TSW string table) -->
 		<ID value="7653135" /> <!-- HR6 (Post boss lore spawn) -->
 		<ID value="7661215" /> <!-- DW6 (Post boss lore spawn) -->
 		<ID value="7648451" /> <!-- Ankh (Orochi Agent after Ankh1) -->

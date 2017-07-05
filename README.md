@@ -41,6 +41,10 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version 1.2.Next
++ Claiming lore will now cause waypoints to immediately respect notification preference for claimed/unclaimed lore
++ Changes to claimed/unclaimed lore preferences will now be immediately reflected in displayed waypoints
+
 Version 1.2.0
 + Expanded options for tracking known/unkown lore
 + Expanded options for waypoint notifications
