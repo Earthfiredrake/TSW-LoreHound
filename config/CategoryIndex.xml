@@ -7,7 +7,9 @@
 	<!-- Here be the magic numbers (probably planted by the Dragon) -->
 	<Category name="Placed"> <!-- Lore pickup with fixed location and usually always visible -->
 		<!-- Also includes most event lore, and a handful of lores with minor trigger conditions -->
-		<ID value="7128026" /> <!-- Standard placed lore -->
+		<ID value="7128026"> <!-- Standard placed lore -->
+		  <Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->		  
+		</ID>
 		<ID value="7993128" /> <!-- Shrouded lore (End of Days)-->
 	</Category>
 	<Category name="Trigger"> <!-- Will spawn after a certain condition is met -->

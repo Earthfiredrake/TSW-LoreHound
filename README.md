@@ -1,22 +1,23 @@
 # TSW-LoreHound
-Notifications for lore drops in The Secret World, even if they're not visible.
+Proximity detection for lore in The Secret World, including non-visible pickups.
 Mostly compatible with SWL, with limitations on GUI customization.
 
 ## Overview
-Will detect and attempt to identify lore pickups when they enter or spawn within a 20m radius around the player. Lore pickups have been roughly categorized into four groups.
+Will detect and attempt to identify lore pickups when they enter or spawn within ~25m of the player. Lore pickups have been roughly categorized into four groups.
 + Placed: Basic placed lore. Usually always available but also includes most event lore and a few that require extra work to reveal.
-  + Lore for inactive events will not be fully identified and is excluded from detections by default. I'm hopeful that it will work with no changes when the related event is running.
-  + Some event lore appears to have been removed from the game entirely rather than just disabled, and cannot be detected at all.
-+ Triggered: Requires a particular condition to spawn but doesn't despawn (as far as I know).
+  + Am attempting to recategorize the conditional spawning ones, so if you encounter any that don't appear by default let me know.
+  + Lore for inactive events will not be fully identified and is excluded from notifications by default. I'm hopeful that it will work with no changes when the related event is running.
+  + Some event lore appears to have been removed from the game entirely rather than just disabled so cannot be detected at all.
++ Triggered: Requires a particular condition to spawn or be visible but doesn't despawn (as far as I know).
   + Commonly in instances that don't permit MUs, such as dungeons or replayable mission areas.
 + Dropped: Mostly bestiary lore drops from monsters and triggered spawns. Will time out after a short period of time.
-  + A tracking option can inform you when these despawn, as long as you stay in the vicinity (larger than the initial detection radius, likely over 100m).
+  + A tracking option can inform you when these despawn, as long as you stay in the vicinity (somewhere between ~75-100m).
     + Bestiary lore has a 5min timeout.
 	+ KD rare spawn drops have a 1min timeout.
 + Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
-  + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble.
+  + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble. (Automated reports remain untested in SWL.)
 
-Each category can independently have notifications output to either chat (System channel), as FIFO alerts, or with ingame waypoints. By default, if it is able to precisely identify a lore that the character has not picked up, it will ignore it. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
+Each category can independently have notifications output to either chat (System channel), as FIFO alerts, or with ingame waypoints. Default settings are designed to provide notifications for already acquired drop lore, and any uncategorized lore, but options are available to make it more of a personal proximity guide. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
 + Timestamp: Puts a timestamp on detections, so you can know when the drop was without having to timestamp all of the System channel (revealing the mysteriously blank lines that it otherwise hides).
 + Location*: Map name and coordinate vector for the lore
   + The vector has been swizzled into [x,z,y] format, where y is the vertical coordinate
@@ -30,7 +31,7 @@ To improve efficiency and reduce false-positives, it only checks against the exi
 All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
 ## Installation
-The packaged release should be unzipped into the appropriate folder and the client restarted.
+The packaged release (including the internal LoreHound folder) should be unzipped into the appropriate folder and the client restarted.
 TSW: [TSW Directory]\Data\Gui\Customized\Flash.
 SWL: [SWL Directory]\Data\Gui\Custom\Flash.
 
@@ -42,8 +43,10 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 
 ## Change Log
 Version 1.2.Next
-+ Claiming lore will now cause waypoints to immediately respect notification preference for claimed/unclaimed lore
++ Claiming lore will update the waypoints to reflect the change in state
 + Changes to claimed/unclaimed lore preferences will now be immediately reflected in displayed waypoints
++ Some lore which previously fell into the "Placed" category is now being shuffled to the "Triggered" category to better reflect its behaviour. This requires manual confirmation, so it a work in progress, and currently consists of:
+  + Padurii #3
 
 Version 1.2.0
 + Expanded options for tracking known/unkown lore
@@ -132,7 +135,7 @@ This continues to be something of a work in progress, though I'm mostly satisfie
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
-As always, defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata in game (by mail or pm), via the github issues system, or in the official forum post.
+As always, defect reports, suggestions, and contributions are welcome. They can be sent to Peloprata in SWL (by mail or pm), via the github issues system, or in the official forum post. I am infrequently in TSW at this point, so mail there is likely to be an unreliable method of communication. More often than not I can also be found lurking on various Discord servers, think of it as an investigation mission.
 
 Source Repository: https://github.com/Earthfiredrake/TSW-LoreHound
 

@@ -172,7 +172,13 @@ class efd.LoreHound.LoreHound extends Mod {
 				var categoryXML:XMLNode = xmlRoot.childNodes[i];
 				var category:Number = LoreHound["ef_LoreType_" + categoryXML.attributes.name];
 				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
-					CategoryIndex[categoryXML.childNodes[j].attributes.value] = category;
+					var dynelXML:XMLNode = categoryXML.childNodes[j];
+					var indexEntry:Object = {type : category, excluding : new Array()};
+					for (var k:Number = 0; k < dynelXML.childNodes.length; ++k) {
+						var exclusionXML:XMLNode = dynelXML.childNodes[k];
+						indexEntry.excluding[exclusionXML.attributes.loreID] = LoreHound["ef_LoreType_" + exclusionXML.attributes.category];
+					}
+					CategoryIndex[dynelXML.attributes.value] = indexEntry;
 				}
 			}
 			delete IndexFile;
@@ -371,8 +377,11 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function TryConfirmLoreID(lore:LoreData, repeat:Number):Boolean {
 		// Passthrough on valid lore ID, placed event lore, or if several retries all fail
-		if (lore.LoreID ||
-			lore.Type == LoreData.ef_LoreType_Placed ||
+		if (lore.LoreID) {
+			// Reclassify based on ID#, in case it's a lore that detects as the wrong type
+			lore.Type = ClassifyID(lore.CategorizationID, lore.LoreID);
+			return true;
+		} else if (lore.Type == LoreData.ef_LoreType_Placed ||
 			repeat > 5) { return true; }
 		setTimeout(Delegate.create(this, ProcessAndNotify), 1, lore, repeat + 1);
 		return false;
@@ -436,8 +445,11 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Lore identification
 	// Much of the primary categorization info is now contained in the xml data file
-	private function ClassifyID(categorizationId:Number):Number {
-		var category:Number = CategoryIndex[categorizationId];
+	private function ClassifyID(categorizationId:Number, loreId:Number):Number {
+		var indexEntry:Object = CategoryIndex[categorizationId];
+		var category:Number = indexEntry.excluding[loreId] ?
+			indexEntry.excluding[loreId] :
+			indexEntry.type;
 		return category ? category : ef_LoreType_None;
 	}
 
