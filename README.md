@@ -42,10 +42,10 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version 1.2.Next
-+ Claiming lore will update the waypoints to reflect the change in state
-+ Changes to claimed/unclaimed lore preferences will now be immediately reflected in displayed waypoints
-+ Some lore which previously fell into the "Placed" category is now being shuffled to the "Triggered" category to better reflect its behaviour. This requires manual confirmation, so it a work in progress, and currently consists of:
+Version 1.2.2
++ Waypoints now refresh immediately to reflect change in preferences, or when lore is claimed
++ Fixes GUI Edit Mode regression bug, icon can once again be moved and resized
++ Some lore which previously fell into the "Placed" category is now being reclassified as "Triggered". This requires manual confirmation, so it a work in progress, and currently consists of:
   + Padurii #3
 
 Version 1.2.0

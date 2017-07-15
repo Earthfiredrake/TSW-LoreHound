@@ -26,7 +26,7 @@ import efd.LoreHound.lib.etu.GemOverlay;
  */
 class efd.LoreHound.lib.etu.GemController extends UIComponent {
 
-	public static var __className:String = "efd.LoreHound.lib.etModUtils.GemController";
+	public static var __className:String = "efd.LoreHound.lib.etu.GemController";
 
 	/**
 	 * do not call this directly
