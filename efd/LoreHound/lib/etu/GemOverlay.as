@@ -19,7 +19,7 @@ import flash.geom.Point;
  */
 class efd.LoreHound.lib.etu.GemOverlay extends UIComponent {
 
-	public static var __className:String = "efd.LoreHound.lib.etModUtils.GemOverlay";
+	public static var __className:String = "efd.LoreHound.lib.etu.GemOverlay";
 
 	public function GemOverlay() {
 

@@ -69,7 +69,7 @@ class efd.LoreHound.lib.Mod {
 	//       ef_ModGui_NoIcon: Display no mod or topbar icon
 	//       ef_ModGui_NoConfigWindow: Do not use a config window,
 	//         topbar integration will use tne ModEnabledDV as config target
-	//       ef_ModGui_Console: (NoIcon | NoConfigWindow) also removes HostMovie variable
+	//       ef_ModGui_Console: (NoIcon | NoConfigWindow) also removes HostMovie variable, so cannot have an interface window either
 	//       ef_ModGui_NoTopbar: Disable VTIO compatible topbar integration
 	//         also useful for testing how it behaves without one
 	//       ef_ModGui_None: Disables all gui elements
@@ -130,14 +130,19 @@ class efd.LoreHound.lib.Mod {
 
 		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
 			HostMovie = hostMovie; // Not needed for console style mods
-		}
-
-		if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
-			EscStackTrigger = new EscapeStackNode();
-			ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
-			ShowConfigDV.SetValue(false);
-			ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
 			ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
+
+			if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
+				ConfigWindowEscTrigger = new EscapeStackNode();
+				ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
+				ShowConfigDV.SetValue(false);
+				ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
+			}
+
+			if (modInfo.Type == e_ModType_Interface) {
+				ShowInterface = false;
+				InterfaceWindowEscTrigger = new EscapeStackNode();
+			}
 		}
 		InitializeModConfig(modInfo);
 
@@ -158,6 +163,23 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
+	private function CheckLoadComplete():Void {
+		for (var key:String in SystemsLoaded) {
+			if (!SystemsLoaded[key]) { return; }
+		}
+		TraceMsg("Is fully loaded");
+		LoadComplete();
+	}
+
+	private function LoadComplete():Void {
+		delete SystemsLoaded; // No longer required
+		UpdateInstall();
+		Icon.UpdateState();
+		ModLoadedDV.SetValue(true);
+	}
+
+/// Configuration Settings
+
 	private function InitializeModConfig(modInfo:Object):Void {
 		Config = new ConfigWrapper(modInfo.ArchiveName);
 
@@ -165,6 +187,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
+		if (ShowInterface != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
 		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
@@ -201,6 +224,119 @@ class efd.LoreHound.lib.Mod {
 				break;
 		}
 	}
+
+/// Versioning and Upgrades
+
+	private function UpdateInstall():Void {
+		if (!Config.GetValue("Installed")) {
+			DoInstall();
+			Config.SetValue("Installed", true);
+			ChatMsg(LocaleManager.GetString("General", "Installed"));
+			if (ShowConfigDV != undefined) {
+				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
+				// Decided against having the options menu auto open here
+				// Users might not realize that it's a one off event, and consider it a bug
+			}
+			return; // No existing version to update
+		}
+		var oldVersion:String = Config.GetValue("Version");
+		var newVersion:String = Config.GetDefault("Version");
+		var versionChange:Number = CompareVersions(newVersion, oldVersion);
+		if (versionChange != 0) { // The version changed, either updated or reverted
+			if (versionChange > 0) {
+				// Verify upgrade restrictions
+				if (CompareVersions(MinUpgradableVersion, oldVersion) > 0) {
+					ChatMsg(LocaleManager.FormatString("General", "NoMigration", oldVersion));
+					Config.ResetAll();
+				} else { DoUpdate(newVersion, oldVersion); }
+			}
+			// Reset the version number to the new version
+			Config.ResetValue("Version");
+			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
+			if (ShowConfigDV != undefined) {
+				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
+			}
+		}
+		delete MinUpgradableVersion; // No longer required
+	}
+
+	// Compares two version strings (format "#.#.#[.alpha|.beta]")
+	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
+	// If positive, then the first version is higher, negative means first version was lower
+	// A return of 0 indicates that the versions were the same
+	public static function CompareVersions(firstVer:String, secondVer:String):Number {
+		var first:Array = firstVer.split(".");
+		var second:Array = secondVer.split(".");
+		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
+			if (first[i] != second[i]) {
+				if (i < 3) {
+					return Number(first[i]) < Number(second[i]) ? -(i + 1) : i + 1;
+				} else {
+					// One's alpha and the other is beta, all other values the same
+					return first[i] == "alpha" ? -4 : 4;
+				}
+			}
+		}
+		// Version number is the same, but one may still have a pre-release tag
+		if (first.length != second.length) {
+			return first.length > second.length ? -4 : 4;
+		}
+		return 0;
+	}
+
+/// Topbar registration
+
+	// MeeehrUI is legacy compatible with the VTIO interface,
+	// but explicit support will make solving unique issues easier
+	// Meeehr's should always trigger first if present, and can be checked during the callback.
+	private function RegisterWithTopbar():Void {
+		MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
+		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
+		// Try to register now, in case they loaded first, otherwise signup to detect if they load
+		if (!(DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV))) {
+			MeeehrDV.SignalChanged.Connect(DeferRegistration, this);
+			ViperDV.SignalChanged.Connect(DeferRegistration, this);
+		}
+	}
+
+	private function DeferRegistration(dv:DistributedValue) {
+		// Running multiple mods based on this framework was causing other mods (TSWACT) to fail topbar registration
+		// Current theory is there's some type of process time limiter on callbacks before they get discarded
+		// As this framework does some potentially heavy lifting during this stage (adjusting clip layer)
+		// Defer it slightly to give the program more time to deal with other mods
+		setTimeout(Delegate.create(this, DoTopbarRegistration), 1, dv);
+	}
+
+	private function DoTopbarRegistration(dv:DistributedValue):Boolean {
+		if (dv.GetValue() && !IsTopbarRegistered) {
+			MeeehrDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
+			ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
+			// Adjust our default icon to be better suited for topbar integration
+			if (Icon != undefined) {
+				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+				Icon.ConfigureForTopbar();
+			}
+			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
+			//       Both are capable of handling "undefined" or otherwise invalid icon names
+			var topbarInfo:Array = new Array(ModName, DevName, Version, undefined, Icon.toString());
+			topbarInfo[3] = ShowConfigDV != undefined ? ConfigWindowVarName : ModEnabledVarName;
+			DistributedValue.SetDValue("VTIO_RegisterAddon", topbarInfo.join('|'));
+			// Topbar creates its own icon, use it as our target for changes instead
+			// Can't actually remove ours though, Meeehr's redirects event handling oddly
+			// (It calls back to the original clip, using the new clip as the "this" instance)
+			Icon = Icon.CopyToTopbar(HostMovie.Icon);
+			IsTopbarRegistered = true;
+			TopbarRegistered();
+			// Once registered, topbar DVs are no longer required
+			// If discrimination between Viper and Meeehr is needed, consider expanding TopbarRegistered to be an enum
+			delete MeeehrDV;
+			delete ViperDV;
+			TraceMsg("Topbar registration complete");
+		}
+		return IsTopbarRegistered;
+	}
+
+/// Mod Icon
 
 	private function CreateIcon(modInfo:Object):Void {
 		var iconData:Object = modInfo.IconData ? modInfo.IconData : new Object();
@@ -241,11 +377,12 @@ class efd.LoreHound.lib.Mod {
 		Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(), iconData));
 	}
 
+/// Standard Icon Mouse Handlers
+
 	private function ChangeModEnabled(dv:DistributedValue):Void {
 		var value:Boolean = dv != undefined ? dv.GetValue() : !Config.GetValue("Enabled");
 		Config.SetValue("Enabled", value);
 	}
-
 	private function ToggleModTooltip():String {
 		return LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipModOff" : "TooltipModOn");
 	}
@@ -254,54 +391,55 @@ class efd.LoreHound.lib.Mod {
 	private static function ToggleConfigTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
 
 	private function ToggleInterface():Void {
-		// TODO: Decide how to trigger an interface display
+		if (!ShowInterface) { // Show the interface
+			if (InterfaceWindowClip == null) {
+				InterfaceWindowClip = OpenWindow("InterfaceWindow", InterfaceWindowLoaded, CloseInterfaceWindow, InterfaceWindowEscTrigger);
+			}
+		} else { // Close the interface
+			CloseInterfaceWindow();
+		}
+		ShowInterface == !ShowInterface;
 	}
-
 	private static function ToggleInterfaceTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
 
-	private function ShowConfigWindow(dv:DistributedValue):Void {
-		if (dv.GetValue()) { // Open window
-			if (ConfigWindowClip == null) {
-				ConfigWindowClip = HostMovie.attachMovie(ModName + "SettingsWindow", "SettingsWindow", HostMovie.getNextHighestDepth());
-				// Defer the actual binding to config until things are set up
-				ConfigWindowClip.SignalContentLoaded.Connect(ConfigWindowLoaded, this);
+/// Window Displays
 
-				var LocaleTitle:String = LocaleManager.FormatString("GUI", "ConfigWindowTitle", ModName);
-				ConfigWindowClip.SetTitle(LocaleTitle, "left");
-				ConfigWindowClip.SetPadding(10);
-				ConfigWindowClip.SetContent(ModName + "ConfigWindowContent");
+	private function OpenWindow(windowName:String, loadEvent:Function, closeEvent:Function, escNode:EscapeStackNode):MovieClip {
+		var clip:MovieClip = HostMovie.attachMovie(ModName + windowName, windowName, HostMovie.getNextHighestDepth());
+		clip.SignalContentLoaded.Connect(loadEvent, this); // Defer config bindings until content is loaded
 
-				ConfigWindowClip.ShowCloseButton(true);
-				ConfigWindowClip.ShowStroke(false);
-				ConfigWindowClip.ShowResizeButton(false);
-				ConfigWindowClip.ShowFooter(false);
+		var localeTitle:String = LocaleManager.FormatString("GUI", windowName + "Title", ModName);
+		clip.SetTitle(localeTitle, "left");
+		clip.SetPadding(10);
+		clip.SetContent(ModName + windowName + "Content");
+		clip.ShowCloseButton(true);
+		clip.ShowStroke(false);
+		clip.ShowRezieButton(false);
+		clip.ShowFooter(false);
 
-				var position:Point = Config.GetValue("ConfigWindowPosition");
-				ConfigWindowClip._x = position.x;
-				ConfigWindowClip._y = position.y;
+		var position:Point = Config.GetValue(windowName + "Position");
+		clip._x = position.x;
+		clip._y = position.y;
 
-				ResolutionScaleDV.SignalChanged.Connect(SetConfigWindowScale, this);
-				SetConfigWindowScale();
+		ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, clip);
+		SetWindowScale.call(clip, ResolutionScaleDV);
 
-				EscStackTrigger.SignalEscapePressed.Connect(CloseConfigWindow, this);
-				EscapeStack.Push(EscStackTrigger);
-				ConfigWindowClip.SignalClose.Connect(CloseConfigWindow, this);
-			}
-		} else { // Close window
-			if (ConfigWindowClip != null) {
-				EscStackTrigger.SignalEscapePressed.Disconnect(CloseConfigWindow, this);
-				ResolutionScaleDV.SignalChanged.Disconnect(SetConfigWindowScale, this);
+		escNode.SignalEscapePressed.Connect(closeEvent, this);
+		EscapeStack.Push(escNode);
+		clip.SignalClose.Connect(closeEvent, this);
 
-				ReturnWindowToVisibleBounds(ConfigWindowClip, Config.GetDefault("ConfigWindowPosition"));
-				Config.SetValue("ConfigWindowPosition", new Point(ConfigWindowClip._x, ConfigWindowClip._y));
-
-				ConfigWindowClip.removeMovieClip();
-				ConfigWindowClip = null;
-			}
-		}
+		return clip;
 	}
 
-	private function ConfigWindowLoaded():Void { ConfigWindowClip.m_Content.AttachConfig(Config); }
+	private function CloseWindow(windowClip:MovieClip, windowName:String, closeEvent:Function, escNode:EscapeStackNode):Void {
+		escNode.SignalEscapePressed.Disconnect(closeEvent, this);
+		ResolutionScaleDV.SignalChanged.Disconnect(SetWindowScale, windowClip);
+
+		ReturnWindowToVisibleBounds(windowClip, Config.GetDefault(windowName + "Position"));
+		Config.SetValue(windowName + "Position", new Point(windowClip._x, windowClip._y));
+
+		windowClip.removeMovieClip();
+	}
 
 	private static function ReturnWindowToVisibleBounds(window:MovieClip, defaults:Point):Void {
 		var visibleBounds = Stage.visibleRect;
@@ -315,110 +453,37 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function SetConfigWindowScale():Void {
-		var scale:Number = ResolutionScaleDV.GetValue() * 100;
-		ConfigWindowClip._xscale = scale;
-		ConfigWindowClip._yscale = scale;
+	private function SetWindowScale(scaleDV:DistributedValue):Void {
+		var scale:Number = scaleDV.GetValue() * 100;
+		var target:Object = this;
+		target._xscale = scale;
+		target._yscale = scale;
 	}
+
+	private function ShowConfigWindow(dv:DistributedValue):Void {
+		if (dv.GetValue()) { // Open window
+			if (ConfigWindowClip == null) {
+				ConfigWindowClip = OpenWindow("ConfigWindow", ConfigWindowLoaded, CloseConfigWindow, ConfigWindowEscTrigger);
+			}
+		} else { // Close window
+			if (ConfigWindowClip != null) {
+				CloseWindow(ConfigWindowClip, "ConfigWindow", CloseConfigWindow, ConfigWindowEscTrigger);
+				ConfigWindowClip = null;
+			}
+		}
+	}
+
+	private function ConfigWindowLoaded():Void { ConfigWindowClip.m_Content.AttachConfig(Config); }
 
 	private function CloseConfigWindow():Void { ShowConfigDV.SetValue(false); }
 
-	private function CheckLoadComplete():Void {
-		for (var key:String in SystemsLoaded) {
-			if (!SystemsLoaded[key]) { return; }
-		}
-		TraceMsg("Is fully loaded");
-		LoadComplete();
-	}
+	private function InterfaceWindowLoaded():Void { }
 
-	private function LoadComplete():Void {
-		delete SystemsLoaded; // No longer required
-		UpdateInstall();
-		Icon.UpdateState();
-		ModLoadedDV.SetValue(true);
-	}
-
-	private function UpdateInstall():Void {
-		if (!Config.GetValue("Installed")) {
-			DoInstall();
-			Config.SetValue("Installed", true);
-			ChatMsg(LocaleManager.GetString("General", "Installed"));
-			if (ShowConfigDV != undefined) {
-				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
-				// Decided against having the options menu auto open here
-				// Users might not realize that it's a one off event, and consider it a bug
-			}
-			return; // No existing version to update
+	private function CloseInterfaceWindow():Void {
+		if (InterfaceWindowClip != null) {
+			CloseWindow(InterfaceWindowClip, "InterfaceWindow", CloseInterfaceWindow, InterfaceWindowEscTrigger);
+			InterfaceWindowClip = null;
 		}
-		var oldVersion:String = Config.GetValue("Version");
-		var newVersion:String = Config.GetDefault("Version");
-		var versionChange:Number = CompareVersions(newVersion, oldVersion);
-		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) {
-				// Verify upgrade restrictions
-				if (CompareVersions(MinUpgradableVersion, oldVersion) > 0) {
-					ChatMsg(LocaleManager.FormatString("General", "NoMigration", oldVersion));
-					Config.ResetAll();
-				} else { DoUpdate(newVersion, oldVersion); }
-			}
-			// Reset the version number to the new version
-			Config.ResetValue("Version");
-			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
-			if (ShowConfigDV != undefined) {
-				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
-			}
-		}
-		delete MinUpgradableVersion; // No longer required
-	}
-
-	// MeeehrUI is legacy compatible with the VTIO interface,
-	// but explicit support will make solving unique issues easier
-	// Meeehr's should always trigger first if present, and can be checked during the callback.
-	private function RegisterWithTopbar():Void {
-		MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
-		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
-		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		if (!(DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV))) {
-			MeeehrDV.SignalChanged.Connect(DeferRegistration, this);
-			ViperDV.SignalChanged.Connect(DeferRegistration, this);
-		}
-	}
-	
-	private function DeferRegistration(dv:DistributedValue) {
-		// Running multiple mods based on this framework was causing other mods (TSWACT) to fail topbar registration
-		// Current theory is there's some type of process time limiter on callbacks before they get discarded
-		// As this framework does some potentially heavy lifting during this stage (adjusting clip layer)
-		// Defer it slightly to give the program more time to deal with other mods
-		setTimeout(Delegate.create(this, DoTopbarRegistration), 1, dv);
-	}
-
-	private function DoTopbarRegistration(dv:DistributedValue):Boolean {
-		if (dv.GetValue() && !IsTopbarRegistered) {
-			MeeehrDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
-			ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
-			// Adjust our default icon to be better suited for topbar integration
-			if (Icon != undefined) {
-				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
-				Icon.ConfigureForTopbar();
-			}
-			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
-			//       Both are capable of handling "undefined" or otherwise invalid icon names
-			var topbarInfo:Array = new Array(ModName, DevName, Version, undefined, Icon.toString());
-			topbarInfo[3] = ShowConfigDV != undefined ? ConfigWindowVarName : ModEnabledVarName;
-			DistributedValue.SetDValue("VTIO_RegisterAddon", topbarInfo.join('|'));
-			// Topbar creates its own icon, use it as our target for changes instead
-			// Can't actually remove ours though, Meeehr's redirects event handling oddly
-			// (It calls back to the original clip, using the new clip as the "this" instance)
-			Icon = Icon.CopyToTopbar(HostMovie.Icon);
-			IsTopbarRegistered = true;
-			TopbarRegistered();
-			// Once registered, topbar DVs are no longer required
-			// If discrimination between Viper and Meeehr is needed, consider expanding TopbarRegistered to be an enum
-			delete MeeehrDV;
-			delete ViperDV;
-			TraceMsg("Topbar registration complete");
-		}
-		return IsTopbarRegistered;
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
@@ -508,30 +573,6 @@ class efd.LoreHound.lib.Mod {
 	public static var TraceMsg:Function;
 	public static var LogMsg:Function;
 
-	// Compares two version strings (format "#.#.#[.alpha|.beta]")
-	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
-	// If positive, then the first version is higher, negative means first version was lower
-	// A return of 0 indicates that the versions were the same
-	public static function CompareVersions(firstVer:String, secondVer:String):Number {
-		var first:Array = firstVer.split(".");
-		var second:Array = secondVer.split(".");
-		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
-			if (first[i] != second[i]) {
-				if (i < 3) {
-					return Number(first[i]) < Number(second[i]) ? -(i + 1) : i + 1;
-				} else {
-					// One's alpha and the other is beta, all other values the same
-					return first[i] == "alpha" ? -4 : 4;
-				}
-			}
-		}
-		// Version number is the same, but one may still have a pre-release tag
-		if (first.length != second.length) {
-			return first.length > second.length ? -4 : 4;
-		}
-		return 0;
-	}
-
 	/// The following empty functions are provided as override hooks for subclasses to implement
 	private function DoInstall():Void { }
 	private function DoUpdate(newVersion:String, oldVersion:String):Void { }
@@ -576,7 +617,11 @@ class efd.LoreHound.lib.Mod {
 	private var ShowConfigDV:DistributedValue; // Needs to be DV as topbars use it for providing settings from the mod list; if undefined, no config window is available
 	private var ResolutionScaleDV:DistributedValue;
 	private var ConfigWindowClip:MovieClip = null;
-	private var EscStackTrigger:EscapeStackNode;
+	private var ConfigWindowEscTrigger:EscapeStackNode;
+
+	private var ShowInterface:Boolean;
+	private var InterfaceWindowClip:MovieClip = null;
+	private var InterfaceWindowEscTrigger:EscapeStackNode;
 
 	private var HostMovie:MovieClip;
 	public var Icon:ModIcon;
