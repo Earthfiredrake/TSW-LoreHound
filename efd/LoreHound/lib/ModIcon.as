@@ -29,12 +29,9 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		Config.NewSetting("IconScale", 100);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
 
-		ScreenResScaleDV = DistributedValue.Create("GUIResolutionScale");
-		ScreenResScaleDV.SignalChanged.Connect(UpdateScale, this);
 		GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
 		SignalGeometryChanged = new Signal();
 
-		UpdateScale();
 		// UpdateState customization won't be completed anyway
 		// If custom state could persist between sessions, the mod should confirm it on load
 		UpdateState();
@@ -52,8 +49,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		Config.DeleteSetting("IconPosition");
 		Config.DeleteSetting("IconScale");
 		GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
-		ScreenResScaleDV.SignalChanged.Disconnect(UpdateScale, this);
-		delete ScreenResScaleDV;
 	}
 
 	// Copy addtional properties and functions to the topbar's copy of the icon
@@ -117,10 +112,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	/// Layout and GEM handling
 	private function UpdateScale():Void {
-		var guiScale:Number = ScreenResScaleDV.GetValue();
-		if ( guiScale == undefined) { guiScale = 1; }
-		_xscale = guiScale * Config.GetValue("IconScale");
-		_yscale = guiScale * Config.GetValue("IconScale");
+		_xscale = Config.GetValue("IconScale");
+		_yscale = Config.GetValue("IconScale");
 	}
 
 	private function ManageGEM(unlocked:Boolean):Void {
@@ -237,7 +230,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	// GUI layout variables do not need to be copied for topbar icon
 	private var HostMovie:MovieClip;
 	private var GemManager:GemController;
-	private var ScreenResScaleDV:DistributedValue;
 	private var SignalGeometryChanged:Signal;
 
 	private var Tooltip:TooltipInterface;

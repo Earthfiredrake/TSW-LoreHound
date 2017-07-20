@@ -131,6 +131,8 @@ class efd.LoreHound.lib.Mod {
 		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
 			HostMovie = hostMovie; // Not needed for console style mods
 			ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
+			ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, HostMovie);
+			SetWindowScale.call(HostMovie, ResolutionScaleDV);
 
 			if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
 				ConfigWindowEscTrigger = new EscapeStackNode();
@@ -421,9 +423,6 @@ class efd.LoreHound.lib.Mod {
 		clip._x = position.x;
 		clip._y = position.y;
 
-		ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, clip);
-		SetWindowScale.call(clip, ResolutionScaleDV);
-
 		escNode.SignalEscapePressed.Connect(closeEvent, this);
 		EscapeStack.Push(escNode);
 		clip.SignalClose.Connect(closeEvent, this);
@@ -433,7 +432,6 @@ class efd.LoreHound.lib.Mod {
 
 	private function CloseWindow(windowClip:MovieClip, windowName:String, closeEvent:Function, escNode:EscapeStackNode):Void {
 		escNode.SignalEscapePressed.Disconnect(closeEvent, this);
-		ResolutionScaleDV.SignalChanged.Disconnect(SetWindowScale, windowClip);
 
 		ReturnWindowToVisibleBounds(windowClip, Config.GetDefault(windowName + "Position"));
 		Config.SetValue(windowName + "Position", new Point(windowClip._x, windowClip._y));
