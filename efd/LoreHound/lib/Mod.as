@@ -28,6 +28,7 @@ import efd.LoreHound.lib.ModIcon;
 //   "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart (the config based toggle var does prevent loading if false)
 //   "IconPosition": Only used if topbar is not handling icon layout
 //   "IconScale": Only used if topbar is not handling icon layout
+//   "InterfaceWindowPostion"
 //   "ConfigWindowPosition"
 class efd.LoreHound.lib.Mod {
 	// Mod info flags for disabling certain gui elements

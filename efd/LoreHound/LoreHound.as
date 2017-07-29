@@ -159,9 +159,8 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function LoadLoreCategories():Void {
 		IndexFile = new XML();
 		IndexFile.ignoreWhite = true;
-		var capture:LoreHound = this;
 		IndexFile.onLoad = Delegate.create(this, CategoryIndexLoaded);
-		IndexFile.load("LoreHound/CategoryIndex.xml");
+		IndexFile.load("LoreHound\\CategoryIndex.xml");
 	}
 
 	private function CategoryIndexLoaded(success:Boolean):Void {

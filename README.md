@@ -1,6 +1,6 @@
 # TSW-LoreHound
 Proximity detection for lore in The Secret World, including non-visible pickups.
-Mostly compatible with SWL, with limitations on GUI customization.
+Compatible with SWL.
 
 ## Overview
 Will detect and attempt to identify lore pickups when they enter or spawn within ~25m of the player. Lore pickups have been roughly categorized into four groups.
@@ -31,9 +31,9 @@ To improve efficiency and reduce false-positives, it only checks against the exi
 All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
 ## Installation
-The packaged release (including the internal LoreHound folder) should be unzipped into the appropriate folder and the client restarted.
-TSW: [TSW Directory]\Data\Gui\Customized\Flash.
-SWL: [SWL Directory]\Data\Gui\Custom\Flash.
+The packaged release should be unzipped (including the internal LoreHound folder) into the appropriate folder and the client restarted.
+<br/>TSW: [TSW Directory]\Data\Gui\Customized\Flash.
+<br/>SWL: [SWL Directory]\Data\Gui\Custom\Flash.
 
 When upgrading, existing .bxml files in the LoreHound directory should be deleted to ensure changes in the .xml files are loaded (whichever is newer seems to take precedence).
 
@@ -110,20 +110,28 @@ Version 0.1.1-alpha
 + Grumpy dog has unfriendly info format and no GUI access to settings
 + Unknown lore id count:  26
 
-## Known Issues
+## Known Issues & FAQ
 The following issues are known to exist in the most recent release:
 + There appear to be seven uncategorized lore IDs somewhere in the game
   + Three of these are believed to be event related and unavailable at the moment
-+ Sometimes misses lore pickups already within the detection range when zoning into a new map
-  + "Fixing" this causes cascading strange behaviours as it detects things halfway through loading the map. While these can, mostly, be corrected, I'm not convinced it's worth the time.
++ Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them, or issueing incorrect alerts.
 + Text field labels are truncated to fixed sizes
   + Lore topics may cause waypoint labels to be trunctated, hiding the #
   + Customization or translation of labels in the options menu will likely require some tweaking to allow for the extra space
 + A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
-SWL compatibility issues:
-+ GUI editing is not currently working, so the icon cannot be moved or resized
+Where are the waypoints on my map? <br/>
+I have not found any way for an ingame mod to interact with or overlay the map UI or the waypoint files. While this mod can help you locate things once you're close, a waypoint pack such as Lassie's may be a helpful supplement.
+
+Can I adjust the detection range? <br/>
+No. The API for the proximity detection system I am using does not give me access to that feature. Similarly the despawn tracking range is outside of my control (and slightly random). Once detected, the range at which onscreen waypoints disappear could be customized, but does not seem to be that important to people.
+
+Can it tell me where lore X is? <br/>
+Not really. LoreHound does not actually contain a database of lore locations or names, it generates the notifications on the fly based on the detected object. If looking for the location of a specific lore, I suggest using a community info site, such as TSWDB or Crygaia wiki.
+
+Why is so much of it disabled by default? <br/>
+The initial intent of LoreHound was to provide a system to detect invisible lore drops, ie: those which drop from monsters when you already have them. I tried to avoid spamming notifications or spoiling lore locations for those who would rather hunt them down personally. While popular demand and my own use have led to it being more flexible, the default settings continue to reflect the original design goals.
 
 ## Testing and Further Developments
 This continues to be something of a work in progress, though I'm mostly satisfied that it achives the objectives. I am considering:
@@ -131,7 +139,7 @@ This continues to be something of a work in progress, though I'm mostly satisfie
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
 + Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
-+ Was considering a map replacement mod that would permit more extensive custom markings, and could tie in with LoreHound to populate the lore locations. This was placed on hiatus due to the SWL release, and is not yet in development.
++ Possible future linkage with Cartographer once it gets far enough into development.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
@@ -140,6 +148,8 @@ As always, defect reports, suggestions, and contributions are welcome. They can 
 Source Repository: https://github.com/Earthfiredrake/TSW-LoreHound
 
 Forum Post: https://forums.thesecretworld.com/showthread.php?98459-Mod-LoreHound&p=2031487#post2031487
+
+Curse Mirror: https://mods.curse.com/tsw-mods/tsw/273270-lorehound
 
 ## Building from Source
 Requires copies of the TSW and Scaleform CLIK APIs. Existing project files are configured for Flash Pro CS5.5.
