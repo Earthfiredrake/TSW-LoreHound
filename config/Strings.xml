@@ -87,6 +87,10 @@
 				en="Automated Reports" />
 		<String tag="OtherSettingExtraTest"
 				en="Extended Testing" />
+		<String tag="OtherSettingLogDump"
+				en="Log Cartographer Data" />
+		<String tag="OtherSettingWPColour"
+				en="Waypoint Colour" />
 		<String tag="TooltipCredit"
 				en="v%1% by %2%" /> <!-- %1% = ModVersion; %2% = DevName -->
 		<String tag="TooltipLeft"

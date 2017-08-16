@@ -26,7 +26,10 @@ Each category can independently have notifications output to either chat (System
 + Instance IDs: Identifier values for the particular pickup object in the world.
   + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects.
 
-To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. If it fails to detect something that it should have the "Extra Testing" option will activate additional testing on objects that would otherwise be ignored.
+Additional Options
++ "Extended Testing": To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. This option will activate additional testing on objects that would otherwise be ignored, for use if it fails to detect something that it should have.
++ "Log Cartographer Data": Detected lore notifications are logged in "ClientLog.txt" file, in a format which can be easilly extracted for use by my Cartographer mod.
++ "Waypoint Colour": The colour (in 6 digit Hex notation) to use on onscreen waypoints.
 
 All settings are saved account wide and will be shared across characters. If you'd rather have different settings for each character, renaming the file "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this, as it will be unable to transfer existing settings anyway.
 
@@ -42,6 +45,14 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version 1.2.4
++ By request: Waypoint colour may now be customized to something less like a sabotage mission marker
+  + Colour changes will not affect currently displayed waypoints
++ Previously undocumented feature to dump detections to ClientLog.txt has been given proper config option
+  + Format of data has changed for convenient transfer of data to Cartographer
+  + Does not require onscreen notification to work, but does filter on other criteria
++ Various minor framework patches
+
 Version 1.2.2
 + Waypoints now refresh immediately to reflect change in preferences, or when lore is claimed
 + Fixes GUI Edit Mode regression bug, icon can once again be moved and resized
@@ -118,6 +129,7 @@ The following issues are known to exist in the most recent release:
 + Text field labels are truncated to fixed sizes
   + Lore topics may cause waypoint labels to be trunctated, hiding the #
   + Customization or translation of labels in the options menu will likely require some tweaking to allow for the extra space
++ The waypoint colour customization interface is a bit kludgy
 + A brief lag may be observed after reloading the ui, where the full size icon is displayed rather than attached to the topbar
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
@@ -138,8 +150,8 @@ This continues to be something of a work in progress, though I'm mostly satisfie
 + Some form of whitelisting to further filter the accepted values:
   + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
-+ Actual localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
-+ Possible future linkage with Cartographer once it gets far enough into development.
++ Localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
++ Possible runtime linkage with Cartographer once it gets far enough into development.
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 

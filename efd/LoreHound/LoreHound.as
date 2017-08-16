@@ -32,7 +32,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.2.3",
+		Version : "1.2.4",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -67,7 +67,6 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
-		DumpToLog = false;
 		DetailStatRange = 1; // Start with the first million
 		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		SystemsLoaded.CategoryIndex = false;
@@ -102,6 +101,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("ShowWaypoints", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
 		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
+		Config.NewSetting("CartographerLogDump", false); // Dumps detected lore to the log file in a format which can easilly be extracted for Cartographer waypoint files
+		Config.NewSetting("WaypointColour", 0xF6D600); // Colour of onscreen waypoints
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
@@ -149,6 +150,15 @@ class efd.LoreHound.LoreHound extends Mod {
 							// Waypoints to remove should automatically do so during the next refresh cycle
 					}
 				}
+				break;
+			case "WaypointColour":
+				// TODO: This is spamming the screen with stray waypoints whenever it changes
+				// Probably because it's not having time to clear the existing waypoint before a new one registers overtop
+				//ClearWaypoints();
+				//for (var key:String in TrackedLore) {
+					//var lore:LoreData = TrackedLore[key];
+					// if (Config.GetValue("WaypointAlerts") & lore.Type) { CreateWaypoint(lore.DynelInst, AttemptIdentification(lore)); }
+				//}
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
@@ -406,7 +416,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			(Config.GetValue("ChatAlerts") & lore.Type) ||
 			(Config.GetValue("WaypointAlerts") & lore.Type) ||
 			(lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
-			DumpToLog){ return true; }
+			Config.GetValue("CartographerLogDump")){ return true; }
 
 		// No notifications are to be made
 		return false;
@@ -506,7 +516,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Fifo", loreName));
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
 		if (!(lore.Type & LoreData.ef_LoreType_Despawn)) {
-		// No Dynel data on despawn, and initial detection should have left a record
+		// No Dynel data on despawn, and initial detection should have left a log record
 			if (lore.Type == ef_LoreType_Uncategorized) {
 				var reportStrings:Array = new Array();
 				// TODO: Strip customization/localization from debug systems
@@ -518,11 +528,11 @@ class efd.LoreHound.LoreHound extends Mod {
 				reportStrings.push("Category ID: " + lore.CategorizationID);
 				messageStrings.push(reportStrings.join('\n'));
 			}
-			if (DumpToLog) {
+			if (Config.GetValue("CartographerLogDump")) {
 				var dynel:Dynel = lore.DynelInst;
 				var pos:Vector3 = dynel.GetPosition(0);
-				var posStr:String = "[" + Math.round(pos.x) + "," + Math.round(pos.z) + "," + Math.round(pos.y) + "]";
-				messageStrings.push("C:" + lore.Type + ";ID:" + lore.LoreID + ";PF:" + dynel.GetPlayfieldID() + ";" + posStr);
+				var posStr:String = 'x="'+ Math.round(pos.x) + '" y="' + Math.round(pos.z) + '" z="' + Math.round(pos.y) + '"';
+				messageStrings.push('C:' + lore.Type + ' <Lore zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' loreID="' + lore.LoreID + '" />');
 			}
 		}
 		return messageStrings;
@@ -648,7 +658,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			AutoReport.AddReport({ id: lore.CategorizationID, text: messageStrings[3] });
 			// Relevant details are already embedded
 		}
-		if (DumpToLog && messageStrings.length > 3) {
+		if (Config.GetValue("CartographerLogDump") && messageStrings.length > 3) {
 			// Situations where a log dump was not possible (despawns) would also not generate a report
 			// If generated report will always be in index 3, and log dump will always be in the last slot (either 3 or 4)
 			LogMsg(messageStrings[messageStrings.length - 1]);
@@ -666,7 +676,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		waypoint.m_IsScreenWaypoint = true;
 		waypoint.m_IsStackingWaypoint = true;
 		waypoint.m_Radius = 0;
-		waypoint.m_Color = 0xF6D600;
+		waypoint.m_Color = Config.GetValue("WaypointColour");
 		waypoint.m_WorldPosition = dynel.GetPosition(0);
 		var scrPos:Point = dynel.GetScreenPosition();
 		waypoint.m_ScreenPositionX = scrPos.x;
@@ -698,7 +708,10 @@ class efd.LoreHound.LoreHound extends Mod {
 		for (var key:String in TrackedLore) {
 			var lore:LoreData = TrackedLore[key];
 			if (Config.GetValue("WaypointAlerts") & lore.Type) {
-				if (!FilterLore(lore)) { // If not notifying for a particular lore, clear the waypoint if any (clears waypoint when picking up lore)
+				if (!FilterLore(lore)) {
+					// If not notifying for a particular lore, clear the waypoint if any
+					// Clears waypoint when picking up lore or when settings change
+					// TODO: Investigate Lore.SignalTagAdded, might be the "on pickup" event I need
 					RemoveWaypoint(lore.DynelID);
 					continue;
 				}
@@ -723,12 +736,12 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
-	private static var c_MaxWaypointRange = 50; // Maximum display range for waypoints, in metres
+	private static var c_MaxWaypointRange:Number = 50; // Maximum display range for waypoints, in metres
+	private static var c_WaypointColour:Number = 0xF6D600; // TODO: Change this, as it conflicts with the "Sabotage" mission waypoint colour
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided
 	// Tradeoff between the length of time locked up, and the number of tests needed
-	private var DumpToLog:Boolean;
 	private var DetailStatRange:Number;
 	private var DetailStatMode:Number;
 

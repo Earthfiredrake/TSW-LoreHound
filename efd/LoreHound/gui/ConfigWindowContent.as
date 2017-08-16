@@ -2,7 +2,10 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
+import flash.geom.ColorTransform;
+
 import gfx.controls.CheckBox;
+import gfx.utils.Delegate;
 
 import com.Components.WindowComponentContent;
 
@@ -26,6 +29,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailLocation.disableFocus = true;
 		CBDetailCategory.disableFocus = true;
 		CBDetailInstance.disableFocus = true;
+		CBLogDump.disableFocus = true;
 
 		LocaleManager.ApplyLabel(LBDetailGroupTitle);
 		LocaleManager.ApplyLabel(LBTimestamp);
@@ -38,6 +42,8 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		LocaleManager.ApplyLabel(LBDespawn);
 		LocaleManager.ApplyLabel(LBAutoReport);
 		LocaleManager.ApplyLabel(LBExtraTests);
+		LocaleManager.ApplyLabel(LBLogDump);
+		LocaleManager.ApplyLabel(LBWPColour);
 	}
 
 	public function AttachConfig(config:ConfigWrapper):Void {
@@ -56,6 +62,9 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
 		CBDetailCategory.addEventListener("select", this, "CBDetailCategory_Select");
 		CBDetailInstance.addEventListener("select", this, "CBDetailInstance_Select");
+		CBLogDump.addEventListener("select", this, "CBLogDump_Select");
+
+		TFWPColour.onChanged = Delegate.create(this, TFWPColour_Changed);
 
 		// Differentiate child content elements
 		PlacedLoreGroup.Init(LoreHound.ef_LoreType_Placed, config);
@@ -76,6 +85,15 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		}
 		if (setting == "ExtraTesting" || setting == undefined) {
 			CBExtraTests.selected = Config.GetValue("ExtraTesting");
+		}
+		if (setting == "CartographerLogDump" || setting == undefined) {
+			CBLogDump.selected = Config.GetValue("CartographerLogDump");
+		}
+		if (setting == "WaypointColour" || setting == undefined) {
+			TFWPColour.text = Config.GetValue("WaypointColour").toString(16).toUpperCase();
+			var colour = new ColorTransform();
+			colour.rgb = Config.GetValue("WaypointColour");
+			MCWPColourPatch.transform.colorTransform = colour;
 		}
 		if (setting == "Details" || setting == undefined) {
 			var details = Config.GetValue("Details");
@@ -129,6 +147,20 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetFlagValue("Details", LoreHound.ef_Details_DynelId, event.selected);
 	}
 
+	private function CBLogDump_Select(event:Object):Void {
+		Config.SetValue("CartographerLogDump", event.selected);
+	}
+
+	private function TFWPColour_Changed(field:TextField):Void {
+		// TODO: This is a finicky way of dealing with the problem, results in frequent changes, no actual reset on invalid values
+		var value:Number = parseInt(field.text, 16);
+		if (value != NaN) {
+			Config.SetValue("WaypointColour", value);
+		} else {
+			field.text = Config.GetValue("WaypointColour").toString(16);
+		}
+	}
+
 	//Labels
 	private var LBDetailGroupTitle:TextField;
 	private var LBTimestamp:TextField;
@@ -141,6 +173,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var LBDespawn:TextField;
 	private var LBAutoReport:TextField;
 	private var LBExtraTests:TextField;
+	private var LBLogDump:TextField;
+	private var LBWPColour:TextField;
+
+	private var MCWPColourPatch:MovieClip;
 
 	// Checkboxes
 	private var CBModEnabled:CheckBox;
@@ -148,11 +184,15 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
 	private var CBExtraTests:CheckBox;
+	private var CBLogDump:CheckBox;
 
 	private var CBDetailTimestamp:CheckBox;
 	private var CBDetailLocation:CheckBox;
 	private var CBDetailCategory:CheckBox;
 	private var CBDetailInstance:CheckBox;
+
+	// Text Field
+	private var TFWPColour:TextField;
 
 	// Lore Groups
 	private var PlacedLoreGroup:LoreCategorySettingGroup;

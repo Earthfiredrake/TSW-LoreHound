@@ -8,7 +8,7 @@
 	<Category name="Placed"> <!-- Lore pickup with fixed location and usually always visible -->
 		<!-- Also includes most event lore, and a handful of lores with minor trigger conditions -->
 		<ID value="7128026"> <!-- Standard placed lore -->
-		  <Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->		  
+		  <Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->
 		</ID>
 		<ID value="7993128" /> <!-- Shrouded lore (End of Days)-->
 	</Category>
@@ -39,7 +39,9 @@
 		<ID value="8499259" /> <!-- Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while -->
 		<ID value="8508040" /> <!-- Behemoth of the Devouring Plague drop (The Wall BS #4) -->
 		<!-- Bestiary lore seems to have 5 min despawn timers -->
-		<ID value="9240080" /> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
+		<ID value="9240080"> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
+			<Reclassify loreID="9275" category="Trigger" /> <!-- Golems #8, player triggered event in TSW, time based trigger in SWL -->
+		</ID>
 		<ID value="9241297" /> <!-- Spectres #11 drop -->
 	</Category>
 	<Category name="Unknown"> <!-- Values believed to connect to lore pickups, location is unknown -->
