@@ -47,6 +47,7 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 ## Change Log
 Version 1.2.4
 + By request: Waypoint colour may now be customized to something less like a sabotage mission marker
+  + Default changed from 0xF6D600 to the slightly oranger 0xFFAA00
   + Colour changes will not affect currently displayed waypoints
 + Previously undocumented feature to dump detections to ClientLog.txt has been given proper config option
   + Format of data has changed for convenient transfer of data to Cartographer

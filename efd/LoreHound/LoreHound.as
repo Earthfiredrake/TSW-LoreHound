@@ -103,7 +103,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
 		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
 		Config.NewSetting("CartographerLogDump", false); // Dumps detected lore to the log file in a format which can easilly be extracted for Cartographer waypoint files
-		Config.NewSetting("WaypointColour", 0xF6D600); // Colour of onscreen waypoints
+		Config.NewSetting("WaypointColour", 0xFFAA00); // Colour of onscreen waypoints
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
