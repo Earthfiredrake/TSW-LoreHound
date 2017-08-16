@@ -21,10 +21,7 @@ class efd.LoreHound.lib.LocaleManager {
 
 		SignalStringsLoaded = new Signal();
 
-		StringFile = new XML();
-		StringFile.ignoreWhite = true;
-		StringFile.onLoad = StringsLoaded;
-		StringFile.load(fileName);
+		StringFile = Mod.LoadXmlAsynch(fileName, StringsLoaded);
 	}
 
 	public static function GetString(category:String, tag:String):String { return StringDict[category][tag]; }
@@ -49,10 +46,9 @@ class efd.LoreHound.lib.LocaleManager {
 				var category:Object = new Object;
 				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
 					var entry:XMLNode = categoryXML.childNodes[j];
-					var localeStr:String = entry.attributes[CurrentLocale];
 					// Load the localized string if available, or default to English
 					// English being the most likely to be both available and understood
-					category[entry.attributes.tag] = localeStr != undefined ? localeStr : entry.attributes.en;
+					category[entry.attributes.tag] = GetLocaleString(entry);
 				}
 				StringDict[categoryXML.attributes.name] = category;
 			}
@@ -62,6 +58,11 @@ class efd.LoreHound.lib.LocaleManager {
 		}
 		delete StringFile;
 		SignalStringsLoaded.Emit(success);
+	}
+
+	public static function GetLocaleString(xml:XMLNode):String {
+		var localeStr:String = xml.attributes[CurrentLocale];
+		return localeStr ? localeStr : xml.attributes.en;
 	}
 
 	private static var StringFile:XML;

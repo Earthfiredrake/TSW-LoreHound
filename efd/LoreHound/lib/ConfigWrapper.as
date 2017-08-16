@@ -116,7 +116,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 		if (value instanceof Point) { return value.clone(); }
 		if (value instanceof Array) {
 			var clone = new Array();
-			for (var i:Number; i < value.length; ++i) {
+			for (var i:Number = 0; i < value.length; ++i) {
 				clone[i] = CloneValue(value[i]);
 			}
 			return clone;

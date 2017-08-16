@@ -81,10 +81,10 @@ class efd.LoreHound.lib.Mod {
 	//     Any overiden functions are wrapped in a Delegate(this) before being passed along
 	//       They unfortunately cannot be wrapped in delegates in advance, as initialization requires compile constants
 	//     Remaining values are applied as initializers prior to construction
-	//	   The following values are added to it and should not be overriden or conflicted with:
+	//     The following values are added to it and should not be overriden or conflicted with:
 	//       ModName, DevName, HostMovie, Config
 	//     Values which may be overriden by the mod:
-	//	     UpdateState:Function Sets the icon frame to be displayed based on current mod state
+	//       UpdateState:Function Sets the icon frame to be displayed based on current mod state
 	//       LeftMouseInfo:Object Mouse handler as described below
 	//       RightMouseInfo:Object Mouse handler as described below
 	//         A mouse handler object defines two functions, neither of which should specify which mouse button was involved:
@@ -99,6 +99,8 @@ class efd.LoreHound.lib.Mod {
 		ErrorMsg = Delegate.create(this, _ErrorMsg);
 		TraceMsg = Delegate.create(this, _TraceMsg);
 		LogMsg = Delegate.create(this, _LogMsg);
+
+		LoadXmlAsynch = Delegate.create(this, _LoadXmlAsynch);
 
 		GlobalDebugDV = DistributedValue.Create(DVPrefix + "DebugMode");
 		GlobalDebugDV.SignalChanged.Connect(SetDebugMode, this);
@@ -126,7 +128,7 @@ class efd.LoreHound.lib.Mod {
 			ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
 		}
 
-		LocaleManager.Initialize(ModName + "/Strings.xml");
+		LocaleManager.Initialize("Strings");
 		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
 
 		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
@@ -139,12 +141,14 @@ class efd.LoreHound.lib.Mod {
 				ConfigWindowEscTrigger = new EscapeStackNode();
 				ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
 				ShowConfigDV.SetValue(false);
-				ShowConfigDV.SignalChanged.Connect(ShowConfigWindow, this);
+				ShowConfigDV.SignalChanged.Connect(ShowConfigWindowChanged, this);
 			}
 
 			if (modInfo.Type == e_ModType_Interface) {
-				ShowInterface = false;
 				InterfaceWindowEscTrigger = new EscapeStackNode();
+				ShowInterfaceDV = DistributedValue.Create(InterfaceWindowVarName);
+				ShowInterfaceDV.SetValue(false);
+				ShowInterfaceDV.SignalChanged.Connect(ShowInterfaceWindowChanged, this);
 			}
 		}
 		InitializeModConfig(modInfo);
@@ -174,6 +178,8 @@ class efd.LoreHound.lib.Mod {
 		LoadComplete();
 	}
 
+	// TODO: Failure to clear the SystemsLoaded object seems to crash reliably when the interface window opens
+	//       Investigate and fix. Low priority, currently SystemsLoaded is being cleared/largely unused
 	private function LoadComplete():Void {
 		delete SystemsLoaded; // No longer required
 		UpdateInstall();
@@ -190,7 +196,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
-		if (ShowInterface != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
+		if (ShowInterfaceDV != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
 		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
@@ -357,7 +363,7 @@ class efd.LoreHound.lib.Mod {
 
 		if (!iconData.LeftMouseInfo) {
 			if (modInfo.Type == e_ModType_Interface) {
-				iconData.LeftMouseInfo = { Action : Delegate.create(this, ToggleInterface), Tooltip : ToggleInterfaceTooltip };
+				iconData.LeftMouseInfo = { Action : Delegate.create(this, ToggleInterfaceWindow), Tooltip : ToggleInterfaceTooltip };
 			} else if (modInfo.Type == e_ModType_Reactive && ShowConfigDV != undefined) {
 				iconData.LeftMouseInfo = { Action : Delegate.create(this, ToggleConfigWindow), Tooltip : ToggleConfigTooltip };
 			}
@@ -390,18 +396,22 @@ class efd.LoreHound.lib.Mod {
 		return LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipModOff" : "TooltipModOn");
 	}
 
-	private function ToggleConfigWindow():Void { ShowConfigDV.SetValue(!ShowConfigDV.GetValue()); }
+	private function ToggleConfigWindow():Void {
+		if (!ShowConfigDV.GetValue()) {
+			ShowConfigDV.SetValue(true);
+		} else {
+			TriggerWindowClose.apply(ConfigWindowClip);
+		}
+	}
 	private static function ToggleConfigTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
 
-	private function ToggleInterface():Void {
-		if (!ShowInterface) { // Show the interface
-			if (InterfaceWindowClip == null) {
-				InterfaceWindowClip = OpenWindow("InterfaceWindow", InterfaceWindowLoaded, CloseInterfaceWindow, InterfaceWindowEscTrigger);
-			}
-		} else { // Close the interface
-			CloseInterfaceWindow();
+	private function ToggleInterfaceWindow():Void {
+		if (! ShowInterfaceDV.GetValue()) {// Show the interface
+			ShowInterfaceDV.SetValue(true);
+		} else {
+			// Close the interface;
+			TriggerWindowClose.apply(InterfaceWindowClip);
 		}
-		ShowInterface == !ShowInterface;
 	}
 	private static function ToggleInterfaceTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
 
@@ -424,15 +434,15 @@ class efd.LoreHound.lib.Mod {
 		clip._x = position.x;
 		clip._y = position.y;
 
-		escNode.SignalEscapePressed.Connect(closeEvent, this);
+		escNode.SignalEscapePressed.Connect(TriggerWindowClose, clip);
 		EscapeStack.Push(escNode);
 		clip.SignalClose.Connect(closeEvent, this);
 
 		return clip;
 	}
 
-	private function CloseWindow(windowClip:MovieClip, windowName:String, closeEvent:Function, escNode:EscapeStackNode):Void {
-		escNode.SignalEscapePressed.Disconnect(closeEvent, this);
+	private function WindowClosed(windowClip:MovieClip, windowName:String, escNode:EscapeStackNode):Void {
+		escNode.SignalEscapePressed.Disconnect(TriggerWindowClose, windowClip);
 
 		ReturnWindowToVisibleBounds(windowClip, Config.GetDefault(windowName + "Position"));
 		Config.SetValue(windowName + "Position", new Point(windowClip._x, windowClip._y));
@@ -452,6 +462,12 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
+	private function TriggerWindowClose():Void {
+		var target:Object = this;
+		target.SignalClose.Emit(target);
+		target.m_Content.Close();
+	}
+
 	private function SetWindowScale(scaleDV:DistributedValue):Void {
 		var scale:Number = scaleDV.GetValue() * 100;
 		var target:Object = this;
@@ -459,14 +475,14 @@ class efd.LoreHound.lib.Mod {
 		target._yscale = scale;
 	}
 
-	private function ShowConfigWindow(dv:DistributedValue):Void {
+	private function ShowConfigWindowChanged(dv:DistributedValue):Void {
 		if (dv.GetValue()) { // Open window
 			if (ConfigWindowClip == null) {
 				ConfigWindowClip = OpenWindow("ConfigWindow", ConfigWindowLoaded, CloseConfigWindow, ConfigWindowEscTrigger);
 			}
 		} else { // Close window
 			if (ConfigWindowClip != null) {
-				CloseWindow(ConfigWindowClip, "ConfigWindow", CloseConfigWindow, ConfigWindowEscTrigger);
+				WindowClosed(ConfigWindowClip, "ConfigWindow", ConfigWindowEscTrigger);
 				ConfigWindowClip = null;
 			}
 		}
@@ -476,14 +492,23 @@ class efd.LoreHound.lib.Mod {
 
 	private function CloseConfigWindow():Void { ShowConfigDV.SetValue(false); }
 
-	private function InterfaceWindowLoaded():Void { }
-
-	private function CloseInterfaceWindow():Void {
-		if (InterfaceWindowClip != null) {
-			CloseWindow(InterfaceWindowClip, "InterfaceWindow", CloseInterfaceWindow, InterfaceWindowEscTrigger);
-			InterfaceWindowClip = null;
+	private function ShowInterfaceWindowChanged(dv:DistributedValue):Void {
+		if (dv.GetValue()) { // Open window
+			if (InterfaceWindowClip == null)
+			{
+				InterfaceWindowClip = OpenWindow("InterfaceWindow", InterfaceWindowLoaded, CloseInterfaceWindow, InterfaceWindowEscTrigger);
+			}
+		} else {// Close window
+			if (InterfaceWindowClip != null) {
+				WindowClosed(InterfaceWindowClip, "InterfaceWindow", InterfaceWindowEscTrigger);
+				InterfaceWindowClip = null;
+			}
 		}
 	}
+
+	private function InterfaceWindowLoaded():Void { }
+
+	private function CloseInterfaceWindow():Void { ShowInterfaceDV.SetValue(false); }
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
 	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
@@ -498,6 +523,22 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
+
+	/// Data file loading
+
+	// Loads an XML file from a path local to the mod's directory
+	// The '.xml' suffix is added if not present
+	public function _LoadXmlAsynch(fileName:String, callback:Function):XML {
+		if (fileName.substr(-4) != ".xml") {
+			fileName += ".xml";
+		}
+		var loader:XML = new XML();
+		loader.ignoreWhite = true;
+		loader.onLoad = callback;
+		loader.load(ModName + "\\" + fileName);
+		return loader;
+	}
+	public static var LoadXmlAsynch:Function; // Static delegate
 
 	/// Text output utility functions
 	// Options object supports the following properties:
@@ -584,6 +625,7 @@ class efd.LoreHound.lib.Mod {
 
 	public function get Enabled():Boolean { return _Enabled; }
 	public function set Enabled(value:Boolean):Void {
+		// TODO: This check for Config("Enabled") should be cleaned up for cases where it doesn't exist
 		value = EnabledByGame && Config.GetValue("Enabled");
 		if (value != _Enabled) { // State changed
 			_Enabled = value;
@@ -595,6 +637,7 @@ class efd.LoreHound.lib.Mod {
 	public function get ModLoadedVarName():String { return DVPrefix + ModName + "Loaded"; }
 	public function get ModEnabledVarName():String { return DVPrefix + ModName + "Enabled"; }
 	public function get ConfigWindowVarName():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
+	public function get InterfaceWindowVarName():String { return DVPrefix + "Show" + ModName + "Interface"; }
 
 	// Customize based on mod authorship
 	public static var DevName:String = "Peloprata";
@@ -618,7 +661,7 @@ class efd.LoreHound.lib.Mod {
 	private var ConfigWindowClip:MovieClip = null;
 	private var ConfigWindowEscTrigger:EscapeStackNode;
 
-	private var ShowInterface:Boolean;
+	private var ShowInterfaceDV:DistributedValue; // Provided as DV for /setoption force opening of interface
 	private var InterfaceWindowClip:MovieClip = null;
 	private var InterfaceWindowEscTrigger:EscapeStackNode;
 

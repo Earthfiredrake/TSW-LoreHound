@@ -78,7 +78,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		var arConfig:ConfigWrapper = AutoReport.Initialize(ModName, Version, DevName);
 
 		InitializeConfig(arConfig);
-		LoadLoreCategories();
+
+		IndexFile = LoadXmlAsynch("CategoryIndex", Delegate.create(this, CategoryIndexLoaded));
 
 		TraceMsg("Initialized");
 	}
@@ -164,13 +165,6 @@ class efd.LoreHound.LoreHound extends Mod {
 				super.ConfigChanged(setting, newValue, oldValue);
 				break;
 		}
-	}
-
-	private function LoadLoreCategories():Void {
-		IndexFile = new XML();
-		IndexFile.ignoreWhite = true;
-		IndexFile.onLoad = Delegate.create(this, CategoryIndexLoaded);
-		IndexFile.load("LoreHound\\CategoryIndex.xml");
 	}
 
 	private function CategoryIndexLoaded(success:Boolean):Void {
