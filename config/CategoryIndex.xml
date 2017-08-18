@@ -14,14 +14,9 @@
 	</Category>
 	<Category name="Trigger"> <!-- Will spawn after a certain condition is met -->
 		<!-- Unknown if they despawn, most are in instances that don't permit MUs -->
-		<ID value="7648084" /> <!-- Pol (Hidden zombie after Pol1) -->
 		<ID value="7648085" /> <!-- Pol (Drone spawn after Pol3) (missing from TSW string table) -->
 		<ID value="7653135" /> <!-- HR6 (Post boss lore spawn) -->
 		<ID value="7661215" /> <!-- DW6 (Post boss lore spawn) -->
-		<ID value="7648451" /> <!-- Ankh (Orochi Agent after Ankh1) -->
-		<ID value="7648450" /> <!-- Ankh (Wretched Receptacles (Ankh #5)) -->
-		<ID value="7648452" /> <!-- Ankh (Disembalmed Atenist after Ankh3 (Ankh #8)) -->
-		<ID value="7648449" /> <!-- Ankh (Pit Dwellers) -->
 		<ID value="7647988" /> <!-- HF6 (Post boss lore spawn) -->
 		<ID value="7647983" /> <!-- Fac6 (Post boss lore spawn) -->
 		<ID value="7647985" /> <!-- Fac5 (Post boss lore spawn) -->
@@ -29,16 +24,21 @@
 		<ID value="7573298" /> <!-- HE6 (Post boss lore spawn), also used for Faust Omega "Knowledge" room -->
 		<ID value="8507997" /> <!-- CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor -->
 		<ID value="8508000" /> <!-- CK carpark (HiE BS #2) spawns after picking up the evidence -->
-		<ID value="9125445" /> <!-- MFA (Smiler mech after MFA5) -->
 		<ID value="9125570" /> <!-- MFA6 (Post boss lore spawn) -->
 		<ID value="9135398" /> <!-- MFB4 (Post boss lore spawn) -->
 		<ID value="9135406" /> <!-- MFB5 (Filth Must Flow spawn) -->
 	</Category>
 	<Category name="Drop"> <!-- Temporary lore spawns dropped by mobs or other special actions -->
+		<ID value="7648084" /> <!-- Pol (Hidden zombie after Pol1) -->
+		<ID value="7648451" /> <!-- Ankh (Orochi Agent after Ankh1) -->
+		<ID value="7648450" /> <!-- Ankh (Wretched Receptacles (Ankh #5)) -->
+		<ID value="7648452" /> <!-- Ankh (Disembalmed Atenist after Ankh3 (Ankh #8)) -->
+		<ID value="7648449" /> <!-- Ankh (Pit Dwellers) -->
 		<!-- Both Black Signal lores have 1 min despawn timers -->
 		<ID value="8499259" /> <!-- Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while -->
 		<ID value="8508040" /> <!-- Behemoth of the Devouring Plague drop (The Wall BS #4) -->
 		<!-- Bestiary lore seems to have 5 min despawn timers -->
+		<ID value="9125445" /> <!-- MFA (Smiler mech after MFA5) -->
 		<ID value="9240080"> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
 			<Reclassify loreID="9275" category="Trigger" /> <!-- Golems #8, player triggered event in TSW, time based trigger in SWL -->
 		</ID>

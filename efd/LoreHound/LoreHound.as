@@ -32,7 +32,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.2.4",
+		Version : "1.2.5",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		IconData : { UpdateState : UpdateIcon,
@@ -526,7 +526,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				var dynel:Dynel = lore.DynelInst;
 				var pos:Vector3 = dynel.GetPosition(0);
 				var posStr:String = 'x="'+ Math.round(pos.x) + '" y="' + Math.round(pos.z) + '" z="' + Math.round(pos.y) + '"';
-				messageStrings.push('C:' + lore.Type + ' <Lore zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' loreID="' + lore.LoreID + '" />');
+				messageStrings.push('<!-- ' + AttemptIdentification(lore) + ' --> <Lore zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' loreID="' + lore.LoreID + '" />');
 			}
 		}
 		return messageStrings;

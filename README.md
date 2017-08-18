@@ -45,6 +45,10 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version Next
++ Fixed the bug with icon not staying with UI edit mode overlay
++ Lore dropped from mobs in dungeons has been recategorized as Drop lore (instead of Triggered)
+
 Version 1.2.4
 + By request: Waypoint colour may now be customized to something less like a sabotage mission marker
   + Default changed from 0xF6D600 to the slightly oranger 0xFFAA00
