@@ -8,7 +8,12 @@
 	<Category name="Placed"> <!-- Lore pickup with fixed location and usually always visible -->
 		<!-- Also includes most event lore, and a handful of lores with minor trigger conditions -->
 		<ID value="7128026"> <!-- Standard placed lore -->
-		  <Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->
+			<Reclassify loreID="6967" category="Trigger" /> <!-- Jingu Clan #8, requires talking -->
+			<Reclassify loreID="6992" category="Trigger" /> <!-- House-in-Exile #6, requires talking -->
+			<Reclassify loreID="7032" category="Trigger" /> <!-- Korinto-kai #8, requires talking -->
+			<Reclassify loreID="7111" category="Trigger" /> <!-- Susanoo's #5, requires action -->
+			<Reclassify loreID="7118" category="Trigger" /> <!-- Zeroes Wild #5, requires mission? -->
+			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->
 		</ID>
 		<ID value="7993128" /> <!-- Shrouded lore (End of Days)-->
 	</Category>
