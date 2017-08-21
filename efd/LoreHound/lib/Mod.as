@@ -191,6 +191,8 @@ class efd.LoreHound.lib.Mod {
 
 	private function InitializeModConfig(modInfo:Object):Void {
 		Config = new ConfigWrapper(modInfo.ArchiveName);
+		ConfigResetDV = DistributedValue.Create(ModResetVarName);
+		ConfigResetDV.SignalChanged.Connect(ResetConfig, this);
 
 		Config.NewSetting("Version", modInfo.Version);
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
@@ -231,6 +233,13 @@ class efd.LoreHound.lib.Mod {
 				break;
 			default: // Setting does not push changes (is checked on demand)
 				break;
+		}
+	}
+
+	private function ResetConfig(dv:DistributedValue):Void {
+		if (dv.GetValue()) {
+			Config.ResetAll();
+			dv.SetValue(false);
 		}
 	}
 
@@ -636,6 +645,7 @@ class efd.LoreHound.lib.Mod {
 
 	public function get ModLoadedVarName():String { return DVPrefix + ModName + "Loaded"; }
 	public function get ModEnabledVarName():String { return DVPrefix + ModName + "Enabled"; }
+	public function get ModResetVarName():String { return DVPrefix + ModName + "ResetConfig"; }
 	public function get ConfigWindowVarName():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
 	public function get InterfaceWindowVarName():String { return DVPrefix + "Show" + ModName + "Interface"; }
 
@@ -656,6 +666,7 @@ class efd.LoreHound.lib.Mod {
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;
+	private var ConfigResetDV:DistributedValue; // DV so that it can be flagged from chat when nothing else works
 	private var ShowConfigDV:DistributedValue; // Needs to be DV as topbars use it for providing settings from the mod list; if undefined, no config window is available
 	private var ResolutionScaleDV:DistributedValue;
 	private var ConfigWindowClip:MovieClip = null;
