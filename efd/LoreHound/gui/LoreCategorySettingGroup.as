@@ -45,6 +45,9 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 		case LoreData.ef_LoreType_Uncategorized:
 			GroupTitle.text += "Uncategorized";
 			break;
+		case LoreData.ef_LoreType_SpecialItem:
+			GroupTitle.text += "SpecialItem";
+			break;
 		}
 		LocaleManager.ApplyLabel(GroupTitle);
 

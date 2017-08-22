@@ -53,6 +53,8 @@
 				en="Dropped Lore" />
 		<String tag="SettingGroupUncategorized"
 				en="Uncategorized Lore" />
+		<String tag="SettingGroupSpecialItem"
+				en="Related Items" />
 		<String tag="LoreSettingWP"
 				en="Show Waypoints" />
 		<String tag="LoreSettingFifo"
