@@ -13,6 +13,7 @@ import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
+import efd.LoreHound.LoreData;
 
 class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private function ConfigWindowContent() { super(); } // Indirect construction only
@@ -67,10 +68,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		TFWPColour.onChanged = Delegate.create(this, TFWPColour_Changed);
 
 		// Differentiate child content elements
-		PlacedLoreGroup.Init(LoreHound.ef_LoreType_Placed, config);
-		TriggerLoreGroup.Init(LoreHound.ef_LoreType_Trigger, config);
-		DropLoreGroup.Init(LoreHound.ef_LoreType_Drop, config);
-		UncategorizedLoreGroup.Init(LoreHound.ef_LoreType_Uncategorized, config);
+		PlacedLoreGroup.Init(LoreData.ef_LoreType_Placed, config);
+		TriggerLoreGroup.Init(LoreData.ef_LoreType_Trigger, config);
+		DropLoreGroup.Init(LoreData.ef_LoreType_Drop, config);
+		UncategorizedLoreGroup.Init(LoreData.ef_LoreType_Uncategorized, config);
 	}
 
 	private function ConfigUpdated(setting:String, newValue, oldValue):Void {

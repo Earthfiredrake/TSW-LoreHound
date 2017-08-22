@@ -39,16 +39,6 @@ class efd.LoreHound.LoreHound extends Mod {
 					 ExtraTooltipInfo : IconTooltip }
 	};
 
-	// Category flags for identifiable lore types
-	private static var ef_LoreType_None:Number = 0;
-	public static var ef_LoreType_Placed:Number = 1 << 0; // Most lore with fixed locations
-	public static var ef_LoreType_Trigger:Number = 1 << 1; // Lore with triggered spawn conditions, seems to stay spawned once triggered (often after dungeon bosses)
-	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
-	private static var ef_LoreType_Despawn:Number = 1 << 3; // Special type for generating despawn messages (will be output as Drop lore)
-	public static var ef_LoreType_Uncategorized:Number = 1 << 4; // Newly detected lore, will need to be catalogued
-	public static var ef_LoreType_SpecialItem:Number = 1 << 5; // Special pickups or other items related to lore (Pieces o'Joe, Draug Hearts, Scarabs, Demonic Crystals etc.)
-	private static var ef_LoreType_All:Number = (1 << 6) - 1;
-
 	// Category flags for extended information
 	private static var ef_Details_None:Number = 0;
 	public static var ef_Details_Location:Number = 1 << 0; // Playfield name and coordinate vector
@@ -87,15 +77,15 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
-		Config.NewSetting("FifoLevel", ef_LoreType_None); // DEPRECATED(v1.2.0.alpha) : Renamed
-		Config.NewSetting("ChatLevel", ef_LoreType_Drop | ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.NewSetting("FifoLevel", LoreData.ef_LoreType_None); // DEPRECATED(v1.2.0.alpha) : Renamed
+		Config.NewSetting("ChatLevel", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
 
 		// Renaming and expanding options for v1.2
-		Config.NewSetting("FifoAlerts", ef_LoreType_None); // FIFO onscreen alerts
-		Config.NewSetting("ChatAlerts", ef_LoreType_Drop | ef_LoreType_Uncategorized); // System chat alerts
-		Config.NewSetting("WaypointAlerts", ef_LoreType_Drop | ef_LoreType_Uncategorized); // Display onscreen waypoints for lore
-		Config.NewSetting("AlertForCollected", ef_LoreType_Drop | ef_LoreType_Uncategorized); // Alert the player for lore they already have
-		Config.NewSetting("AlertForUncollected", ef_LoreType_Uncategorized); // Alert the player for lore they haven't picked up yet
+		Config.NewSetting("FifoAlerts", LoreData.ef_LoreType_None); // FIFO onscreen alerts
+		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // System chat alerts
+		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Display onscreen waypoints for lore
+		Config.NewSetting("AlertForCollected", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they already have
+		Config.NewSetting("AlertForUncollected", LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they haven't picked up yet
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
@@ -174,13 +164,13 @@ class efd.LoreHound.LoreHound extends Mod {
 			var xmlRoot:XMLNode = IndexFile.firstChild;
 			for (var i:Number = 0; i < xmlRoot.childNodes.length; ++i) {
 				var categoryXML:XMLNode = xmlRoot.childNodes[i];
-				var category:Number = LoreHound["ef_LoreType_" + categoryXML.attributes.name];
+				var category:Number = LoreData["ef_LoreType_" + categoryXML.attributes.name];
 				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
 					var dynelXML:XMLNode = categoryXML.childNodes[j];
 					var indexEntry:Object = {type : category, loreID : dynelXML.attributes.loreID, excluding : new Array()};
 					for (var k:Number = 0; k < dynelXML.childNodes.length; ++k) {
 						var exclusionXML:XMLNode = dynelXML.childNodes[k];
-						indexEntry.excluding[exclusionXML.attributes.loreID] = LoreHound["ef_LoreType_" + exclusionXML.attributes.category];
+						indexEntry.excluding[exclusionXML.attributes.loreID] = LoreData["ef_LoreType_" + exclusionXML.attributes.category];
 					}
 					CategoryIndex[dynelXML.attributes.value] = indexEntry;
 				}
@@ -202,7 +192,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function IsCategorizedLore(categoryId:Number):Boolean {
 		var category:Number = ClassifyID(categoryId);
-		return category != ef_LoreType_Uncategorized && category != ef_LoreType_None;
+		return category != LoreData.ef_LoreType_Uncategorized && category != LoreData.ef_LoreType_None;
 	}
 
 	private function DoUpdate(newVersion:String, oldVersion:String):Void {
@@ -226,9 +216,9 @@ class efd.LoreHound.LoreHound extends Mod {
 			Config.SetValue("ChatAlerts", Config.GetValue("ChatLevel"));
 			// Copy waypoint settings to new per-category setting
 			var existingAlerts = Config.GetValue("FifoLevel") | Config.GetValue("ChatLevel");
-			Config.SetValue("WaypointAlerts", (Config.GetValue("ShowWaypoints") ? existingAlerts : ef_LoreType_None));
+			Config.SetValue("WaypointAlerts", (Config.GetValue("ShowWaypoints") ? existingAlerts : LoreData.ef_LoreType_None));
 			// Copy unclaimed lore to per-category setting (no existing setting for claimed lore)
-			Config.SetValue("AlertForUncollected", (Config.GetValue("IgnoreUnclaimedLore") ? ef_LoreType_Uncategorized : ef_LoreType_All - ef_LoreType_Despawn));
+			Config.SetValue("AlertForUncollected", (Config.GetValue("IgnoreUnclaimedLore") ? LoreData.ef_LoreType_Uncategorized : LoreData.ef_LoreType_All - LoreData.ef_LoreType_Despawn));
 		}
 	}
 
@@ -363,7 +353,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
 		if (loreType == LoreData.ef_LoreType_None) {
-			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
+			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = LoreData.ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
 			else { return; } // Dynel is not lore
 		}
 
@@ -465,7 +455,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		var category:Number = indexEntry.excluding[loreId] ?
 			indexEntry.excluding[loreId] :
 			indexEntry.type;
-		return category ? category : ef_LoreType_None;
+		return category ? category : LoreData.ef_LoreType_None;
 	}
 
 	private static function ExpandedDetection(dynel:Dynel):Boolean {
@@ -526,7 +516,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		messageStrings.push(LocaleManager.FormatString("LoreHound", typeString + "Chat", loreName));
 		if (!(lore.Type & LoreData.ef_LoreType_Despawn)) {
 		// No Dynel data on despawn, and initial detection should have left a log record
-			if (lore.Type == ef_LoreType_Uncategorized) {
+			if (lore.Type == LoreData.ef_LoreType_Uncategorized) {
 				var reportStrings:Array = new Array();
 				// TODO: Strip customization/localization from debug systems
 				//   loreName still uses custom strings
@@ -676,7 +666,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				ChatMsg(detailStrings[i], { noPrefix : true });
 			}
 		}
-		if (lore.Type == ef_LoreType_Uncategorized) { // Auto report handles own enabled state
+		if (lore.Type == LoreData.ef_LoreType_Uncategorized) { // Auto report handles own enabled state
 			// When compiling reports for the automated report system consider the following options for IDs
 			// Categorization ID: This one is currently being used to report on uncategorized lore groups (Range estimated to be [7...10] million)
 			// Lore ID: If a particular lore needs to be flagged for some reason, this is a reasonable choice if available (Range estimated to be [400...1000])

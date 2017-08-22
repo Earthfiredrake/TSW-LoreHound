@@ -8,6 +8,7 @@ import gfx.core.UIComponent;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
+import efd.LoreHound.LoreData;
 
 class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 	private function LoreCategorySettingGroup() { super(); } // Indirect construction only
@@ -32,16 +33,16 @@ class efd.LoreHound.gui.LoreCategorySettingGroup extends UIComponent {
 		Type = loreType;
 		GroupTitle.text = "SettingGroup";
 		switch(loreType) {
-		case LoreHound.ef_LoreType_Placed:
+		case LoreData.ef_LoreType_Placed:
 			GroupTitle.text += "Placed";
 			break;
-		case LoreHound.ef_LoreType_Trigger:
+		case LoreData.ef_LoreType_Trigger:
 			GroupTitle.text += "Trigger";
 			break;
-		case LoreHound.ef_LoreType_Drop:
+		case LoreData.ef_LoreType_Drop:
 			GroupTitle.text += "Drop";
 			break;
-		case LoreHound.ef_LoreType_Uncategorized:
+		case LoreData.ef_LoreType_Uncategorized:
 			GroupTitle.text += "Uncategorized";
 			break;
 		}
