@@ -16,6 +16,7 @@ Will detect and attempt to identify lore pickups when they enter or spawn within
 	+ KD rare spawn drops have a 1min timeout.
 + Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
   + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble. (Automated reports remain untested in SWL.)
++ Related Items: Items which, while not lore themselves, are directly related to acquiring certain lore (mostly in the bestiary category)
 
 Each category can independently have notifications output to either chat (System channel), as FIFO alerts, or with ingame waypoints. Default settings are designed to provide notifications for already acquired drop lore, and any uncategorized lore, but options are available to make it more of a personal proximity guide. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
 + Timestamp: Puts a timestamp on detections, so you can know when the drop was without having to timestamp all of the System channel (revealing the mysteriously blank lines that it otherwise hides).
@@ -46,12 +47,12 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 
 ## Change Log
 Version 1.3.0
-+ Fixed the bug with icon not staying with UI edit mode overlay
-+ Config can now be manually reset (/setoption efdLoreHoundResetConfig true)
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:
   + Pieces of Joe: Will be detected only if they are currently spawned
   + Demonic Crystals
   + Dead Scarabs: Including colour identification
++ Fixed the bug with icon not staying with UI edit mode overlay
++ Config can now be manually reset (/setoption efdLoreHoundResetConfig true)
 + Lore recategorizations:
   + Mobs drops in dungeons have been recategorized as Drop lore (instead of Triggered)
   + Several entries in KD have been recategorized as Triggered (instead of Placed), due to requiring actions/missions to appear
