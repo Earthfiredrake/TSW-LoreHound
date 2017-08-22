@@ -55,6 +55,8 @@ Version 1.3.0
 + Lore recategorizations:
   + Mobs drops in dungeons have been recategorized as Drop lore (instead of Triggered)
   + Several entries in KD have been recategorized as Triggered (instead of Placed), due to requiring actions/missions to appear
++ Log output has been slightly reformatted and a basic python script has been included to quickly parse relevant entries
+  + Usage requires a suitable python interpreter to be installed, and will dump the data into a LoreHound.txt file in the LoreHound directory
 
 Version 1.2.4
 + By request: Waypoint colour may now be customized to something less like a sabotage mission marker
@@ -185,6 +187,8 @@ Requires copies of the TSW and Scaleform CLIK APIs. Existing project files are c
 Master/Head is the most recent packaged release. Develop/Head is usually a commit or two behind my current test build. As much as possible I try to avoid regressions or unbuildable commits but new features may be incomplete and unstable and there may be additional debug code that will be removed or disabled prior to release.
 
 Once built, 'LoreHound.swf' and the contents of 'config' should be copied to the directory 'LoreHound' in the game's mod directory. '/reloadui' is sufficient to force the game to load an updated swf or mod data file, but changes to the game config files (LoginPrefs.xml and Modules.xml) will require a restart of the client and possible deletion of .bxml caches from the mod directory.
+
+If the LogParser.py tool is required, it should be copied to the instal directory as well.
 
 ## License and Attribution
 Copyright (c) 2017 Earthfiredrake<br/>
