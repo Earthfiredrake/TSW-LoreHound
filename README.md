@@ -45,11 +45,16 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version Next
+Version 1.3.0
 + Fixed the bug with icon not staying with UI edit mode overlay
 + Config can now be manually reset (/setoption efdLoreHoundResetConfig true)
-+ New category "Special Items" for non-lore pickups and objects related to unlocking lore
-+ Lore dropped from mobs in dungeons has been recategorized as Drop lore (instead of Triggered)
++ New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:
+  + Pieces of Joe: Will be detected only if they are currently spawned
+  + Demonic Crystals
+  + Dead Scarabs: Including colour identification
++ Lore recategorizations:
+  + Mobs drops in dungeons have been recategorized as Drop lore (instead of Triggered)
+  + Several entries in KD have been recategorized as Triggered (instead of Placed), due to requiring actions/missions to appear
 
 Version 1.2.4
 + By request: Waypoint colour may now be customized to something less like a sabotage mission marker
@@ -141,7 +146,7 @@ The following issues are known to exist in the most recent release:
   + This is intentional and reduces the occurence of bugs related to other mods integrating with the topbar
 
 Where are the waypoints on my map? <br/>
-I have not found any way for an ingame mod to interact with or overlay the map UI or the waypoint files. While this mod can help you locate things once you're close, a waypoint pack such as Lassie's may be a helpful supplement.
+I have not found any way for an ingame mod to interact with or overlay the map UI or the waypoint files. While this mod can help you locate things once you're close, a waypoint pack such as Lassie's may be a helpful supplement. I am currently working on a supplementary map mod, Cartographer, which will eventually have support for direct updates from a future version of LoreHound.
 
 Can I adjust the detection range? <br/>
 No. The API for the proximity detection system I am using does not give me access to that feature. Similarly the despawn tracking range is outside of my control (and slightly random). Once detected, the range at which onscreen waypoints disappear could be customized, but does not seem to be that important to people.
@@ -159,6 +164,10 @@ This continues to be something of a work in progress, though I'm mostly satisfie
   + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
 + Localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
 + Possible runtime linkage with Cartographer once it gets far enough into development.
++ Some lore is detected in one type, while it behaves as something different, there is an ongoing effort to correct this for two major reasons:
+  + Consistency of alerts with behaviour
+  + Preventing drop lore from spamming Cartographer with large numbers of location waypoints
+    + While simply preventing duplicates by loreID is possible, a large number of existing lore entries with multiple (fixed) spawn points suggests that such a solution is not flexible enough
 
 A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
 
