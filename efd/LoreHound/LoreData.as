@@ -17,15 +17,17 @@ class efd.LoreHound.LoreData {
 	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
 	public static var ef_LoreType_Despawn:Number = 1 << 3; // Special type for generating despawn messages (will be output as Drop lore)
 	public static var ef_LoreType_Uncategorized:Number = 1 << 4; // Newly detected lore, will need to be catalogued
-	public static var ef_LoreType_All:Number = (1 << 5) - 1;
+	public static var ef_LoreType_SpecialItem:Number = 1 << 5; // Special pickups or other items related to lore (Pieces o'Joe, Draug Hearts, Scarabs, Demonic Crystals etc.)
+	public static var ef_LoreType_All:Number = (1 << 6) - 1;
 
-	public function LoreData(dynel:Dynel, formatStrID:Number, type:Number) {
+	public function LoreData(dynel:Dynel, formatStrID:Number, type:Number, overrideID:Number) {
 		// The dynel will be invalid when the lore tracking callbacks are disabled
 		// Caches useful values prior to this
 		DynelInst = dynel;
 		DynelID = dynel.GetID();
 		CategorizationID = formatStrID;
 		Type = type;
+		LoreIDCache = overrideID;
 	}
 
 	// Extracts the format string ID from the xml localization formatting tag

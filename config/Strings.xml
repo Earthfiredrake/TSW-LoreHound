@@ -153,7 +153,7 @@
 		<String tag="PlacedChat"
 				en="Placed lore nearby (%1%)" />
 		<String tag="TriggerFifo"
-				en="Lore (%1%) has appeared" />
+				en="Lore trigger (%1%) nearby" />
 		<String tag="TriggerChat"
 				en="Triggered lore nearby (%1%)" />
 		<String tag="DropFifo"
@@ -168,6 +168,16 @@
 				en="Uncategorized lore (%1%) found!" />
 		<String tag="UncategorizedChat"
 				en="Uncategorized lore (%1%) found! Please submit for cataloguing" />
+		<String tag="SpecialItemFifo"
+				en="Lore item (%1%) nearby" />
+		<String tag="SpecialItemChat"
+				en="Lore related item (%1%) nearby" />
+		<String tag="ScarabColourBlack"
+				en="%1%, Black" />
+		<String tag="ScarabColourGreen"
+				en="%1%, Green" />
+		<String tag="ScarabColourRed"
+				en="%1%, Red" />
 	</Category>
 	<Category name="Patch"> <!-- Update notes if a patch resulted in unexpected settings changed -->
 		<String tag="AutoReportRepair"

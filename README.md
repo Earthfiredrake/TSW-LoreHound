@@ -47,6 +47,8 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 ## Change Log
 Version Next
 + Fixed the bug with icon not staying with UI edit mode overlay
++ Config can now be manually reset (/setoption efdLoreHoundResetConfig true)
++ New category "Special Items" for non-lore pickups and objects related to unlocking lore
 + Lore dropped from mobs in dungeons has been recategorized as Drop lore (instead of Triggered)
 
 Version 1.2.4

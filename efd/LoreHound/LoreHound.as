@@ -46,7 +46,8 @@ class efd.LoreHound.LoreHound extends Mod {
 	public static var ef_LoreType_Drop:Number = 1 << 2; // Lore which drops from monsters, or otherwise spawns with a time limit
 	private static var ef_LoreType_Despawn:Number = 1 << 3; // Special type for generating despawn messages (will be output as Drop lore)
 	public static var ef_LoreType_Uncategorized:Number = 1 << 4; // Newly detected lore, will need to be catalogued
-	private static var ef_LoreType_All:Number = (1 << 5) - 1;
+	public static var ef_LoreType_SpecialItem:Number = 1 << 5; // Special pickups or other items related to lore (Pieces o'Joe, Draug Hearts, Scarabs, Demonic Crystals etc.)
+	private static var ef_LoreType_All:Number = (1 << 6) - 1;
 
 	// Category flags for extended information
 	private static var ef_Details_None:Number = 0;
@@ -176,7 +177,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				var category:Number = LoreHound["ef_LoreType_" + categoryXML.attributes.name];
 				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
 					var dynelXML:XMLNode = categoryXML.childNodes[j];
-					var indexEntry:Object = {type : category, excluding : new Array()};
+					var indexEntry:Object = {type : category, loreID : dynelXML.attributes.loreID, excluding : new Array()};
 					for (var k:Number = 0; k < dynelXML.childNodes.length; ++k) {
 						var exclusionXML:XMLNode = dynelXML.childNodes[k];
 						indexEntry.excluding[exclusionXML.attributes.loreID] = LoreHound["ef_LoreType_" + exclusionXML.attributes.category];
@@ -331,10 +332,15 @@ class efd.LoreHound.LoreHound extends Mod {
 	//   GetStat() - Excessive scanning has found one useful value on most lore dynels
 	//     Have now tested the first 50 million indices, with mode 0
 	//     Have also tested the first 16 modes at the 2-3 million range with no observable difference between them
-	//     #12 - Unknown, consistently 7456524 across current data sample
+	//     #12 - Consistently 7456524 across most lore dynels (including black signal)
+	//           It is not assigned for triggered lore that is placed invisibly...
+	//           Unless a trigger is found that can proc on this value changing, it won't be particularly useful with lore detection
+	//           Further testing suggests it might be related to the model id
+	//           Can be used to determine colour of Dead Scarabs and spawn state of Bits of Joe
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
-	//     #1050 - Unknown, usually 6, though other numbers have been observed
+	//     #1050 - Unknown, usually 6 on lore, though other numbers have been observed (1 on scarabs)
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
+	//     #1374 - Seems to be new for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
 	//     #2000560 - Exists on a massive majority of the lore recently observed:
 	//                - Missing from all Shrouded Lore and other event lore (presumably because it's inactive, TODO: Test this theory, in July)
 	//                - Sometimes fails to load before a dropped lore triggers the detection, a few quick retries is usually enough time for it to load
@@ -356,12 +362,12 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Categorize the detected item
 		var loreType:Number = ClassifyID(categorizationId);
-		if (loreType == ef_LoreType_None) {
+		if (loreType == LoreData.ef_LoreType_None) {
 			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
 			else { return; } // Dynel is not lore
 		}
 
-		ProcessAndNotify(new LoreData(dynel, categorizationId, loreType), 0);
+		ProcessAndNotify(new LoreData(dynel, categorizationId, loreType, CategoryIndex[categorizationId].loreID), 0);
 	}
 
 	// Callback for timeout delegate if loreId is uninitialized
@@ -391,6 +397,12 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function FilterLore(lore:LoreData):Boolean {
+		// Only process special items that are currently spawned
+		if (lore.Type == LoreData.ef_LoreType_SpecialItem &&
+			!lore.DynelInst.GetStat(12, 2)) {
+			return false;
+		}
+
 		// Filters lore based on user notification settings
 		if (lore.LoreID == 0) {
 			if (lore.Type == LoreData.ef_LoreType_Placed) { // Most likely inactive event lore
@@ -499,6 +511,9 @@ class efd.LoreHound.LoreHound extends Mod {
 				case LoreData.ef_LoreType_Uncategorized:
 					typeString = "Uncategorized";
 					break;
+				case LoreData.ef_LoreType_SpecialItem:
+					typeString = "SpecialItem";
+					break;
 				default:
 					// It should be impossible for the game data to trigger this state
 					// This message probably indicates a logical failure in the mod
@@ -540,6 +555,24 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Lore.IsVisible(id): Unsure, still doesn't seem to be related to unlocked state
 	// Lore.GetTagViewpoint(id): 0 is Buzzing, 1 is Black Signal (both are m_Children for a single topic)
 	private static function AttemptIdentification(lore:LoreData):String {
+		if (lore.Type == LoreData.ef_LoreType_SpecialItem) {
+			// Special items contain the lore ID (for filtering purposes), but should use the default dynel name for reporting purposes
+			// Some have additional logic to further differentiate them
+			if (lore.CategorizationID == 9240620) { // Dead Scarab
+				var scarabColour:String;
+				switch (lore.DynelInst.GetStat(12, 2)) {
+					case 9240634: scarabColour = "ScarabColourBlack"; break;
+					case 9240632: scarabColour = "ScarabColourGreen"; break;
+					case 9240636: scarabColour = "ScarabColourRed"; break;
+					default:
+						TraceMsg("Scarab colour filter failure!");
+						return LDBFormat.Translate(lore.DynelInst.GetName());
+				}
+				return LocaleManager.FormatString("LoreHound", scarabColour, LDBFormat.Translate(lore.DynelInst.GetName()));
+			}
+			return LDBFormat.Translate(lore.DynelInst.GetName());
+		}
+
 		if (lore.LoreID) {
 			var topic:String = lore.Topic;
 			var index:Number = lore.Index;
@@ -567,7 +600,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Deal with missing IDs
 		switch (lore.Type) {
-			case ef_LoreType_Placed:
+			case LoreData.ef_LoreType_Placed:
 				// All the unidentified common lore I ran into matched up with event/seasonal lore
 				// Though not all the event/seasonal lore exists in this disabled state
 				// For lore in accessible locations (ie, not event instances):

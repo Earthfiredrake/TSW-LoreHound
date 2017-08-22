@@ -49,6 +49,18 @@
 		</ID>
 		<ID value="9241297" /> <!-- Spectres #11 drop -->
 	</Category>
+	<Category name="SpecialItem"> <!-- Non-lore, but related items -->
+		<!-- Since these are not directly lore pickups, they need to be manually hooked up to their related lore IDs -->
+		<ID value="9240180" loreID="9249" /> <!-- Demonic Crystal (Rakshasa #6) -->
+		<ID value="9240620" loreID="8660" /> <!-- Dead Scarabs (Arthropods #7) -->
+		<!-- Bits of Joe (Zombies #13) -->
+		<ID value="9240955" loreID="8592" />
+		<ID value="9240958" loreID="8592" />
+		<ID value="9240966" loreID="8592" />
+		<ID value="9240970" loreID="8592" />
+		<ID value="9240977" loreID="8592" />
+		<ID value="9240983" loreID="8592" />
+	</Category>
 	<Category name="Unknown"> <!-- Values believed to connect to lore pickups, location is unknown -->
 		<ID value="8397678" /> <!-- Probably Niflheim -->
 		<ID value="8397708" /> <!-- Probably Niflheim -->
