@@ -6,19 +6,23 @@
 <LoreCategories>
 	<!-- Here be the magic numbers (probably planted by the Dragon) -->
 	<Category name="Placed"> <!-- Lore pickup with fixed location and usually always visible -->
-		<!-- Also includes most event lore, and a handful of lores with minor trigger conditions -->
+		<!-- Also includes most event lore; Lore with trigger conditions should be reclassified -->
 		<ID value="7128026"> <!-- Standard placed lore -->
 			<Reclassify loreID="6967" category="Trigger" /> <!-- Jingu Clan #8, requires talking -->
 			<Reclassify loreID="6992" category="Trigger" /> <!-- House-in-Exile #6, requires talking -->
 			<Reclassify loreID="7032" category="Trigger" /> <!-- Korinto-kai #8, requires talking -->
 			<Reclassify loreID="7111" category="Trigger" /> <!-- Susanoo's #5, requires action -->
-			<Reclassify loreID="7118" category="Trigger" /> <!-- Zeroes Wild #5, requires mission? -->
-			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires quest The Abandoned -->
+			<Reclassify loreID="7118" category="Trigger" /> <!-- Zeroes Wild #5, requires mission -->
+			<Reclassify loreID="7285" category="Drop" /> <!-- Tale of Momotaro #5, drops from mission boss -->
+			<Reclassify loreID="7554" category="Trigger" /> <!-- Dream Palace BS #2, requires mission -->
+			<Reclassify loreID="7555" category="Trigger" /> <!-- Dream Palace BS #3, requires mission -->
+			<Reclassify loreID="7556" category="Trigger" /> <!-- Dream Palace BS #4, requires mission -->
+			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires mission -->
 		</ID>
-		<ID value="7993128" /> <!-- Shrouded lore (End of Days)-->
+		<ID value="7993128" /> <!-- Shrouded lore (End of Days); (Presently intentionally miscategorized for simpler event lore handling) -->
 	</Category>
-	<Category name="Trigger"> <!-- Will spawn after a certain condition is met -->
-		<!-- Unknown if they despawn, most are in instances that don't permit MUs -->
+	<Category name="Trigger"> <!-- Will spawn at fixed location once a condition is met -->
+		<!-- Despawn timers, and whether they spawn server or client side may vary -->
 		<ID value="7648085" /> <!-- Pol (Drone spawn after Pol3) (missing from TSW string table) -->
 		<ID value="7653135" /> <!-- HR6 (Post boss lore spawn) -->
 		<ID value="7661215" /> <!-- DW6 (Post boss lore spawn) -->
@@ -32,8 +36,9 @@
 		<ID value="9125570" /> <!-- MFA6 (Post boss lore spawn) -->
 		<ID value="9135398" /> <!-- MFB4 (Post boss lore spawn) -->
 		<ID value="9135406" /> <!-- MFB5 (Filth Must Flow spawn) -->
+		<ID value="9241297" /> <!-- Spectres #11, drops at fixed locations -->
 	</Category>
-	<Category name="Drop"> <!-- Temporary lore spawns dropped by mobs or other special actions -->
+	<Category name="Drop"> <!-- Temporary lore spawns dropped by mobs, location may vary as consequence -->
 		<ID value="7648084" /> <!-- Pol (Hidden zombie after Pol1) -->
 		<ID value="7648451" /> <!-- Ankh (Orochi Agent after Ankh1) -->
 		<ID value="7648450" /> <!-- Ankh (Wretched Receptacles (Ankh #5)) -->
@@ -45,12 +50,16 @@
 		<!-- Bestiary lore seems to have 5 min despawn timers -->
 		<ID value="9125445" /> <!-- MFA (Smiler mech after MFA5) -->
 		<ID value="9240080"> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
-			<Reclassify loreID="9275" category="Trigger" /> <!-- Golems #8, player triggered event in TSW, time based trigger in SWL -->
+			<Reclassify loreID="9275" category="Trigger" /> <!-- Golems #8, player triggered event in TSW, time based trigger in SWL (with 2 min despawn) -->
+			<!-- <Reclassify loreID="8482" category="Trigger" /> --> <!-- Bogeyman #4; Fixed locations; Category Retained: Despawn Tracking -->
 		</ID>
-		<ID value="9241297" /> <!-- Spectres #11 drop -->
 	</Category>
 	<Category name="SpecialItem"> <!-- Non-lore, but related items -->
 		<!-- Since these are not directly lore pickups, they need to be manually hooked up to their related lore IDs -->
+		<ID value="6082354" loreID="583" /> <!-- Strange Candle (Black House #1) -->
+		<!-- <ID value="6272274" loreID="1444" /> --> <!-- Polaroid (The Kingdom #9; Disabled: Mission use only) -->
+		<!-- <ID value="7645380" loreID="1032" /> --> <!-- Mongomery's Research (Temple City #5; Disabled: Mission use only) -->
+		<!-- <ID value="7647753" loreID="4017" /> --> <!-- Morninglight Pamphlet (Morninglight #1; Disabled: Spam) -->
 		<ID value="9240180" loreID="9249" /> <!-- Demonic Crystal (Rakshasa #6) -->
 		<ID value="9240620" loreID="8660" /> <!-- Dead Scarabs (Arthropods #7) -->
 		<!-- Bits of Joe (Zombies #13) -->
