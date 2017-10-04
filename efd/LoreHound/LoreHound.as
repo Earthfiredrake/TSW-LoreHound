@@ -330,7 +330,8 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 	//     #1050 - Unknown, usually 6 on lore, though other numbers have been observed (1 on scarabs)
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
-	//     #1374 - Seems to be new for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
+	//     #1374 - OverrideCursor, used for categorizing the Reticule interaction prompt
+	//             New for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
 	//     #2000560 - Exists on a massive majority of the lore recently observed:
 	//                - Missing from all Shrouded Lore and other event lore (presumably because it's inactive, TODO: Test this theory, in July)
 	//                - Sometimes fails to load before a dropped lore triggers the detection, a few quick retries is usually enough time for it to load

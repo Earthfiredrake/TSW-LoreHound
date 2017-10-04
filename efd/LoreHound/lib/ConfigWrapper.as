@@ -16,8 +16,14 @@ import efd.LoreHound.lib.Mod;
 
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
-// The setting name "ArchiveType" is reserved for internal use
-// Supports basic types and limited composite types (nested ConfigWrapper, Array, Point, and generic Object)
+
+// Basic types, Archive and Point all use built in serialization support
+// Due to an implementation issue, arrays are being repacked as archives
+//   (An array with one item, when saved with the default serialization method, is indistinguishable from a single variable)
+// Object and Config Wrappers are also repacked into archives
+//   To differentiate these uses of Archive the setting name "ArchiveType" is reserved for internal use
+//   ConfigWrappers must decend directly from other ConfigWrappers, they won't load properly if nested within other types
+//     TODO: This may be an issue, and should be fixed if possible
 
 class efd.LoreHound.lib.ConfigWrapper {
 	// ArchiveName is distributed value to be saved to for top level config wrappers
@@ -179,7 +185,6 @@ class efd.LoreHound.lib.ConfigWrapper {
 			var values:Archive = new Archive();
 			wrapper.AddEntry("ArchiveType", value instanceof Array ? "Array" : "Object");
 			for (var key:String in value) {
-				wrapper.AddEntry("Keys", key);
 				values.AddEntry(key, Package(value[key]));
 			}
 			wrapper.AddEntry("Values", values);
@@ -225,15 +230,18 @@ class efd.LoreHound.lib.ConfigWrapper {
 			switch (type) {
 				case "Config":
 					// Have to use the existing config, as it has the field names defined
+					// TODO: This only works for uniform config nesting, it doesn't support configs nested in other types
 					GetValue(key).FromArchive(element);
+					if (key == undefined) {
+						ErrorMsg("A config archive could not be linked to an immediate parent.");
+					}
 					return null;
 				case "Array":
-				case "Object": // Serialized unspecified type
+				case "Object": // Serialized general type
 					var value = type == "Array" ? new Array() : new Object();
-					var keys:Array = element.FindEntryArray("Keys");
 					var values:Archive = element.FindEntry("Values");
-					for (var i in keys) {
-						value[keys[i]] = Unpack(values.FindEntry(keys[i]));
+					for (var index:String in values["m_Dictionary"]) {
+						value[index] = Unpack(values.FindEntry(index));
 					}
 					return value;
 				default:
@@ -253,7 +261,12 @@ class efd.LoreHound.lib.ConfigWrapper {
 		Mod.TraceMsg(msg, options);
 	}
 
-	// As long as we're using the game
+	private static function ErrorMsg(msg:String, options:Object):Void {
+		if (options == undefined) { options = new Object(); }
+		options.system = "Config";
+		Mod.ErrorMsg(msg, options);
+	}
+
 	public function get IsLoaded():Boolean { return CurrentArchive != undefined; }
 
 	// Checks if this, or any nested Config settings object, is dirty
