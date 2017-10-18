@@ -17,6 +17,8 @@
 			<Reclassify loreID="7554" category="Trigger" /> <!-- Dream Palace BS #2, requires mission -->
 			<Reclassify loreID="7555" category="Trigger" /> <!-- Dream Palace BS #3, requires mission -->
 			<Reclassify loreID="7556" category="Trigger" /> <!-- Dream Palace BS #4, requires mission -->
+			<Reclassify loreID="7816" category="Trigger" /> <!-- The Bomb #7, requires backtracking -->
+			<Reclassify loreID="7864" category="Trigger" /> <!-- Lilith #9, spawns after fight -->
 			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires mission -->
 		</ID>
 		<ID value="7993128" /> <!-- Shrouded lore (End of Days); (Presently intentionally miscategorized for simpler event lore handling) -->

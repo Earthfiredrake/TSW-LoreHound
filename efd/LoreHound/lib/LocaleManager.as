@@ -10,9 +10,21 @@ import efd.LoreHound.lib.Mod;
 
 // Loads an xml file and extracts a set of indexed strings for use by the mod
 // Strings will be localized if possible, or default to English if translations are undefined
-// See Strings.xml for a sample of the expected data format
 // Tags must be unique within a category, categories should not be defined multiple times
+// Format specification:
+//   <Category name="categoryKey">
+//     <String tag="stringKey" [rdb="id=# category=#"|en="English|Default"|fr="French"|de="German"] />
+//   </Category>
+// Any combination of localization attributes is permited though usually they will either be:
+//   rdb: The string is sourced from the game resource database for the user's language (may also include an "en" fallback, but likely will not)
+//     This option will take precidence, unless it fails to load
+//   en+[fr/de]: Localization support is dependent on the mod developer, or end user customization, though "en" should be provided as a default
 
+// Can also be used on individual string tags by other loaders to parse localized strings,
+//   without adding them to the internal lookup table
+// In this usage, the category tag is omitted, and the name and tag attribute of the String xml tag are ignored
+
+// Also provides some formatting utilities for strings and simplified lookups for common UI elements
 class efd.LoreHound.lib.LocaleManager {
 	private function LocaleManager() { } // Static class for ease of access and singleton nature
 
@@ -46,8 +58,6 @@ class efd.LoreHound.lib.LocaleManager {
 				var category:Object = new Object;
 				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
 					var entry:XMLNode = categoryXML.childNodes[j];
-					// Load the localized string if available, or default to English
-					// English being the most likely to be both available and understood
 					category[entry.attributes.tag] = GetLocaleString(entry);
 				}
 				StringDict[categoryXML.attributes.name] = category;
@@ -60,9 +70,15 @@ class efd.LoreHound.lib.LocaleManager {
 		SignalStringsLoaded.Emit(success);
 	}
 
+	// Load the localized string if available, or default to English
+	// English being the most likely to be both available and understood
 	public static function GetLocaleString(xml:XMLNode):String {
-		var localeStr:String = xml.attributes[CurrentLocale];
-		return localeStr ? localeStr : xml.attributes.en;
+		var localeStr:String;
+		if (xml.attributes.rdb != undefined) {
+			localeStr = LDBFormat.Translate("<localized " + xml.attributes.rdb + " />");
+		}
+		if (localeStr == undefined) { localeStr = xml.attributes[CurrentLocale]; }
+		return localeStr != undefined ? localeStr : xml.attributes.en;
 	}
 
 	private static var StringFile:XML;
