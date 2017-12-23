@@ -35,6 +35,7 @@
 		<ID value="7573298" /> <!-- HE6 (Post boss lore spawn), also used for Faust Omega "Knowledge" room -->
 		<ID value="8507997" /> <!-- CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor -->
 		<ID value="8508000" /> <!-- CK carpark (HiE BS #2) spawns after picking up the evidence -->
+		<ID value="8397708" /> <!-- Niflheim; Present under tree -->
 		<ID value="9125570" /> <!-- MFA6 (Post boss lore spawn) -->
 		<ID value="9135398" /> <!-- MFB4 (Post boss lore spawn) -->
 		<ID value="9135406" /> <!-- MFB5 (Filth Must Flow spawn) -->
@@ -49,6 +50,7 @@
 		<!-- Both Black Signal lores have 1 min despawn timers -->
 		<ID value="8499259" /> <!-- Hyper-Infected Citizen drop (Kaiden BS #3), will despawn if not engaged but can be healtanked for a while -->
 		<ID value="8508040" /> <!-- Behemoth of the Devouring Plague drop (The Wall BS #4) -->
+		<ID value="8397678" /> <!-- Niflheim; Hel's drop -->
 		<!-- Bestiary lore seems to have 5 min despawn timers -->
 		<ID value="9125445" /> <!-- MFA (Smiler mech after MFA5) -->
 		<ID value="9240080"> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
@@ -72,9 +74,7 @@
 		<ID value="9240977" loreID="8592" />
 		<ID value="9240983" loreID="8592" />
 	</Category>
-	<Category name="Unknown"> <!-- Values believed to connect to lore pickups, location is unknown -->
-		<ID value="8397678" /> <!-- Probably Niflheim -->
-		<ID value="8397708" /> <!-- Probably Niflheim -->
+	<Category name="Uncategorized"> <!-- Values believed to connect to lore pickups, location is unknown -->
 		<ID value="8437788" /> <!-- Unknown (KD?) -->
 		<ID value="8437793" /> <!-- Unknown (KD?) -->
 		<ID value="8508014" /> <!-- Unknown (KD?) -->
