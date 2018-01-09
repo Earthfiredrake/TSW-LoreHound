@@ -135,8 +135,9 @@ class efd.LoreHound.lib.Mod {
 			ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
 		}
 
-		LocaleManager.Initialize("Strings");
+		LocaleManager.Initialize();
 		LocaleManager.SignalStringsLoaded.Connect(StringsLoaded, this);
+		LocaleManager.LoadStringFile("Strings");
 
 		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
 			HostMovie = hostMovie; // Not needed for console style mods
@@ -188,6 +189,7 @@ class efd.LoreHound.lib.Mod {
 		delete SystemsLoaded; // No longer required
 		UpdateInstall();
 		Icon.UpdateState();
+		// TODO: Load icon invisibly, and only make it visible when loading is successfully complete?
 		var topbarIntegration = Config.GetValue("UseTopbar", ef_Topbar_None);
 		if (topbarIntegration != ef_Topbar_None) {
 			RegisterWithTopbar(topbarIntegration);
@@ -517,6 +519,11 @@ class efd.LoreHound.lib.Mod {
 
 	private function ShowConfigWindowChanged(dv:DistributedValue):Void {
 		if (dv.GetValue()) { // Open window
+			if (ModLoadedDV.GetValue() == false) {
+				dv.SetValue(false);
+				Mod.ErrorMsg("Did not load properly, and has been disabled.");
+				return;
+			}
 			if (ConfigWindowClip == null) {
 				ConfigWindowClip = OpenWindow("ConfigWindow", ConfigWindowLoaded, CloseConfigWindow, ConfigWindowEscTrigger);
 			}
@@ -534,6 +541,11 @@ class efd.LoreHound.lib.Mod {
 
 	private function ShowInterfaceWindowChanged(dv:DistributedValue):Void {
 		if (dv.GetValue()) { // Open window
+			if (ModLoadedDV.GetValue() == false) {
+				dv.SetValue(false);
+				Mod.ErrorMsg("Did not load properly, and has been disabled.");
+				return;
+			}
 			if (InterfaceWindowClip == null)
 			{
 				InterfaceWindowClip = OpenWindow("InterfaceWindow", InterfaceWindowLoaded, CloseInterfaceWindow, InterfaceWindowEscTrigger);
@@ -620,6 +632,8 @@ class efd.LoreHound.lib.Mod {
 		Utils.PrintChatText(message);
 		if (options.fatal) {
 			_ErrorMsg("  Mod disabled", { noPrefix : true });
+			// TODO: This setting of Enabled should ensure that Enabled is actually a thing
+			//       Should it also ensure that the "Loaded" DV is cleared to lock down interface?
 			Config.SetValue("Enabled", false);
 		}
 	}
@@ -693,7 +707,7 @@ class efd.LoreHound.lib.Mod {
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
 	private var MinUpgradableVersion:String; // Minimum installed version for setting migration during update; Discarded after update
-	private var ModLoadedDV:DistributedValue; // Provided as a hook for any mod integration features
+	private var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for cross-mod integration
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;

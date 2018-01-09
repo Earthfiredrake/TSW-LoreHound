@@ -5,192 +5,112 @@
 
 <!-- The attributes "de", and "fr" can be used for translations of each string, if needed -->
 <!-- They can also be customized as desired, though GUI elements do not expand to fit them -->
-<!-- Category names and string tags are referenced from the mod, and should not be changed -->
+<!-- Category and string tag names are referenced from the mod, and should not be changed -->
 <!-- Strings themselves should be compatible with boost::format for inserting further data -->
 <!-- See http://www.boost.org/doc/libs/1_63_0/libs/format/doc/format.html#syntax for details (TSW likely uses earlier version, unsure which)-->
 <!-- For customized strings, replacement values may be skipped or duplicated without issue -->
 <!-- Any replacement values beyond the number of provided parameters will display as 'undefined' -->
 <!-- Extra parameters are detailed after the string. Debug and trace messages are not localized -->
 <StringCategories>
-	<Category name="General"> <!-- Used for standard messages created as part of my mod framework -->
-		<String tag="Installed"
-				en="Has been installed" />
-		<String tag="Update"
-				en="Updated to v%1%" /> <!-- %1% = ModVersion -->
-		<String tag="Revert"
-				en="Reverted to v%1%" /> <!-- %1% = ModVersion -->
-		<String tag="NoMigration"
-				en="Setting migration from %1% is not possible, settings will be reset to defaults." /> <!-- %1% = PriorVersion -->
-		<String tag="ReviewSettings"
-				en="Please take a moment to review the settings" />
-		<String tag="ModMessagePrefix"
-				en="&lt;font color='#00FFFF'&gt;%1%&lt;/font&gt;: " /> <!-- %1% = ModName; Yeah it's ugly, xml is not great for storing html -->
-		<String tag="SubsystemMessagePrefix"
-				en="%1% - " /> <!-- %1% = Subsystem name -->
-		<!-- Message format strings recieve the following values in standard positions -->
+	<General> <!-- Used for standard messages created as part of my mod framework -->
+		<Installed en="Has been installed" />
+		<Update en="Updated to v%1%" /> <!-- %1% = ModVersion -->
+		<Revert en="Reverted to v%1%" /> <!-- %1% = ModVersion -->
+		<NoMigration en="Setting migration from %1% is not possible, settings will be reset to defaults." /> <!-- %1% = PriorVersion -->
+		<ReviewSettings en="Please take a moment to review the settings" />
+		<ModMessagePrefix en="&lt;font color='#00FFFF'&gt;%1%&lt;/font&gt;: " /> <!-- %1% = ModName; Yeah it's ugly, xml is not great for storing html -->
+		<SubsystemMessagePrefix en="%1% - " /> <!-- %1% = Subsystem name -->
+		<!-- Message format strings receive the following values in standard positions -->
 		<!-- %1% = Message content -->
 		<!-- %2% = ModMessagePrefix (as above or "" if not provided) -->
 		<!-- %3% = SubsystemMessagePrefix (as above or "" if not provided) -->
 		<!-- Further parameters may be provided by the mod, as detailed -->
-		<String tag="FifoMessage"
-				en="%1%" /> <!-- Minimalist output, no non-standard parameters available -->
-		<String tag="ChatMessage"
-				en="%4%%2%%3%%1%" /> <!-- %4% = timestamp (as defined in LoreHound category or "" if not provided); By default formats as "[hh:mm] LoreHound: subsys - message" unless some parts are excluded -->
+		<FifoMessage en="%1%" /> <!-- Minimalist output, no non-standard parameters available -->
+		<ChatMessage en="%4%%2%%3%%1%" /> <!-- %4% = timestamp (as defined in LoreHound category or "" if not provided); By default formats as "[hh:mm] LoreHound: subsys - message" unless some parts are excluded -->
 		 <!-- Used by console style mods that lack icon notification -->
-		<String tag="Enabled"
-				en="Has been enabled" />
-		<String tag="Disabled"
-				en="Has been disabled" />
-	</Category>
-	<Category name="GUI"> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
-		<String tag="ConfigWindowTitle"
-				en="%1% Settings" /> <!-- %1% = ModName -->
-		<String tag="SettingGroupPlaced"
-				en="Placed Lore" />
-		<String tag="SettingGroupTrigger"
-				en="Triggered Lore" />
-		<String tag="SettingGroupDrop"
-				en="Dropped Lore" />
-		<String tag="SettingGroupUncategorized"
-				en="Uncategorized Lore" />
-		<String tag="SettingGroupSpecialItem"
-				en="Related Items" />
-		<String tag="LoreSettingWP"
-				en="Show Waypoints" />
-		<String tag="LoreSettingFifo"
-				en="FIFO Alerts" />
-		<String tag="LoreSettingChat"
-				en="System Chat Messages" />
-		<String tag="LoreStatesTitle"
-				en="Notify for:" />
-		<String tag="LoreSettingUncollected"
-				en="Uncollected Lore" />
-		<String tag="LoreSettingCollected"
-				en="Already Collected Lore" />
-		<String tag="SettingGroupDetails"
-				en="Extra Chat Details" />
-		<String tag="DetailSettingTimestamp"
-				en="Timestamp" />
-		<String tag="DetailSettingLocation"
-				en="Location" />
-		<String tag="DetailSettingCategory"
-				en="Category IDs" />
-		<String tag="DetailSettingInstance"
-				en="Instance IDs" />
-		<String tag="SettingGroupOther"
-				en="Other Options" />
-		<String tag="OtherSettingEnable"
-				en="Enable Mod" />
-		<String tag="OtherSettingTopbar"
-				en="Topbar Integration" />
-		<String tag="TopbarNone"
-				en="Disabled" />
-		<String tag="TopbarVTIO"
-				en="VTIO Only" />
-		<String tag="TopbarAny"
-				en="Enabled" />
-		<String tag="OtherSettingInactive"
-				en="Ignore Off Season Lore" />
-		<String tag="OtherSettingDespawn"
-				en="Track Despawns" />
-		<String tag="OtherSettingReporting"
-				en="Automated Reports" />
-		<String tag="OtherSettingExtraTest"
-				en="Extended Testing" />
-		<String tag="OtherSettingLogDump"
-				en="Log Cartographer Data" />
-		<String tag="OtherSettingWPColour"
-				en="Waypoint Colour" />
-		<String tag="TooltipCredit"
-				en="v%1% by %2%" /> <!-- %1% = ModVersion; %2% = DevName -->
-		<String tag="TooltipLeft"
-				en="Left Click: %1%" /> <!-- %1% = Tooltip for bound action -->
-		<String tag="TooltipRight"
-				en="Right Click: %1%" /> <!-- %1% = Tooltip for bound action -->
-		<String tag="TooltipModOn"
-				en="Enable Mod" />
-		<String tag="TooltipModOff"
-				en="Disable Mod" />
-		<String tag="TooltipShowSettings"
-				en="Show Options" />
-		<String tag="TooltipShowInterface"
-				en="[Display Interface]" />
-		<String tag="TooltipTracking"
-				en="Tracking Drops:" />
-		<String tag="TooltipReports"
-				en="Reports Pending: %1%" /> <!-- %1% = Number of pending reports -->
-	</Category>
-	<Category name="AutoReport"> <!-- Only used for player notifications, report content is internal -->
-		<String tag="ReportQueued"
-				en="A report has been generated and will be sent when you are next at the bank" />
-		<String tag="Submitted"
-				en="All queued reports have been sent. Thank you for your assistance" />
-		<String tag="FailSend"
-				en="One or more reports failed to send and will remain queued" />
-		<String tag="FailDeliver"
-				en="One or more reports could not be delivered and will remain queued" />
-		<String tag="ErrorDesc"
-				en="Reason: %1%" /> <!-- %1% = game provided error message, unknown localization -->
-	</Category>
-	<Category name="LoreHound"> <!-- Chat and fifo messages specific to this mod -->
-		<String tag="LoreName"
-				en="%1% %2%#%3%" /> <!-- %1% = game provided lore topic; %2% = Source (one of below); %3% = Lore# (adjusted for sanity) -->
-		<String tag="BuzzingSource"
-				en="" /> <!-- Provided for customization -->
-		<String tag="BlackSignalSource"
-				en="BS" />
-		<String tag="UnknownSource"
-				en="?!?" /> <!-- Somebody new talking at us through lore! -->
-		<String tag="InactiveEvent"
-				en="Inactive event lore" />
-		<String tag="InactiveShrouded"
-				en="Inactive shrouded lore" />
-		<String tag="InvalidLoreID"
-				en="Invalid lore ID" /> <!-- Name used if lore could not be found with provided id -->
-		<String tag="IncompleteDynel"
-				en="Incomplete data, rescan failed" /> <!-- Name used if no id was available, and not likely to be event lore -->
-		<String tag="TimestampInfo"
-				en="[%|1$02|:%|2$02|] " /> <!-- 1$ = hours, 2$ = minutes; default string zero pads to two digits -->
-		<String tag="PositionInfo"
-				en="%1% (%2%, %4%, %3%)" /> <!-- %1% = Playfield name (translated by game); %2%,%3%,%4% = position vector x,y,z (note values are rounded to nearest integer and y is vertical) -->
-		<String tag="CategoryInfo"
-				en="Category ID: %1% Supergroup: %2%" /> <!-- Values used in categorization, related to game's localization system -->
-		<String tag="InstanceInfo"
-				en="Dynel ID: %1%" /> <!-- ID numbers used to identify a specific lore pickup -->
+		<Enabled en="Has been enabled" />
+		<Disabled en="Has been disabled" />
+	</General>
+	<GUI> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
+		<ConfigWindowTitle en="%1% Settings" /> <!-- %1% = ModName -->
+		<SettingGroupPlaced en="Placed Lore" />
+		<SettingGroupTrigger en="Triggered Lore" />
+		<SettingGroupDrop en="Dropped Lore" />
+		<SettingGroupUncategorized en="Uncategorized Lore" />
+		<SettingGroupSpecialItem en="Related Items" />
+		<LoreSettingWP en="Show Waypoints" />
+		<LoreSettingFifo en="FIFO Alerts" />
+		<LoreSettingChat en="System Chat Messages" />
+		<LoreStatesTitle en="Notify for:" />
+		<LoreSettingUncollected en="Uncollected Lore" />
+		<LoreSettingCollected en="Already Collected Lore" />
+		<SettingGroupDetails en="Extra Chat Details" />
+		<DetailSettingTimestamp en="Timestamp" />
+		<DetailSettingLocation en="Location" />
+		<DetailSettingCategory en="Category IDs" />
+		<DetailSettingInstance en="Instance IDs" />
+		<SettingGroupOther en="Other Options" />
+		<OtherSettingEnable en="Enable Mod" />
+		<OtherSettingTopbar en="Topbar Integration" />
+		<TopbarNone en="Disabled" />
+		<TopbarVTIO en="VTIO Only" />
+		<TopbarAny en="Enabled" />
+		<OtherSettingInactive en="Ignore Off Season Lore" />
+		<OtherSettingDespawn en="Track Despawns" />
+		<OtherSettingReporting en="Automated Reports" />
+		<OtherSettingExtraTest en="Extended Testing" />
+		<OtherSettingLogDump en="Log Cartographer Data" />
+		<OtherSettingWPColour en="Waypoint Colour" />
+		<TooltipCredit en="v%1% by %2%" /> <!-- %1% = ModVersion; %2% = DevName -->
+		<TooltipLeft en="Left Click: %1%" /> <!-- %1% = Tooltip for bound action -->
+		<TooltipRight en="Right Click: %1%" /> <!-- %1% = Tooltip for bound action -->
+		<TooltipModOn en="Enable Mod" />
+		<TooltipModOff en="Disable Mod" />
+		<TooltipShowSettings en="Show Options" />
+		<TooltipShowInterface en="[Display Interface]" />
+		<TooltipTracking en="Tracking Drops:" />
+		<TooltipReports en="Reports Pending: %1%" /> <!-- %1% = Number of pending reports -->
+	</GUI>
+	<AutoReport> <!-- Only used for player notifications, report content is internal -->
+		<ReportQueued en="A report has been generated and will be sent when you are next at the bank" />
+		<Submitted en="All queued reports have been sent. Thank you for your assistance" />
+		<FailSend en="One or more reports failed to send and will remain queued" />
+		<FailDeliver en="One or more reports could not be delivered and will remain queued" />
+		<ErrorDesc en="Reason: %1%" /> <!-- %1% = game provided error message, unknown localization -->
+	</AutoReport>
+	<LoreHound> <!-- Chat and fifo messages specific to this mod -->
+		<LoreName en="%1% %2%#%3%" /> <!-- %1% = game provided lore topic; %2% = Source (one of below); %3% = Lore# (adjusted for sanity) -->
+		<BuzzingSource en="" /> <!-- Provided for customization -->
+		<BlackSignalSource en="BS" />
+		<UnknownSource en="?!?" /> <!-- Somebody new talking at us through lore! -->
+		<InactiveEvent en="Inactive event lore" />
+		<InactiveShrouded en="Inactive shrouded lore" />
+		<InvalidLoreID en="Invalid lore ID" /> <!-- Name used if lore could not be found with provided id -->
+		<IncompleteDynel en="Incomplete data, rescan failed" /> <!-- Name used if no id was available, and not likely to be event lore -->
+		<TimestampInfo en="[%|1$02|:%|2$02|] " /> <!-- 1$ = hours, 2$ = minutes; default string zero pads to two digits -->
+		<PositionInfo en="%1% (%2%, %4%, %3%)" /> <!-- %1% = Playfield name (translated by game); %2%,%3%,%4% = position vector x,y,z (values are rounded to nearest integer and y is vertical(note the swizzle in output)) -->
+		<CategoryInfo en="Category ID: %1% Supergroup: %2%" /> <!-- Values used in categorization, related to game's localization system -->
+		<InstanceInfo en="Dynel ID: %1%" /> <!-- ID numbers used to identify a specific lore pickup -->
 		<!-- For the following: %1% = LoreName (above) -->
-		<String tag="PlacedFifo"
-				en="Lore (%1%) nearby" />
-		<String tag="PlacedChat"
-				en="Placed lore nearby (%1%)" />
-		<String tag="TriggerFifo"
-				en="Lore trigger (%1%) nearby" />
-		<String tag="TriggerChat"
-				en="Triggered lore nearby (%1%)" />
-		<String tag="DropFifo"
-				en="Lore (%1%) dropped" />
-		<String tag="DropChat"
-				en="Dropped lore nearby (%1%)" />
-		<String tag="DespawnFifo"
-				en="Lore (%1%) despawned" />
-		<String tag="DespawnChat"
-				en="Lore despawned or out of range (%1%)" />
-		<String tag="UncategorizedFifo"
-				en="Uncategorized lore (%1%) found!" />
-		<String tag="UncategorizedChat"
-				en="Uncategorized lore (%1%) found! Please submit for cataloguing" />
-		<String tag="SpecialItemFifo"
-				en="Lore item (%1%) nearby" />
-		<String tag="SpecialItemChat"
-				en="Lore related item (%1%) nearby" />
-		<String tag="ScarabColourBlack"
-				en="%1%, Black" />
-		<String tag="ScarabColourGreen"
-				en="%1%, Green" />
-		<String tag="ScarabColourRed"
-				en="%1%, Red" />
-	</Category>
-	<Category name="Patch"> <!-- Update notes if a patch resulted in unexpected settings changed -->
-		<String tag="AutoReportRepair"
-				en="Auto report settings were not saving, this has been fixed and they have been reset to defaults." />
-	</Category>
+		<PlacedFifo en="Lore (%1%) nearby" />
+		<PlacedChat en="Placed lore nearby (%1%)" />
+		<TriggerFifo en="Lore trigger (%1%) nearby" />
+		<TriggerChat en="Triggered lore nearby (%1%)" />
+		<DropFifo en="Lore (%1%) dropped" />
+		<DropChat en="Dropped lore nearby (%1%)" />
+		<DespawnFifo en="Lore (%1%) despawned" />
+		<DespawnChat en="Lore despawned or out of range (%1%)" />
+		<UncategorizedFifo en="Uncategorized lore (%1%) found!" />
+		<UncategorizedChat en="Uncategorized lore (%1%) found! Please submit for cataloguing" />
+		<!-- Lore items use the name of the object as %1% -->
+		<SpecialItemFifo en="Lore item (%1%) nearby" />
+		<SpecialItemChat en="Lore related item (%1%) nearby" />
+		<!-- Scarabs additionally append the colour -->
+		<ScarabColourBlack en="%1%, Black" />
+		<ScarabColourGreen en="%1%, Green" />
+		<ScarabColourRed en="%1%, Red" />
+	</LoreHound>
+	<Patch> <!-- Update notes if a patch resulted in unexpected settings changed -->
+		<AutoReportRepair en="Auto report settings were not saving, this has been fixed and they have been reset to defaults." />
+	</Patch>
 </StringCategories>

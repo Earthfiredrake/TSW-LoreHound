@@ -8,32 +8,53 @@ import com.Utils.Signal;
 
 import efd.LoreHound.lib.Mod;
 
-// Loads an xml file and extracts a set of indexed strings for use by the mod
-// Strings will be localized if possible, or default to English if translations are undefined
-// Tags must be unique within a category, categories should not be defined multiple times
-// Format specification:
-//   <Category name="categoryKey">
-//     <String tag="stringKey" [rdb="id=# category=#"|en="English|Default"|fr="French"|de="German"] />
-//   </Category>
-// Any combination of localization attributes is permited though usually they will either be:
-//   rdb: The string is sourced from the game resource database for the user's language (may also include an "en" fallback, but likely will not)
-//     This option will take precidence, unless it fails to load
-//   en+[fr/de]: Localization support is dependent on the mod developer, or end user customization, though "en" should be provided as a default
+// Provides string localization features, consisting of two major components:
+//   Parses xml files containing categorized strings (ie: Strings.xml) and stores the localized strings in a globally available lookup table
+//   Parses and evaluates string formatted xml tags for subsystem data loaders, for localized data provision
+//   In all cases strings will be localized as
 
-// Can also be used on individual string tags by other loaders to parse localized strings,
-//   without adding them to the internal lookup table
-// In this usage, the category tag is omitted, and the name and tag attribute of the String xml tag are ignored
+// Format specification:
+//   <CategoryKey>
+//     <StringKey fmtSrc [fmt="true"]>
+//       <Param fmtSrc />
+//     </StringKey>
+//   </CategoryKey>
+//   Where:
+//     CategoryKey and StringKey are lookup keys (generally making unique pairs)
+//       Categories may be re-opened and extended after initial definition, but re-defined StringKeys will replace the originals
+//     fmtSrc -> (cat="CategoryKey" str="StringKey") | rbd="id=# category=#" | (en="english/default" [fr="french"][de="german"])
+
+//   Multiple fmtSrcs are permitted, but they will be evaluated in order of precidence, and will ignore any results after finding an accur
+//     str: Sourced from the string file, and must be already loaded, mostly used when other mod data repeatedly uses generic string segments
+//     rdb: Sourced from the game resource database for the user's language
+//     en+[fr/de]: Localization support is dependent on the mod developer, or end user customization. "en" will be used by default if actual locale is unavailable
+
+//   The fmt attribute is used for binding constant params to a formatted string, usually when referencing a str or wrapping an rdb reference
+//     Sufficient params should be provided to cover all replacements in the base string (or expect to see "undefined" output)
+//     Params are passed in the order specified by the file, with the first one binding to %1%
+//     Params are ignored if fmt is not specified, and no runtime data binding is provided at the moment (if partial formatting is needed %n% -> %m% replacement should work)
+//     Params can also have the fmt tag applied, which may be useful if attempting to merge multiple strings
+
+// Can also be used on individual string tags by other loaders to parse localized strings, without adding them to the lookup table
+// In this usage, the category tag is omitted, and the tag attribute of the "String" xml tag is ignored
 
 // Also provides some formatting utilities for strings and simplified lookups for common UI elements
+
 class efd.LoreHound.lib.LocaleManager {
 	private function LocaleManager() { } // Static class for ease of access and singleton nature
 
-	public static function Initialize(fileName:String, testLocale:String):Void {
-		CurrentLocale = testLocale != undefined ? testLocale : LDBFormat.GetCurrentLanguageCode();
-
+	public static function Initialize(testLocale:String):Void {
+		StringDict = new Object();
 		SignalStringsLoaded = new Signal();
+		CurrentLocale = testLocale != undefined ? testLocale : LDBFormat.GetCurrentLanguageCode();
+	}
 
-		StringFile = Mod.LoadXmlAsynch(fileName, StringsLoaded);
+	public static function LoadStringFile(fileName:String):Void {
+		if (StringFile == undefined) {
+			StringFile = Mod.LoadXmlAsynch(fileName, StringsLoaded);
+		} else {
+			Mod.ErrorMsg("Already loading string file, wait for SignalStringsLoaded before starting subsequent files");
+		}
 	}
 
 	public static function GetString(category:String, tag:String):String { return StringDict[category][tag]; }
@@ -50,35 +71,53 @@ class efd.LoreHound.lib.LocaleManager {
 	}
 
 	private static function StringsLoaded(success:Boolean):Void {
-		if (success) {
-			StringDict = new Object();
-			var xmlRoot:XMLNode = StringFile.firstChild;
-			for (var i:Number = 0; i < xmlRoot.childNodes.length; ++i) {
-				var categoryXML:XMLNode = xmlRoot.childNodes[i];
-				var category:Object = new Object;
-				for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
-					var entry:XMLNode = categoryXML.childNodes[j];
-					category[entry.attributes.tag] = GetLocaleString(entry);
-				}
-				StringDict[categoryXML.attributes.name] = category;
-			}
-		} else {
-			// Bypass localization entirely
+		if (success) { AddStrings(StringFile.firstChild); }
+		else {
+			// Bypass localization for obvious reasons
 			Mod.ErrorMsg("Could not load localized strings", { system : "Localization" });
 		}
 		delete StringFile;
 		SignalStringsLoaded.Emit(success);
 	}
 
+	// Parse an xml node to the string lookup table
+	// Used if mod data files can extend the string table
+	public static function AddStrings(xml:XMLNode):Void {
+		for (var i:Number = 0; i < xml.childNodes.length; ++i) {
+			var categoryXML:XMLNode = xml.childNodes[i];
+			var category:Object = (StringDict[categoryXML.nodeName] == undefined) ? (StringDict[categoryXML.nodeName] = new Object()) : StringDict[categoryXML.nodeName];
+			for (var j:Number = 0; j < categoryXML.childNodes.length; ++j) {
+				var entry:XMLNode = categoryXML.childNodes[j];
+				category[entry.nodeName] = GetLocaleString(entry);
+			}
+		}
+	}
+
 	// Load the localized string if available, or default to English
 	// English being the most likely to be both available and understood
 	public static function GetLocaleString(xml:XMLNode):String {
 		var localeStr:String;
-		if (xml.attributes.rdb != undefined) {
+		if (xml.attributes.str != undefined) {
+			localeStr = GetString(xml.attributes.cat, xml.attributes.str);
+		}
+		if (localeStr == undefined && xml.attributes.rdb != undefined) {
 			localeStr = LDBFormat.Translate("<localized " + xml.attributes.rdb + " />");
 		}
-		if (localeStr == undefined) { localeStr = xml.attributes[CurrentLocale]; }
-		return localeStr != undefined ? localeStr : xml.attributes.en;
+		if (localeStr == undefined) {
+			localeStr = xml.attributes[CurrentLocale] != undefined ?  xml.attributes[CurrentLocale] : xml.attributes.en;
+		}
+		return (xml.attributes.fmt) ? ApplyFormat(localeStr, xml) : localeStr;
+	}
+
+	private static function ApplyFormat(str:String, xml:XMLNode):String {
+		var args:Array = new Array(str);
+		for (var i:Number = 0; i < xml.childNodes.length; ++i) {
+			var child:XMLNode = xml.childNodes[i];
+			if (child.nodeName == "Param") {
+				args[i+1] = GetLocaleString(child);
+			}
+		}
+		return Format.Printf.apply(undefined, args);
 	}
 
 	private static var StringFile:XML;
