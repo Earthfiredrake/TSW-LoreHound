@@ -5,6 +5,7 @@
 import flash.geom.ColorTransform;
 
 import gfx.controls.CheckBox;
+import gfx.controls.DropdownMenu;
 import gfx.utils.Delegate;
 
 import com.Components.WindowComponentContent;
@@ -12,6 +13,7 @@ import com.Components.WindowComponentContent;
 import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
+import efd.LoreHound.lib.Mod;
 import efd.LoreHound.LoreHound;
 import efd.LoreHound.LoreData;
 
@@ -19,7 +21,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private function ConfigWindowContent() { super(); } // Indirect construction only
 
 	private function configUI():Void {
-		super.configUI();
 		// Disable focus to prevent selections from locking user input until the window closes
 		CBModEnabled.disableFocus = true;
 		CBIgnoreOffSeasonLore.disableFocus = true;
@@ -31,7 +32,11 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailCategory.disableFocus = true;
 		CBDetailInstance.disableFocus = true;
 		CBLogDump.disableFocus = true;
+		DDTopbar.disableFocus = true;
 
+		LocaleManager.ApplyLabel(LBInactive);
+		LocaleManager.ApplyLabel(LBDespawn);
+		LocaleManager.ApplyLabel(LBAutoReport);
 		LocaleManager.ApplyLabel(LBDetailGroupTitle);
 		LocaleManager.ApplyLabel(LBTimestamp);
 		LocaleManager.ApplyLabel(LBLocation);
@@ -39,12 +44,20 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		LocaleManager.ApplyLabel(LBInstance);
 		LocaleManager.ApplyLabel(LBOtherGroupTitle);
 		LocaleManager.ApplyLabel(LBEnable);
-		LocaleManager.ApplyLabel(LBInactive);
-		LocaleManager.ApplyLabel(LBDespawn);
-		LocaleManager.ApplyLabel(LBAutoReport);
+		LocaleManager.ApplyLabel(LBTopbar);
 		LocaleManager.ApplyLabel(LBExtraTests);
 		LocaleManager.ApplyLabel(LBLogDump);
 		LocaleManager.ApplyLabel(LBWPColour);
+
+		DDTopbar.labelField = "name";
+		DDTopbar.dataProvider = [
+			{name : LocaleManager.GetString("GUI", "TopbarNone"), value : Mod.ef_Topbar_None},
+			{name : LocaleManager.GetString("GUI", "TopbarVTIO"), value : Mod.ef_Topbar_VTIO},
+			{name : LocaleManager.GetString("GUI", "TopbarAny"), value : Mod.ef_Topbar_Any}];
+
+		 // Triggers the "Loaded" event, which in turn attaches the config and hooks the change notifiers
+		 // Setup (particularly of the dropdown) needs to be done before this, so post calling the parent
+		super.configUI();
 	}
 
 	public function AttachConfig(config:ConfigWrapper):Void {
@@ -65,6 +78,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailInstance.addEventListener("select", this, "CBDetailInstance_Select");
 		CBLogDump.addEventListener("select", this, "CBLogDump_Select");
 
+		DDTopbar.addEventListener("change", this, "DDTopbar_Change");
 		TFWPColour.onChanged = Delegate.create(this, TFWPColour_Changed);
 
 		// Differentiate child content elements
@@ -75,9 +89,18 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		SpecialItemGroup.Init(LoreData.ef_LoreType_SpecialItem, config);
 	}
 
+	// Can't generally rely on newValue/oldValue for initial population
 	private function ConfigUpdated(setting:String, newValue, oldValue):Void {
 		if (setting == "Enabled" || setting == undefined) {
 			CBModEnabled.selected = Config.GetValue("Enabled");
+		}
+		if (setting == "UseTopbar" || setting == undefined) {
+			switch (Config.GetValue("UseTopbar")) {
+				case Mod.ef_Topbar_None: { DDTopbar.selectedIndex = 0; break; }
+				case Mod.ef_Topbar_VTIO: { DDTopbar.selectedIndex = 1; break; }
+				case Mod.ef_Topbar_Any: { DDTopbar.selectedIndex = 2; break; }
+				default: Mod.TraceMsg("Unexpected Topbar setting");
+			}
 		}
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
@@ -153,6 +176,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("CartographerLogDump", event.selected);
 	}
 
+	private function DDTopbar_Change(event:Object):Void {
+		Config.SetValue("UseTopbar", event.target.selectedItem.value);
+	}
+
 	private function TFWPColour_Changed(field:TextField):Void {
 		// TODO: This is a finicky way of dealing with the problem, results in frequent changes, no actual reset on invalid values
 		var value:Number = parseInt(field.text, 16);
@@ -164,20 +191,24 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	//Labels
+	private var LBInactive:TextField;
+	private var LBDespawn:TextField;
+	private var LBAutoReport:TextField;
+
 	private var LBDetailGroupTitle:TextField;
 	private var LBTimestamp:TextField;
 	private var LBLocation:TextField;
 	private var LBCategory:TextField;
 	private var LBInstance:TextField;
+
 	private var LBOtherGroupTitle:TextField;
 	private var LBEnable:TextField;
-	private var LBInactive:TextField;
-	private var LBDespawn:TextField;
-	private var LBAutoReport:TextField;
+	private var LBTopbar:TextField;
 	private var LBExtraTests:TextField;
 	private var LBLogDump:TextField;
 	private var LBWPColour:TextField;
 
+	private var DDTopbar:DropdownMenu;
 	private var MCWPColourPatch:MovieClip;
 
 	// Checkboxes

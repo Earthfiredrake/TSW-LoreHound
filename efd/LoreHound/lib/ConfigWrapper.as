@@ -61,13 +61,18 @@ class efd.LoreHound.lib.ConfigWrapper {
 	// Get a reference to the setting (value, defaultValue) tuple object
 	// Useful if a subcomponent needs to view but not change a small number of settings
 	// Hooking up ValueChanged event requires at least temporary access to Config object
-	public function GetSetting(key:String):Object {
-		if (Settings[key] == undefined) { TraceMsg("Setting '" + key + "' is undefined."); return; }
-		return Settings[key];
-	}
+	public function GetSetting(key:String):Object {	return Settings[key]; }
 
 	// If changes are made to a returned reference the caller is responsible for setting the dirty flag and firing the value changed signal
-	public function GetValue(key:String) { return GetSetting(key).value; }
+	// fallbackValue is used if the setting does not exist (The mod framework may inquire about settings which only conditionally exist)
+	public function GetValue(key:String, fallbackValue) {
+		var setting:Object = GetSetting(key);
+		if (setting != undefined) { return GetSetting(key).value; }
+		else {
+			if (fallbackValue == undefined) { TraceMsg(key + " is not defined, and a fallback value was not specified" ); }
+			return fallbackValue;
+		}
+	}
 
 	// Not a clone, allows direct edits to default object
 	// Use ResetValue in preference when resetting values
@@ -196,7 +201,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 	private function FromArchive(archive:Archive):Void {
 		if (archive != undefined) {
 			for (var key:String in Settings) {
-				var element:Object = archive.FindEntry(key,null);
+				var element:Object = archive.FindEntry(key, null);
 				if (element == null) { // Could not find the key in the archive, likely a new setting
 					var value = GetValue(key);
 					if (value instanceof ConfigWrapper) {

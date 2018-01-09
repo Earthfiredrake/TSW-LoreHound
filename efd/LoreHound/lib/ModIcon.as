@@ -39,16 +39,26 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		TraceMsg("Icon created");
 	}
 
+	public function LockToTopbar():Void {
+		IsTopbarLocked = true;
+		if (_y != TopbarYLock) {
+			Config.SetValue("IconScale", 20);
+			Config.SetValue("IconPosition", new Point(50, TopbarYLock));
+		}
+	}
+
 	// Reset this icon in preperation for topbar integration
 	// Topbar handles its own layout and effects so remove the defaults
 	public function ConfigureForTopbar():Void {
-		IsTopbarIcon = true;
-		_x = 0; _y = 0;
-		filters = [];
-		// Settings are not used as long as topbar is in use, no need to save them
-		Config.DeleteSetting("IconPosition");
-		Config.DeleteSetting("IconScale");
-		GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+		if (!IsTopbarIcon) {
+			IsTopbarIcon = true;
+			_x = 0; _y = 0;
+			filters = [];
+			// Settings are not used as long as topbar is in use, no need to save them
+			Config.DeleteSetting("IconPosition");
+			Config.DeleteSetting("IconScale");
+			GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+		}
 	}
 
 	// Copy addtional properties and functions to the topbar's copy of the icon
@@ -95,7 +105,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 			switch (setting) {
 				case "IconPosition":
 					_x = newValue.x;
-					_y = newValue.y;
+					_y = IsTopbarLocked ? TopbarYLock : newValue.y;
 					break;
 				case "IconScale":
 					UpdateScale();
@@ -119,7 +129,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private function ManageGEM(unlocked:Boolean):Void {
 		if (unlocked && !GemManager) {
 			GemManager = GemController.create("GuiEditModeInterface", HostMovie, HostMovie.getNextHighestDepth(), this);
-			GemManager.addEventListener( "scrollWheel", this, "ChangeScale" );
+			if (!IsTopbarLocked) { GemManager.addEventListener( "scrollWheel", this, "ChangeScale" ); }
 			GemManager.addEventListener( "endDrag", this, "ChangePosition" );
 		}
 		if (!unlocked) {
@@ -128,7 +138,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
-	private function ChangePosition(event:Object):Void { Config.SetValue("IconPosition", new Point(_x, _y)); }
+	private function ChangePosition(event:Object):Void {
+		Config.SetValue("IconPosition", new Point(_x, _y));
+		SignalGeometryChanged.Emit();
+	}
 
 	private function ChangeScale(event:Object): Void {
 		var newScale:Number = Config.GetValue("IconScale") + event.delta * 5;
@@ -221,11 +234,14 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private static var TooltipCreditFont:String = "size='10'";
 	private static var TooltipTextFont:String = "size='11'";
 
+	private static var TopbarYLock:Number = 0;
+
 	private var ModName:String;
 	private var DevName:String;
 
 	private var Config:ConfigWrapper;
 	private var IsTopbarIcon:Boolean = false;
+	private var IsTopbarLocked:Boolean = false;
 
 	// GUI layout variables do not need to be copied for topbar icon
 	private var HostMovie:MovieClip;

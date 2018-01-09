@@ -81,6 +81,14 @@
 				en="Other Options" />
 		<String tag="OtherSettingEnable"
 				en="Enable Mod" />
+		<String tag="OtherSettingTopbar"
+				en="Topbar Integration" />
+		<String tag="TopbarNone"
+				en="Disabled" />
+		<String tag="TopbarVTIO"
+				en="VTIO Only" />
+		<String tag="TopbarAny"
+				en="Enabled" />
 		<String tag="OtherSettingInactive"
 				en="Ignore Off Season Lore" />
 		<String tag="OtherSettingDespawn"

@@ -46,6 +46,9 @@ An internal update system *should* carry forward settings from previous versions
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version Next
++ Default topbar integration option (Changes to setting require /reloadui)
+
 Version 1.3.0
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:
   + Pieces of Joe: Will be detected only if they are currently spawned
@@ -189,7 +192,7 @@ Master/Head is the most recent packaged release. Develop/Head is usually a commi
 
 Once built, 'LoreHound.swf' and the contents of 'config' should be copied to the directory 'LoreHound' in the game's mod directory. '/reloadui' is sufficient to force the game to load an updated swf or mod data file, but changes to the game config files (LoginPrefs.xml and Modules.xml) will require a restart of the client and possible deletion of .bxml caches from the mod directory.
 
-If the LogParser.py tool is required, it should be copied to the instal directory as well.
+If the LogParser.py tool is required, it should be copied to the install directory as well.
 
 ## License and Attribution
 Copyright (c) 2017 Earthfiredrake<br/>

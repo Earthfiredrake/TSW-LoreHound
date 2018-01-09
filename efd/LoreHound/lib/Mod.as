@@ -25,12 +25,13 @@ import efd.LoreHound.lib.ModIcon;
 // The framework reserves the following Config setting names for internal use:
 //   "Installed": Used to trigger first run events
 //   "Version": Used to detect upgrades (and rollbacks, but that's of limited use)
-//   "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart (the config based toggle var does prevent loading if false)
-//   "IconPosition": Only used if topbar is not handling icon layout
-//   "IconScale": Only used if topbar is not handling icon layout
+//   "Enabled": Provides a "soft" disable for the user that doesn't interfere with loading on restart (the config based toggle var does prevent loading if false). Only exists if mod has ongoing behaviour to toggle
+//   "UseTopbar": Topbar integration behaviours. Only exists if topbar integration is possible
+//   "IconPosition": Only exists if VTIO topbar is not handling icon layout
+//   "IconScale": Only exists if VTIO topbar is not handling icon layout
 // The framework reserves the following DistributedValue names (where [pfx] is a developer specific prefix (I use 'efd'), and [name] is the mod name):
 //   "[pfx][Name]Loaded": Set to true when the mod is fully loaded and initialized
-//   "[pfx][Name]Enabled": If the mod is a reactive mod which can be disabled by the user
+//   "[pfx][Name]Enabled": If the mod is a reactive mod which can be disabled by the user (corresponds to and only exists if 'Enabled' setting exists)
 //   "[pfx][Name]ResetConfig": Toggle used to reset the mod config to default states from chat
 //   "VTIO_IsLoaded", "meeehrUI_IsLoaded" and "VTIO_RegisterAddon": Provide VTIO/Meeehr compatible topbar integration
 // If an interace or config window is provided, the following settings and DVs are defined:
@@ -73,12 +74,12 @@ class efd.LoreHound.lib.Mod {
 	//     If a prior version upgrades, settings will be reset to defaults to protect against invalid values
 	//   GuiFlags:ef_ModGui (optional, default undefined)
 	//     Set flags to disable certain gui elements. Valid flags are:
-	//       ef_ModGui_NoIcon: Display no mod or topbar icon
+	//       ef_ModGui_NoIcon: Display no icon (may still integrate with VTIO topbar to appear on mod list)
 	//       ef_ModGui_NoConfigWindow: Do not use a config window,
 	//         topbar integration will use tne ModEnabledDV as config target
 	//       ef_ModGui_Console: (NoIcon | NoConfigWindow) also removes HostMovie variable, so cannot have an interface window either
-	//       ef_ModGui_NoTopbar: Disable VTIO compatible topbar integration
-	//         also useful for testing how it behaves without one
+	//       ef_ModGui_NoTopbar: Disable topbar integration (VTIO or built in)
+	//         also useful for testing without uninstalling topbars
 	//       ef_ModGui_None: Disables all gui elements
 	//   IconData:Object (optional, any undefined sub-values will use their own defaults)
 	//     ResName:String (optional, default ModName + "Icon")
@@ -160,8 +161,6 @@ class efd.LoreHound.lib.Mod {
 		InitializeModConfig(modInfo);
 
 		if (!(modInfo.GuiFlags & ef_ModGui_NoIcon)) { CreateIcon(modInfo); }
-
-		if (!(modInfo.GuiFlags & ef_ModGui_NoTopbar)) { RegisterWithTopbar(); }
 	}
 
 	private function StringsLoaded(success:Boolean):Void {
@@ -190,10 +189,22 @@ class efd.LoreHound.lib.Mod {
 		delete SystemsLoaded; // No longer required
 		UpdateInstall();
 		Icon.UpdateState();
+		var topbarIntegration = Config.GetValue("UseTopbar", ef_Topbar_None);
+		if (topbarIntegration != ef_Topbar_None) {
+			RegisterWithTopbar(topbarIntegration);
+		}
 		ModLoadedDV.SetValue(true);
 	}
 
 /// Configuration Settings
+
+	// UseTopbar flag values
+	public static var ef_Topbar_None:Number = 0; // Do not integrate with topbar
+	private static var ef_Topbar_EFDMod:Number = 1 << 0; // Built in topbar integration (ignoring VTIO topbars) (Reserved but invalid setting value: Use "Any" to provide VTIO users with uniform topbar behaviour)
+	public static var ef_Topbar_VTIO:Number = 1 << 1; // Integrate with VTIO compatible topbar mods only (Default setting)
+	public static var ef_Topbar_Any:Number = (1 << 2) -1; // Integrate with a VTIO compatible topbar or use built in integration with default
+
+	// TODO: Some reports of settings being lost, reverting to defaults (Lorehound v1.2.2). Investigate further for possible causes
 
 	private function InitializeModConfig(modInfo:Object):Void {
 		Config = new ConfigWrapper(modInfo.ArchiveName);
@@ -204,6 +215,7 @@ class efd.LoreHound.lib.Mod {
 		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
 		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
+		if (!(modInfo.GuiFlags & ef_ModGui_NoTopbar)) { Config.NewSetting("UseTopbar", ef_Topbar_VTIO); }
 		if (ShowInterfaceDV != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
 		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
@@ -312,14 +324,20 @@ class efd.LoreHound.lib.Mod {
 
 	// MeeehrUI is legacy compatible with the VTIO interface,
 	// but explicit support may make solving unique issues easier
-	// Meeehr's should always trigger first if present, and can be checked during the callback.
-	private function RegisterWithTopbar():Void {
-		MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
-		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
-		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		if (!(DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV))) {
+	// Meeehr's should always trigger first if present, and can be checked during the callback if needed
+	private function RegisterWithTopbar(integrationMode:Number):Void {
+		if (integrationMode & ef_Topbar_VTIO) {
+			MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
+			ViperDV = DistributedValue.Create("VTIO_IsLoaded");
+			// Try to register now, in case they loaded first, otherwise signup to detect if they load
+			if (DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV)) { return; }
 			MeeehrDV.SignalChanged.Connect(DoTopbarRegistration, this);
 			ViperDV.SignalChanged.Connect(DoTopbarRegistration, this);
+		}
+		if (integrationMode & ef_Topbar_EFDMod && Icon != undefined) {
+			// Do custom setup (may be overriden later by VTIO compatible loading)
+			BringAboveTopbar();
+			Icon.LockToTopbar();
 		}
 	}
 
@@ -327,7 +345,7 @@ class efd.LoreHound.lib.Mod {
 		if (dv.GetValue() && !IsTopbarRegistered) {
 			// Adjust our default icon to be better suited for topbar integration
 			if (Icon != undefined) {
-				SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+				BringAboveTopbar();
 				Icon.ConfigureForTopbar();
 			}
 			// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
@@ -353,6 +371,13 @@ class efd.LoreHound.lib.Mod {
 			TraceMsg("Topbar registration complete");
 		}
 		return IsTopbarRegistered;
+	}
+
+	private function BringAboveTopbar():Void {
+		if (!IsAboveTopbar) {
+			SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2);
+			IsAboveTopbar = true;
+		}
 	}
 
 	// This needs to be deferred so that the disconnection doesn't muddle the ongoing processing
@@ -644,6 +669,7 @@ class efd.LoreHound.lib.Mod {
 	public function get Enabled():Boolean { return _Enabled; }
 	public function set Enabled(value:Boolean):Void {
 		// TODO: This check for Config("Enabled") should be cleaned up for cases where it doesn't exist
+		//       Should game trigger Activate/Deactivate pairs for those mods?
 		value = EnabledByGame && Config.GetValue("Enabled");
 		if (value != _Enabled) { // State changed
 			_Enabled = value;
@@ -689,6 +715,7 @@ class efd.LoreHound.lib.Mod {
 	public var Icon:ModIcon;
 
 	private var IsTopbarRegistered:Boolean = false;
+	private var IsAboveTopbar:Boolean = false; // Display layer has been changed to render above topbar
 	private var MeeehrDV:DistributedValue;
 	private var ViperDV:DistributedValue;
 
