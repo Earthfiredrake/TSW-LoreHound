@@ -48,6 +48,7 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 ## Change Log
 Version Next
 + Default topbar integration option (Changes to setting require /reloadui)
++ Workaround for bug with ModFolder when doing /reloadui
 
 Version 1.3.0
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:

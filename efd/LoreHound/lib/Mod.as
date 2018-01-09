@@ -341,8 +341,8 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-	private function DoTopbarRegistration(dv:DistributedValue):Boolean {
-		if (dv.GetValue() && !IsTopbarRegistered) {
+	private function DoTopbarRegistration(dv:DistributedValue):Void {
+		if (dv.GetValue()) {
 			// Adjust our default icon to be better suited for topbar integration
 			if (Icon != undefined) {
 				BringAboveTopbar();
@@ -361,16 +361,14 @@ class efd.LoreHound.lib.Mod {
 			if (HostMovie.Icon != undefined) {
 				Icon = Icon.CopyToTopbar(HostMovie.Icon);
 			}
-			IsTopbarRegistered = true;
 			TopbarRegistered();
 			// Once registered, topbar DVs are no longer required
 			// If discrimination between Viper and Meeehr is needed, consider expanding TopbarRegistered to be an enum
 			// Deferred to prevent mangling the ongoing signal handling
-			setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
+			// setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
 
 			TraceMsg("Topbar registration complete");
 		}
-		return IsTopbarRegistered;
 	}
 
 	private function BringAboveTopbar():Void {
@@ -714,7 +712,6 @@ class efd.LoreHound.lib.Mod {
 	private var HostMovie:MovieClip;
 	public var Icon:ModIcon;
 
-	private var IsTopbarRegistered:Boolean = false;
 	private var IsAboveTopbar:Boolean = false; // Display layer has been changed to render above topbar
 	private var MeeehrDV:DistributedValue;
 	private var ViperDV:DistributedValue;
