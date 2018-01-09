@@ -170,8 +170,7 @@ class efd.LoreHound.lib.Mod {
 			CheckLoadComplete();
 		} else {
 			// Localization support unavailable, not localized
-			ErrorMsg("Mod cannot be enabled", { noPrefix : true });
-			Config.SetValue("Enabled", false);
+			ErrorMsg("Unable to load string table", { fatal : true });
 		}
 	}
 
@@ -611,13 +610,18 @@ class efd.LoreHound.lib.Mod {
 		Utils.PrintChatText(LocaleManager.FormatString.apply(undefined, args));
 	}
 
-	// Bypasses localization, for fatal errors that can't count on localization support
+	// Bypasses localization, for errors that can't count on localization support
+	// Additional option "fatal": Force disables the mod
 	private function _ErrorMsg(message:String, options:Object):Void {
 		if (!options.noPrefix) {
 			var sysPrefix:String = options.system ? (options.system + " - ") : "";
-			message = "<font color='#EE0000'>" + ModName +"</font>: ERROR - " + sysPrefix + message + "!";
+			message = "<font color='#EE0000'>" + ModName +"</font>:"  + (options.fatal ? " FATAL " : " ") + "ERROR - " + sysPrefix + message + "!";
 		}
 		Utils.PrintChatText(message);
+		if (options.fatal) {
+			_ErrorMsg("  Mod disabled", { noPrefix : true });
+			Config.SetValue("Enabled", false);
+		}
 	}
 
 	private function _TraceMsg(message:String, options:Object):Void {
