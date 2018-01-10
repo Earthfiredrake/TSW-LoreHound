@@ -25,7 +25,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		filters = [ShadowFilter];
 
 		// These need to be set with *some* default, so that any saved value is loaded
-		// Actual values/defaults will be sorted out after the load, depending on UseTopbar and VTIO states
+		// Actual values/defaults will be sorted out after the load, depending on TopbarIntegration and VTIO states
 		Config.NewSetting("IconPosition", new Point(-1, -1));
 		Config.NewSetting("IconScale", 100);
 		// Defer the hookup of the on-change events until after loading is complete, to avoid accidental topbar changes
@@ -45,18 +45,30 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		TraceMsg("Icon created");
 	}
 
-	// Reset this icon in preperation for topbar integration
-	// Topbar handles its own layout and effects so remove the defaults
-	public function ConfigureForVTIOTopbar():Void {
-		if (!TopbarDoesLayout) {
-			TopbarDoesLayout = true;
-			_x = 0; _y = 0;
-			filters = [];
-			// Settings are not used as long as topbar is in use, no need to save them
-			Config.DeleteSetting("IconPosition");
-			Config.DeleteSetting("IconScale");
-			GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
-		}
+	// Apply settings for manual integration with the default topbar
+	// Locks scale and Y coordinate
+	public function ConfigureForDefault():Void {
+		LockToTopbar = true;
+		// TODO: Calculate this position, also consider that the topbar may be positioned at bottom (DV: TopMenuAlignment == 1)
+		// TODO: See if I can actually store arbitrary types in Config (only need the X coord here)
+		Config.ChangeDefault("IconPosition", new Point(1125, TopbarYLock));
+		Config.DeleteSetting("IconScale");
+		var gameScale:Number = DistributedValue.GetDValue("GUIResolutionScale");
+		var iconScale:Number = 56.25 / gameScale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
+		_xscale = iconScale;
+		_yscale = iconScale;
+	}
+
+	// Reset this icon in preperation for VTIO integration
+	// VTIO mods handle own layout and effects so remove the defaults
+	public function ConfigureForVTIO():Void {
+		TopbarDoesLayout = true;
+		_x = 0; _y = 0;
+		filters = [];
+		// Settings are not used as long as topbar is in use, no need to save them
+		Config.DeleteSetting("IconPosition");
+		Config.DeleteSetting("IconScale");
+		GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
 	}
 
 	// Copy addtional properties and functions to the VTIO topbar's copy of the icon
@@ -94,7 +106,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		// Minimalist config changed, doesn't handle layout messages and has different behaviour on TopbarIntegration
 		Config.SignalValueChanged.Connect(CloneConfigChanged, copy);
 
-		copy.gotoAndStop(_currentframe); // Match the current icons
+		// copy.gotoAndStop(_currentframe); // Match the current icons
 		return copy;
 	}
 
@@ -105,14 +117,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// Set defaults to reflect UseTopbar status
 		// VTIO will not yet be active, and can not be assumed
-		if (Config.GetValue("UseTopbar") == Mod.ef_Topbar_Any) {
-			Config.ChangeDefault("IconPosition", new Point(1125, TopbarYLock));
-			Config.DeleteSetting("IconScale");
-			var gameScale:Number = DistributedValue.GetDValue("GUIResolutionScale");
-			var iconScale:Number = 56.25 / gameScale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
-			_xscale = iconScale;
-			_yscale = iconScale;
-			LockToTopbar = true;
+		if (Config.GetValue("TopbarIntegration", false)) {
+			ConfigureForDefault();
 		} else {
 			Config.ChangeDefault("IconPosition", new Point(10, 80));
 			UpdateScale();
@@ -120,7 +126,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// Update to reflect loaded values
 		UpdateState();
-		var pos:Point = Config.GetValue("IconPosition");
+		var pos = Config.GetValue("IconPosition");
 		if (pos.equals(new Point(-1, -1))) {
 			// No value was loaded (to replace invalid initial default)
 			// Either this is a first load or VTIO has been (but may no longer be) active
@@ -143,44 +149,29 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 				UpdateScale();
 				return;
 			}
-			case "UseTopbar": {
-				TraceMsg("UseTopbar changed");
-				// Active VTIO states (just or continuing activation, or disabling existing activation)
-				if (TopbarDoesLayout && (newValue & Mod.ef_Topbar_VTIO)) { 
-					// VTIO is already active and new mode uses it, no changes required (handles VTIO<->Any changes when VTIO is active; may also handle any changes that activate VTIO)
-					return;
-				} 
-				if (TopbarDoesLayout) { // VTIO is being disabled (newValue must be None)
-					// Attempt to reset icon to default state
-					// ModFolder is clingy, will need to somehow deregister the icon from it
-					// (possibly can be handled at the Mod level?)
-					// Other topbars have cloned icons, may need to be handled as well
-					TopbarDoesLayout = false;
-					filters = [ShadowFilter];
-					Config.NewSetting("IconPosition", new Point(10, 80));
-					Config.NewSetting("IconScale", 100);
-					GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
-					_visible = true; // If cloned, will have been made invisible by VTIO
-					return;
+			case "TopbarIntegration": {
+				if (newValue) {
+					// Mod will have already responded, so will already be registered with VTIO if possible
+					if (!TopbarDoesLayout) {
+						ConfigureForDefault();
+						Config.ResetValue("IconPosition");
+					}
+				} else {
+					if (TopbarDoesLayout) {
+						TopbarDoesLayout = false;
+						filters = [ShadowFilter];
+						GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
+						// If cloned, will have been made invisible, and may not have current state
+						_visible = true;
+						UpdateState(); // Mod will have already updated the target icon
+					} else {
+						LockToTopbar = false;
+					}
+					if (oldValue == undefined) { // DEPRECATED(v1.3.2): Temporary upgrade support (use of undefined)
+						Config.NewSetting("IconScale", 100);
+						Config.NewSetting("IconPosition", new Point(10, 80));
+					}
 				}
-				// VTIO not present, relevant behaviours are between Any and None(VTIO)
-				if (LockToTopbar) { // Default topbar lock being returned to free floating behaviour (oldValue == Any, VTIO not enabled, newValue will use behaviour of None)
-					LockToTopbar = false;
-					Config.NewSetting("IconScale", 100);
-					Config.SetValue("IconPosition", new Point(10, 80));
-					return;
-				}
-				if (newValue == Mod.ef_Topbar_Any) {
-					LockToTopbar = true;
-					var gameScale:Number = DistributedValue.GetDValue("GUIResolutionScale");
-					var iconScale:Number = 56.25 / gameScale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
-					_xscale = iconScale;
-					_yscale = iconScale;
-					Config.DeleteSetting("IconScale");
-					Config.SetValue("IconPosition", new Point(1125, TopbarYLock)); // HACK: Should put it just to the right of the compass, hopefully away from other things (probably resolution dependant though so may need to tweak this... can use Stage.width?)
-				}
-				// Remaining states are changes between VTIO (not installed) and None and have no effect
-				return;
 			}
 		}
 	}
@@ -189,13 +180,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	// This is mostly to split off UseTopbar behaviour
 	private function CloneConfigChanged(setting:String, newValue, oldValue):Void {
 		if (setting == "Enabled") { UpdateState(); }
-		if (setting == "UseTopbar" && (newValue == Mod.ef_Topbar_None || oldValue == Mod.ef_Topbar_None)) {
-			// With a VTIO icon existing, at some point it was registered. Since changes from VTIO<->Any don't affect VTIO behaviour, only changes to or from None could have any effect
-			if (newValue == Mod.ef_Topbar_None) { // VTIO is being disabled (Change events aren't raised if newValue == oldValue)
-				_visible = false; // TEMP: For now just hide the cloned icon until I have a better plan
-			} else { // By elimination VTIO is being enabled
-				_visible = true;
-			}
+		if (setting == "TopbarIntegration") {
+			_visible = newValue; // Can't actually remove the cloned icon safely, so just hide/reveal it for now
 		}
 	}
 
@@ -213,7 +199,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private function ManageGEM(unlocked:Boolean):Void {
 		if (unlocked && !GemManager) {
 			GemManager = GemController.create("GuiEditModeInterface", HostMovie, HostMovie.getNextHighestDepth(), this);
-			if (!LockToTopbar) { GemManager.addEventListener( "scrollWheel", this, "ChangeScale" ); }
+			if (!LockToTopbar) {
+				// TODO: Find some way to lock the Y Axis
+				GemManager.addEventListener( "scrollWheel", this, "ChangeScale" );
+			}
 			GemManager.addEventListener( "endDrag", this, "ChangePosition" );
 		}
 		if (!unlocked) {

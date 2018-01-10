@@ -23,6 +23,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private function configUI():Void {
 		// Disable focus to prevent selections from locking user input until the window closes
 		CBModEnabled.disableFocus = true;
+		CBTopbar.disableFocus = true;
 		CBIgnoreOffSeasonLore.disableFocus = true;
 		CBTrackDespawns.disableFocus = true;
 		CBErrorReports.disableFocus = true;
@@ -32,7 +33,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailCategory.disableFocus = true;
 		CBDetailInstance.disableFocus = true;
 		CBLogDump.disableFocus = true;
-		DDTopbar.disableFocus = true;
 
 		LocaleManager.ApplyLabel(LBInactive);
 		LocaleManager.ApplyLabel(LBDespawn);
@@ -49,12 +49,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		LocaleManager.ApplyLabel(LBLogDump);
 		LocaleManager.ApplyLabel(LBWPColour);
 
-		DDTopbar.labelField = "name";
-		DDTopbar.dataProvider = [
-			{name : LocaleManager.GetString("GUI", "TopbarNone"), value : Mod.ef_Topbar_None},
-			{name : LocaleManager.GetString("GUI", "TopbarVTIO"), value : Mod.ef_Topbar_VTIO},
-			{name : LocaleManager.GetString("GUI", "TopbarAny"), value : Mod.ef_Topbar_Any}];
-
 		 // Triggers the "Loaded" event, which in turn attaches the config and hooks the change notifiers
 		 // Setup (particularly of the dropdown) needs to be done before this, so post calling the parent
 		super.configUI();
@@ -68,6 +62,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.GetValue("AutoReport").SignalValueChanged.Connect(AutoReportConfigUpdated, this);
 
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
+		CBTopbar.addEventListener("select", this, "CBTopbar_Select");
 		CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
 		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
 		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
@@ -78,7 +73,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailInstance.addEventListener("select", this, "CBDetailInstance_Select");
 		CBLogDump.addEventListener("select", this, "CBLogDump_Select");
 
-		DDTopbar.addEventListener("change", this, "DDTopbar_Change");
 		TFWPColour.onChanged = Delegate.create(this, TFWPColour_Changed);
 
 		// Differentiate child content elements
@@ -94,13 +88,8 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "Enabled" || setting == undefined) {
 			CBModEnabled.selected = Config.GetValue("Enabled");
 		}
-		if (setting == "UseTopbar" || setting == undefined) {
-			switch (Config.GetValue("UseTopbar")) {
-				case Mod.ef_Topbar_None: { DDTopbar.selectedIndex = 0; break; }
-				case Mod.ef_Topbar_VTIO: { DDTopbar.selectedIndex = 1; break; }
-				case Mod.ef_Topbar_Any: { DDTopbar.selectedIndex = 2; break; }
-				default: Mod.TraceMsg("Unexpected Topbar setting");
-			}
+		if (setting == "TopbarIntegration" || setting == undefined) {
+			CBTopbar.selected = Config.GetValue("TopbarIntegration");
 		}
 		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
 			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
@@ -140,6 +129,10 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("Enabled", event.selected);
 	}
 
+	private function CBTopbar_Select(event:Object):Void {
+		Config.SetValue("TopbarIntegration", event.selected);
+	}
+
 	private function CBIgnoreOffSeasonLore_Select(event:Object):Void {
 		Config.SetValue("IgnoreOffSeasonLore", event.selected);
 	}
@@ -176,10 +169,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		Config.SetValue("CartographerLogDump", event.selected);
 	}
 
-	private function DDTopbar_Change(event:Object):Void {
-		Config.SetValue("UseTopbar", event.target.selectedItem.value);
-	}
-
 	private function TFWPColour_Changed(field:TextField):Void {
 		// TODO: This is a finicky way of dealing with the problem, results in frequent changes, no actual reset on invalid values
 		var value:Number = parseInt(field.text, 16);
@@ -208,11 +197,11 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var LBLogDump:TextField;
 	private var LBWPColour:TextField;
 
-	private var DDTopbar:DropdownMenu;
 	private var MCWPColourPatch:MovieClip;
 
 	// Checkboxes
 	private var CBModEnabled:CheckBox;
+	private var CBTopbar:CheckBox;
 	private var CBIgnoreOffSeasonLore:CheckBox;
 	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
