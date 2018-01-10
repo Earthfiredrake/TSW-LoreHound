@@ -47,8 +47,19 @@ If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the exi
 
 ## Change Log
 Version Next
-+ Default topbar integration option (Changes to setting require /reloadui)
-+ Workaround for bug with ModFolder when doing /reloadui
++ Classification improvements
+  + KD: More initially invisible lore now in the triggered category
+  + Light in black places: "Related Items" now includes a candlestick in a basement (but not Prof. Plum)
+    + Various other items were considered but didn't make the cut (almost unmissable, or just plain spammy)
+  + Better late than never, will now detect the lore in Niflheim (I wouldn't want to go sniffing around all those Krampii either)
+    + Uncategorized lore now works too, though auto-reports remain largely untested (to the slight relief of the postman)
++ Interface and other changes
+  + Improved topbar integration, supporting default topbar
+  + Alternatively can stubbornly ignore VTIO mods, if that's your preference (topbar placement will always use a VTIO mod if available)
+  + Workaround for bug with ModFolder when doing /reloadui
+  + Needs further testing with Meeehr/VTIO
+  + Strings.xml has had a minor format change
+    + Any text customization will need to be applied to the new file (the old format no longer works)
 
 Version 1.3.0
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:
@@ -56,7 +67,7 @@ Version 1.3.0
   + Demonic Crystals
   + Dead Scarabs: Including colour identification
 + Fixed the bug with icon not staying with UI edit mode overlay
-+ Config can now be manually reset (/setoption efdLoreHoundResetConfig true)
++ Settings can now be manually reset (/setoption efdLoreHoundResetConfig true)
 + Lore recategorizations:
   + Mobs drops in dungeons have been recategorized as Drop lore (instead of Triggered)
   + Several entries in KD have been recategorized as Triggered (instead of Placed), due to requiring actions/missions to appear

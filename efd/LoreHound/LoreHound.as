@@ -16,7 +16,7 @@ import com.GameInterface.VicinitySystem;
 import com.GameInterface.Waypoint;
 import com.GameInterface.WaypointInterface;
 import GUI.Waypoints.CustomWaypoint;
-import com.Utils.Archive; //DEPRECATED(v1.1.0.alpha): Required for bugfix that corrects forgetting AutoReport settings
+import com.Utils.Archive; // DEPRECATED(v1.1.0.alpha): Required for bugfix that corrects forgetting AutoReport settings
 import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
@@ -145,7 +145,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				break;
 			case "WaypointColour":
 				// TODO: This is spamming the screen with stray waypoints whenever it changes
-				// Probably because it's not having time to clear the existing waypoint before a new one registers overtop
+				// Possibly because it's not having time to clear the existing waypoint before a new one registers overtop
 				//ClearWaypoints();
 				//for (var key:String in TrackedLore) {
 					//var lore:LoreData = TrackedLore[key];
@@ -330,14 +330,16 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 	//     #1050 - Unknown, usually 6 on lore, though other numbers have been observed (1 on scarabs)
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
-	//     #1374 - OverrideCursor, used for categorizing the Reticule interaction prompt
+	//     #1374 - OverrideCursor, used for categorizing the Reticule interaction prompt (See CrosshairController)
 	//             New for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
 	//     #2000560 - Exists on a massive majority of the lore recently observed:
-	//                - Missing from all Shrouded Lore and other event lore (presumably because it's inactive, TODO: Test this theory, in July)
+	//                - Missing from all Shrouded Lore and other event lore (presumably because it's inactive, TODO: Confirm that an event has passed which had inactive lore)
 	//                - Sometimes fails to load before a dropped lore triggers the detection, a few quick retries is usually enough time for it to load
 	//              - Tag # matching db entries labled "Lore#.Tag#", outside of api access but still very useful info (Thanks Vomher)
 	//              - ID number for the lore entry in the journal!
-	//     The function seems to be related to the enum _global.Stat, but most of the indices that actually come up are unspecified.
+	//              - Seems to be tied to "Lore"Nodes in general, as it also appears on Champ mobs, with their achivement ID
+	//     Character and monster dynels have many more values specified, and further analysis is progressing as I find the need
+	//     The function seems to be related to the enum _global.Stat, but most of the indices that actually come up are unspecified
 	//       - The only matching value is 1050, mapping to "CarsGroup", whatever that is.
 	//       - There are a number of other values in the 2 million range, though none matching 560
 	//     Unlisted values and missing IDs return 0

@@ -30,7 +30,7 @@ class efd.LoreHound.lib.AutoReport {
 		Config.NewSetting("Enabled", false); // For privacy reasons, this system should be opt-in
 	 	Config.NewSetting("QueuedReports", new Array());
 		Config.NewSetting("PriorReports", new Array());
-		Config.SignalValueChanged.Connect(ConfigChanged);
+		Config.SignalValueChanged.Connect(ConfigChanged); // Unaffected by load-time triggers, no need to defer
 		return Config;
 	}
 

@@ -51,6 +51,9 @@ class efd.LoreHound.lib.ConfigWrapper {
 		};
 		// Dirty flag not required
 		// Worst case: An unsaved default setting is changed by an upgrade
+		// Change event is raised, as the setting may be created after the initialization step
+		// Initialization creation should occur prior to change events being hooked to avoid incidental notifications at that time
+		SignalValueChanged.Emit(key, defaultValue); // oldValue will be undefined (not to be used to identify this situation though)
 	}
 
 	public function DeleteSetting(key:String):Void {
@@ -65,6 +68,7 @@ class efd.LoreHound.lib.ConfigWrapper {
 
 	// If changes are made to a returned reference the caller is responsible for setting the dirty flag and firing the value changed signal
 	// fallbackValue is used if the setting does not exist (The mod framework may inquire about settings which only conditionally exist)
+	// Note: The setting itself may have an undefined value, which will be returned
 	public function GetValue(key:String, fallbackValue) {
 		var setting:Object = GetSetting(key);
 		if (setting != undefined) { return GetSetting(key).value; }
@@ -74,9 +78,13 @@ class efd.LoreHound.lib.ConfigWrapper {
 		}
 	}
 
-	// Not a clone, allows direct edits to default object
+	// Not a clone, allows direct edits to default reference objects
 	// Use ResetValue in preference when resetting values
 	public function GetDefault(key:String) { return GetSetting(key).defaultValue; }
+
+	// Useful if a meaningful default can't be provided until after saved values have been loaded
+	// NewSetting(key, value) could do something similar, but would stomp the loaded value
+	public function ChangeDefault(key:String, value) { GetSetting(key).defaultValue = value; }
 
 	public function SetValue(key:String, value) {
 		var oldVal = GetValue(key);
@@ -112,9 +120,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 	}
 
 	// Notify the config wrapper of changes made to the internals of composite object settings
-	public function NotifyChange(key:String):Void {
+	// oldValue is optional, and may not be provided
+	public function NotifyChange(key:String, oldValue):Void {
 		DirtyFlag = true;
-		SignalValueChanged.Emit(key, GetValue(key)); // oldValue cannot be provided
+		SignalValueChanged.Emit(key, GetValue(key), oldValue);
 	}
 
 	// Allows defaults to be distinct from values for reference types
@@ -236,6 +245,8 @@ class efd.LoreHound.lib.ConfigWrapper {
 				case "Config":
 					// Have to use the existing config, as it has the field names defined
 					// TODO: This only works for uniform config nesting, it doesn't support configs nested in other types
+					// TODO: This triggers the SignalConfigLoaded event on the nested config, but not the SignalConfigChanged event for the parent
+					//       This problem also crops up in a few other locations
 					GetValue(key).FromArchive(element);
 					if (key == undefined) {
 						ErrorMsg("A config archive could not be linked to an immediate parent.");
