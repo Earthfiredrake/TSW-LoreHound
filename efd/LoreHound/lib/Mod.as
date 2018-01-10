@@ -340,19 +340,9 @@ class efd.LoreHound.lib.Mod {
 
 /// Topbar registration
 
-	// MeeehrUI is legacy compatible with the VTIO interface,
-	// but explicit support may make solving unique issues easier
-	// Meeehr's should always trigger first if present, and can be checked during the callback if needed
+	// Most container mods support the legacy VTIO interface
 	private function LinkWithTopbar():Void {
-		//MeeehrDV = DistributedValue.Create("meeehrUI_IsLoaded");
 		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		// if (DoTopbarRegistration(MeeehrDV) || DoTopbarRegistration(ViperDV)) { return; }
-		// MeeehrDV.SignalChanged.Connect(DoTopbarRegistration, this);
-		// WORKAROUND: ModFolder incorrectly indicates that it is already loaded on /reloadui
-		// Since the VTIO handshake has no ACK, there's no obvious indicator of success
-		// Attempting both immediate and future registrations provides a work around,
-		// Though it's likely there will be additional issues
-		// Disabling the Meeehr version for now
 		DoTopbarRegistration(ViperDV);
 		ViperDV.SignalChanged.Connect(DoTopbarRegistration, this);
 		// DEPRECATED v1.3.2 Temporary upgrade support (condition guard)
@@ -389,12 +379,18 @@ class efd.LoreHound.lib.Mod {
 			}
 			TopbarRegistered(!RegisteredWithTopbar);
 			RegisteredWithTopbar = true;
-			// Once registered, topbar DVs are no longer required... except by ModFolder which has a nasty habit of failing to register the first time around
-			// If discrimination between Viper and Meeehr is needed, consider expanding TopbarRegistered to be an enum
-			// Deferred to prevent mangling ongoing signal handling
-			setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
-
-			TraceMsg("Topbar registration complete");
+			// Once registered, topbar DVs are no longer required; except by ModFolder which has a nasty habit of failing to register the first time around
+			if (!DistributedValue.GetDValue("ModFolder")) {
+				// Deferred to prevent mangling ongoing signal handling
+				setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
+			}
+		} else {
+			// HACK: Workaround for ModFolder, which has a nasty habit of leaving the VTIO_IsLoaded flag set during reloads
+			//       Would be very nice to get in contact with Icarus on this
+			if (DistributedValue.GetDValue("ModFolder")) {
+				TraceMsg("Mod Folder is resetting the load state, permitting an additional registration");
+				RegisteredWithTopbar = false;
+			}
 		}
 	}
 
