@@ -260,7 +260,7 @@ class efd.LoreHound.lib.Mod {
 						DetachTopbarListeners();
 						// NOTE: A /reloadui is strongly recommended after "detaching" from a VTIO topbar
 						//       As VTIO does not provide a method of de-registering, the mod tries to fake it (to varied success)
-						// TODO: Output a message suggesting this?
+						ChatMsg(LocaleManager.GetString("General", "RemoveVTIO"));
 					}
 				}
 				break;
@@ -709,7 +709,7 @@ class efd.LoreHound.lib.Mod {
 	public function get Enabled():Boolean { return _Enabled; }
 	public function set Enabled(value:Boolean):Void {
 		// TODO: This check for Config("Enabled") should be cleaned up for cases where it doesn't exist
-		//       Should game trigger Activate/Deactivate pairs for those mods?
+		//       Should game trigger Activate/Deactivate pairs for those mods? (affects fallback value choice)
 		value = EnabledByGame && Config.GetValue("Enabled");
 		if (value != _Enabled) { // State changed
 			_Enabled = value;

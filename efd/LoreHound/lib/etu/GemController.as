@@ -101,6 +101,8 @@ class efd.LoreHound.lib.etu.GemController extends UIComponent {
 		onMouseMove = function() {
 
 			var diff:Point = new Point( _xmouse - prevMousePos.x, _ymouse - prevMousePos.y );
+			if (lockedAxis & 1) { diff.x = 0; }
+			if (lockedAxis & 2) { diff.y = 0; }
 
 			if ( !dragging ) {
 				dragging = true;
@@ -123,6 +125,15 @@ class efd.LoreHound.lib.etu.GemController extends UIComponent {
 
 		}
 
+	}
+
+	// Lock an axis to prevent movement along it
+	// 0 : None (unlock)
+	// 1 : x
+	// 2 : y
+	// 3 : x+y (prevent movement)
+	public function lockAxis(axisID:Number) {
+		lockedAxis = axisID;
 	}
 
 	private function releaseHandler( event:Object ) : Void {
@@ -177,6 +188,7 @@ class efd.LoreHound.lib.etu.GemController extends UIComponent {
 	private var moveOverlays:Array;
 
 	private var prevMousePos:Point;
+	private var lockedAxis:Number = 0;
 
 	private var overlays:Array;
 

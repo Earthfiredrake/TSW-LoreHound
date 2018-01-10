@@ -38,6 +38,13 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
 		SignalGeometryChanged = new Signal();
 
+		ResolutionDV = DistributedValue.Create("DisplayResolution");
+		GUIScaleDV = DistributedValue.Create("GUIResolutionScale");
+		TopbarLayoutDV = DistributedValue.Create("TopMenuAlignment");
+		ResolutionDV.SignalChanged.Connect(SetTopbarPositions, this);
+		GUIScaleDV.SignalChanged.Connect(SetTopbarPositions, this);
+		TopbarLayoutDV.SignalChanged.Connect(SetTopbarPositions, this);
+
 		// UpdateState customization won't be completed anyway
 		// If custom state could persist between sessions, the mod should confirm it on load
 		// UpdateState();
@@ -48,21 +55,32 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	// Apply settings for manual integration with the default topbar
 	// Locks scale and Y coordinate
 	public function ConfigureForDefault():Void {
-		LockToTopbar = true;
+		OnBaseTopbar = true;
+		SetTopbarPositions();
 		// TODO: Calculate this position, also consider that the topbar may be positioned at bottom (DV: TopMenuAlignment == 1)
 		// TODO: See if I can actually store arbitrary types in Config (only need the X coord here)
-		Config.ChangeDefault("IconPosition", new Point(1125, TopbarYLock));
 		Config.DeleteSetting("IconScale");
-		var gameScale:Number = DistributedValue.GetDValue("GUIResolutionScale");
-		var iconScale:Number = 56.25 / gameScale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
-		_xscale = iconScale;
-		_yscale = iconScale;
+	}
+
+	private function SetTopbarPositions():Void {
+		if (OnBaseTopbar) {
+			var scale:Number = GUIScaleDV.GetValue();
+			var resolution:Point = ResolutionDV.GetValue();
+			DefaultTopbarX = (resolution.x / 2 + 100) / scale;
+			TopbarY = TopbarLayoutDV.GetValue() ? (resolution.y - 25) / scale : 2;
+			Config.ChangeDefault("IconPosition", DefaultTopbarX);
+			_y = TopbarY;
+			var iconScale:Number = 56.25 / scale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
+			_xscale = iconScale;
+			_yscale = iconScale;
+		}
 	}
 
 	// Reset this icon in preperation for VTIO integration
 	// VTIO mods handle own layout and effects so remove the defaults
 	public function ConfigureForVTIO():Void {
 		TopbarDoesLayout = true;
+		OnBaseTopbar = false;
 		_x = 0; _y = 0;
 		filters = [];
 		// Settings are not used as long as topbar is in use, no need to save them
@@ -130,24 +148,32 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		if (pos.equals(new Point(-1, -1))) {
 			// No value was loaded (to replace invalid initial default)
 			// Either this is a first load or VTIO has been (but may no longer be) active
-			Config.ResetValue("IconPosition"); // Will update position via ConfigChanged callback
+			Config.ResetValue("IconPosition"); // Will update to default position via ConfigChanged callback
 		} else {
-			_x = pos.x;
-			_y = pos.y;
+			if (OnBaseTopbar) {
+				_x = pos;
+			} else {
+				_x = pos.x;
+				_y = pos.y;
+			}
 		}
 	}
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch (setting) {
-			case "Enabled": { UpdateState(); return; }
+			case "Enabled": { UpdateState(); break; }
 			case "IconPosition": {
-				_x = newValue.x;
-				_y = newValue.y;
-				return;
+				if (OnBaseTopbar) {
+					_x = newValue;
+				} else {
+					_x = newValue.x;
+					_y = newValue.y;
+				}
+				break;
 			}
 			case "IconScale": {
 				UpdateScale();
-				return;
+				break;
 			}
 			case "TopbarIntegration": {
 				if (newValue) {
@@ -165,26 +191,26 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 						_visible = true;
 						UpdateState(); // Mod will have already updated the target icon
 					} else {
-						LockToTopbar = false;
+						OnBaseTopbar = false;
 					}
-					if (oldValue == undefined) { // DEPRECATED(v1.3.2): Temporary upgrade support (use of undefined)
+					if (oldValue != undefined) { // DEPRECATED(v1.3.2): Temporary upgrade support (use of undefined)
 						Config.NewSetting("IconScale", 100);
 						Config.NewSetting("IconPosition", new Point(10, 80));
 					}
 				}
+				break;
 			}
 		}
 	}
 
 	// Minimalist ConfigChanged for the cloned copy created by VTIO/Meeehr
-	// This is mostly to split off UseTopbar behaviour
+	// This is mostly to split off TopbarIntegration behaviour
 	private function CloneConfigChanged(setting:String, newValue, oldValue):Void {
 		if (setting == "Enabled") { UpdateState(); }
-		if (setting == "TopbarIntegration") {
-			_visible = newValue; // Can't actually remove the cloned icon safely, so just hide/reveal it for now
-		}
+		if (setting == "TopbarIntegration") { _visible = newValue; } // Can't actually remove the cloned icon safely, so just hide/reveal it for now
 	}
 
+	// Basic state update, can be overriden by mod through init objects
 	public function UpdateState():Void {
 		gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive");
 		RefreshTooltip();
@@ -199,8 +225,10 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private function ManageGEM(unlocked:Boolean):Void {
 		if (unlocked && !GemManager) {
 			GemManager = GemController.create("GuiEditModeInterface", HostMovie, HostMovie.getNextHighestDepth(), this);
-			if (!LockToTopbar) {
-				// TODO: Find some way to lock the Y Axis
+			GemManager.lockAxis(0);
+			if (OnBaseTopbar) {
+				GemManager.lockAxis(2);
+			} else {
 				GemManager.addEventListener( "scrollWheel", this, "ChangeScale" );
 			}
 			GemManager.addEventListener( "endDrag", this, "ChangePosition" );
@@ -212,7 +240,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	private function ChangePosition(event:Object):Void {
-		Config.SetValue("IconPosition", new Point(_x, LockToTopbar ? TopbarYLock : _y));
+		Config.SetValue("IconPosition", OnBaseTopbar ? _x : new Point(_x, _y));
 		SignalGeometryChanged.Emit();
 	}
 
@@ -310,8 +338,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private static var TooltipCreditFont:String = "size='10'";
 	private static var TooltipTextFont:String = "size='11'";
 
-	private static var TopbarYLock:Number = 2;
-
 	private var ModName:String;
 	private var DevName:String;
 
@@ -321,8 +347,14 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private var Tooltip:TooltipInterface;
 
 	// GUI layout variables do not need to be copied for topbar icon
-	private var LockToTopbar:Boolean = false;
+	private var OnBaseTopbar:Boolean = false;
 	private var HostMovie:MovieClip;
 	private var GemManager:GemController;
 	private var SignalGeometryChanged:Signal;
+
+	private var ResolutionDV:DistributedValue;
+	private var GUIScaleDV:DistributedValue;
+	private var TopbarLayoutDV:DistributedValue;
+	private var DefaultTopbarX:Number;
+	private var TopbarY:Number;
 }
