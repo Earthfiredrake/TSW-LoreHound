@@ -22,6 +22,11 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	/// Initialization
 	public function ModIcon() {
 		super();
+
+		// Get a unique ID for default layout calculations
+		IconCountDV = DistributedValue.Create(Mod.DVPrefix + "NextIconID");
+		GetID();
+
 		filters = [ShadowFilter];
 
 		// These need to be set with *some* default, so that any saved value is loaded
@@ -52,6 +57,32 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		TraceMsg("Icon created");
 	}
 
+	private function VerifyIDCount(dv:DistributedValue):Void {
+		// If ID already in use, push to next value
+		if (dv.GetValue() == IconID) {
+			dv.SetValue(IconID + 1);
+		}
+	}
+
+	private function GetID():Void {
+		if ( IconID != -1) { return; } // Icon already has ID value
+		IconID = IconCountDV.GetValue();
+		if (!IconID) { IconID = 0; } // Handle the very first ID of a session
+		IconCountDV.SetValue(IconID + 1);
+		IconCountDV.SignalChanged.Connect(VerifyIDCount, this);
+	}
+
+	// Free the ID when this icon no longer requires it (such as when unloaded)
+	public function FreeID():Void {
+		if ( IconID == -1) { return; } // IconID not assigned
+		IconCountDV.SignalChanged.Disconnect(VerifyIDCount, this);
+		// Next free ID is this one, unless it's already been set lower
+		if (IconCountDV.GetValue() > IconID) {
+			IconCountDV.SetValue(IconID);
+		}
+		IconID = -1;
+	}
+
 	// Apply settings for manual integration with the default topbar
 	// Locks scale and Y coordinate
 	public function ConfigureForDefault():Void {
@@ -66,7 +97,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		if (OnBaseTopbar) {
 			var scale:Number = GUIScaleDV.GetValue();
 			var resolution:Point = ResolutionDV.GetValue();
-			DefaultTopbarX = (resolution.x / 2 + 100) / scale;
+			DefaultTopbarX = (resolution.x / 2 + 100 + IconID * 20) / scale;
 			TopbarY = TopbarLayoutDV.GetValue() ? (resolution.y - 25) / scale : 2;
 			Config.ChangeDefault("IconPosition", DefaultTopbarX);
 			_y = TopbarY;
@@ -76,17 +107,33 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 	}
 
-	// Reset this icon in preperation for VTIO integration
-	// VTIO mods handle own layout and effects so remove the defaults
-	public function ConfigureForVTIO():Void {
-		TopbarDoesLayout = true;
-		OnBaseTopbar = false;
-		_x = 0; _y = 0;
-		filters = [];
-		// Settings are not used as long as topbar is in use, no need to save them
-		Config.DeleteSetting("IconPosition");
-		Config.DeleteSetting("IconScale");
-		GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+	// Toggles VTIO mode configuration
+	// Note: Not an entirely inverse function, most importantly Config settings are not restored (in the situation this is disabled they need to be reset unconditionally)
+	public function get VTIOMode():Boolean { return _VTIOMode; } // Can't do private properties... not that "private" really means much in flash anyway
+	public function set VTIOMode(value:Boolean) {
+		if (value != _VTIOMode) {
+			_VTIOMode = value;
+			if (value) {
+				// Reset this icon in preperation for VTIO integration
+				// VTIO mods handle own layout and effects
+				FreeID();
+				OnBaseTopbar = false;
+				_x = 0; _y = 0;
+				filters = [];
+				// Settings are not used as long as topbar is in use, no need to save them
+				Config.DeleteSetting("IconPosition");
+				Config.DeleteSetting("IconScale");
+				GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
+			} else {
+				// Restores the state
+				GetID();
+				filters = [ShadowFilter];
+				// Note: Settings are not restored here,
+				GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
+				_visible = true; // If cloned, will have been made invisible
+				UpdateState(); // Mod will have already updated the target icon
+			}
+		}
 	}
 
 	// Copy addtional properties and functions to the VTIO topbar's copy of the icon
@@ -106,7 +153,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.ModName = ModName;
 		copy.DevName = DevName;
 		copy.Config = Config;
-		copy.TopbarDoesLayout = true;
+		copy._VTIOMode = true;
 		copy.Tooltip = Tooltip;
 
 		// Required functions (and function variables)
@@ -138,7 +185,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		if (Config.GetValue("TopbarIntegration", false)) {
 			ConfigureForDefault();
 		} else {
-			Config.ChangeDefault("IconPosition", new Point(10, 80));
+			Config.ChangeDefault("IconPosition", new Point(10, 80 + IconID * 40));
 			UpdateScale();
 		}
 
@@ -178,24 +225,16 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 			case "TopbarIntegration": {
 				if (newValue) {
 					// Mod will have already responded, so will already be registered with VTIO if possible
-					if (!TopbarDoesLayout) {
+					if (!VTIOMode) {
 						ConfigureForDefault();
 						Config.ResetValue("IconPosition");
 					}
 				} else {
-					if (TopbarDoesLayout) {
-						TopbarDoesLayout = false;
-						filters = [ShadowFilter];
-						GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
-						// If cloned, will have been made invisible, and may not have current state
-						_visible = true;
-						UpdateState(); // Mod will have already updated the target icon
-					} else {
-						OnBaseTopbar = false;
-					}
+					VTIOMode = false;
+					OnBaseTopbar = false;
 					if (oldValue != undefined) { // DEPRECATED(v1.3.2): Temporary upgrade support (use of undefined)
 						Config.NewSetting("IconScale", 100);
-						Config.NewSetting("IconPosition", new Point(10, 80));
+						Config.NewSetting("IconPosition", new Point(10, 80 + IconID * 40));
 					}
 				}
 				break;
@@ -342,7 +381,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private var DevName:String;
 
 	private var Config:ConfigWrapper;
-	private var TopbarDoesLayout:Boolean = false;
+	private var _VTIOMode:Boolean = false;
 
 	private var Tooltip:TooltipInterface;
 
@@ -357,4 +396,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private var TopbarLayoutDV:DistributedValue;
 	private var DefaultTopbarX:Number;
 	private var TopbarY:Number;
+
+	// Used to adjust default icon locations so they no longer stack up awkwardly
+	private var IconCountDV:DistributedValue;
+	private var IconID:Number = -1;
 }

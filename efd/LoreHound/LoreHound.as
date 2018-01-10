@@ -75,6 +75,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		TraceMsg("Initialized");
 	}
 
+	// TODO: Some reports of settings being lost, reverting to defaults (v1.2.2). Investigate further for possible causes
+
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
 		Config.NewSetting("FifoLevel", LoreData.ef_LoreType_None); // DEPRECATED(v1.2.0.alpha) : Renamed
@@ -82,13 +84,13 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Renaming and expanding options for v1.2
 		Config.NewSetting("FifoAlerts", LoreData.ef_LoreType_None); // FIFO onscreen alerts
-		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // System chat alerts
-		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Display onscreen waypoints for lore
+		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // System chat alerts
+		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // Display onscreen waypoints for lore
 		Config.NewSetting("AlertForCollected", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they already have
-		Config.NewSetting("AlertForUncollected", LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they haven't picked up yet
+		Config.NewSetting("AlertForUncollected", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // Alert the player for lore they haven't picked up yet
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
-		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running (TODO: Test this when a game event is running)
+		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running
 		Config.NewSetting("TrackDespawns", true); // Track timed lore comb drops, and notify when they despawn
 		Config.NewSetting("ShowWaypoints", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
@@ -99,7 +101,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
 		// - Some fields are always included when detecting uncategorized lore, to help identify it
-		Config.NewSetting("Details", ef_Details_Location);
+		Config.NewSetting("Details", ef_Details_Location | ef_Details_Timestamp);
 
 		arConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
 		Config.NewSetting("AutoReport", arConfig);
@@ -333,7 +335,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     #1374 - OverrideCursor, used for categorizing the Reticule interaction prompt (See CrosshairController)
 	//             New for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
 	//     #2000560 - Exists on a massive majority of the lore recently observed:
-	//                - Missing from all Shrouded Lore and other event lore (presumably because it's inactive, TODO: Confirm that an event has passed which had inactive lore)
+	//                - Missing from all Shrouded Lore and other inactive event lore (lore for active events has this value)
 	//                - Sometimes fails to load before a dropped lore triggers the detection, a few quick retries is usually enough time for it to load
 	//              - Tag # matching db entries labled "Lore#.Tag#", outside of api access but still very useful info (Thanks Vomher)
 	//              - ID number for the lore entry in the journal!
@@ -731,7 +733,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				if (!FilterLore(lore)) {
 					// If not notifying for a particular lore, clear the waypoint if any
 					// Clears waypoint when picking up lore or when settings change
-					// TODO: Investigate Lore.SignalTagAdded, might be the "on pickup" event I need
+					// TODO: Lore.SignalTagAdded as an "on pickup" event to simplify some of this, setting changes would have to be handled elsewhere
 					RemoveWaypoint(lore.DynelID);
 					continue;
 				}
@@ -757,7 +759,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
 	private static var c_MaxWaypointRange:Number = 50; // Maximum display range for waypoints, in metres
-	private static var c_WaypointColour:Number = 0xF6D600; // TODO: Change this, as it conflicts with the "Sabotage" mission waypoint colour
 
 	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
 	// It will dump the Nth million stat ids, with the mode parameter provided

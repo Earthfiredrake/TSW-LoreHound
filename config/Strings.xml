@@ -30,7 +30,7 @@
 		 <!-- Used by console style mods that lack icon notification -->
 		<Enabled en="Has been enabled" />
 		<Disabled en="Has been disabled" />
-		<RemoveVTIO en="The topbar mod does not support removal of registered mods at runtime. An attempt to fake it has been made, but may result in unexpected behaviour. It is strongly recommended to  properly finish the process with '/reloadui'." />
+		<RemoveVTIO en="The topbar mod does not support removal of registered mods at runtime. An attempt to fake it has been made, but may result in unexpected behaviour. It is strongly recommended to properly finish the process with '/reloadui'." />
 	</General>
 	<GUI> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
 		<ConfigWindowTitle en="%1% Settings" /> <!-- %1% = ModName -->

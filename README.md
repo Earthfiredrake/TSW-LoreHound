@@ -4,12 +4,13 @@ Compatible with SWL.
 
 ## Overview
 Will detect and attempt to identify lore pickups when they enter or spawn within ~25m of the player. Lore pickups have been roughly categorized into four groups.
-+ Placed: Basic placed lore. Usually always available but also includes most event lore and a few that require extra work to reveal.
-  + Am attempting to recategorize the conditional spawning ones, so if you encounter any that don't appear by default let me know.
-  + Lore for inactive events will not be fully identified and is excluded from notifications by default. I'm hopeful that it will work with no changes when the related event is running.
-  + Some event lore appears to have been removed from the game entirely rather than just disabled so cannot be detected at all.
-+ Triggered: Requires a particular condition to spawn or be visible but doesn't despawn (as far as I know).
-  + Commonly in instances that don't permit MUs, such as dungeons or replayable mission areas.
++ Placed: Basic placed lore. Usually always available but also includes most event lore and a few that require extra work to reveal
+  + Am attempting to recategorize the conditional spawning ones, so if you encounter any that don't appear by default let me know
+  + Lore for inactive events will not be fully identified and is excluded from notifications by default. Once the event is running, the missing data is available and detection works normally
+  + Some event lore appears to have been removed from the game entirely rather than just disabled so cannot be detected at all outside of the event
++ Triggered: Requires a particular condition to spawn or be visible but doesn't despawn (as far as I know)
+  + Commonly in instances that don't permit MUs, such as dungeons or replayable mission areas
+  + There's also a pile of it in KD
 + Dropped: Mostly bestiary lore drops from monsters and triggered spawns. Will time out after a short period of time.
   + A tracking option can inform you when these despawn, as long as you stay in the vicinity (somewhere between ~75-100m).
     + Bestiary lore has a 5min timeout.
@@ -28,6 +29,7 @@ Each category can independently have notifications output to either chat (System
   + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects.
 
 Additional Options
++ "Topbar Integration": Enable to lock the mod icon to the default topbar or a topbar mod that supports the VTIO registration system (such as Meeehr's topbar or ModFolder). Disable to revert the mod to a free floating icon that can be placed elsewhere on the screen.
 + "Extended Testing": To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. This option will activate additional testing on objects that would otherwise be ignored, for use if it fails to detect something that it should have.
 + "Log Cartographer Data": Detected lore notifications are logged in "ClientLog.txt" file, in a format which can be easilly extracted for use by my Cartographer mod.
 + "Waypoint Colour": The colour (in 6 digit Hex notation) to use on onscreen waypoints.
@@ -41,25 +43,29 @@ The packaged release should be unzipped (including the internal LoreHound folder
 
 When upgrading, existing .bxml files in the LoreHound directory should be deleted to ensure changes in the .xml files are loaded (whichever is newer seems to take precedence).
 
-An internal update system *should* carry forward settings from previous versions. To simplify the system, major versions will be used as thresholds, v1.0.x will upgrade from any v0.y, but later versions require a staged upgrade through v1.0. Starting with v1.1.0 directly upgrading from versions prior to v1.0.0 may result in settings being lost, reset, or potentially invalid.
+An internal update system *should* carry forward settings from previous versions. To simplify the system, major versions will be used as thresholds; v1.0.x will upgrade from any v0.y, but later versions require a staged upgrade through v1.0. Starting with v1.1.0 directly upgrading from versions prior to v1.0.0 will reset all settings to defaults.
 
 If upgrading from v0.1.1-alpha, a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
-Version Next
+Version 1.3.2
 + Classification improvements
   + KD: More initially invisible lore now in the triggered category
   + Light in black places: "Related Items" now includes a candlestick in a basement (but not Prof. Plum)
     + Various other items were considered but didn't make the cut (almost unmissable, or just plain spammy)
-  + Better late than never, will now detect the lore in Niflheim (I wouldn't want to go sniffing around all those Krampii either)
-    + Uncategorized lore now works too, though auto-reports remain largely untested (to the slight relief of the postman)
+  + Better late than never, detects the lore in Niflheim (I wouldn't want to go sniffing around all those Krampii either)
+    + Uncategorized lore fixed to provide notifications in the future (auto-reports continue to be largely untested, to the slight relief of the postman)
+  + The uncategorized lore count drops to 5
 + Interface and other changes
-  + Improved topbar integration, supporting default topbar
-  + Alternatively can stubbornly ignore VTIO mods, if that's your preference (topbar placement will always use a VTIO mod if available)
+  + Improved topbar integration, supporting default topbar as well as VTIO compatible mods
+    + Enabled on fresh installs, updating will use existing behaviour to pick a value (icons should be where you left them)
+	+ Default topbar location should be just to the right of the middle of the screen
   + Workaround for bug with ModFolder when doing /reloadui
-  + Needs further testing with Meeehr/VTIO
+  + Default settings have been changed to better reflect common usage (I do eventually listen to criticism)    
+	+ Will now get chat and waypoint notifications for all types of uncollected lore by default
+	+ This affects fresh installs, upgrades should retain their existing preferences
   + Strings.xml has had a minor format change
-    + Any text customization will need to be applied to the new file (the old format no longer works)
+    + Any text customization will need to be copied to the new file (the old format no longer works)
 
 Version 1.3.0
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:

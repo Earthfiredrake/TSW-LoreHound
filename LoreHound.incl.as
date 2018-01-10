@@ -29,4 +29,7 @@ function OnModuleDeactivated():Archive { return efdLoreHound.GameToggleModEnable
 
 // Called just before the game unloads the clip
 // - When the user logs out, or returns to character selection (unconfirmed)
-function OnUnload():Void { delete efdLoreHound; } // May as well be tidy
+function OnUnload():Void {
+	efdLoreHound.OnUnload();
+	delete efdLoreHound;
+}

@@ -38,14 +38,14 @@ import efd.LoreHound.lib.ModIcon;
 //   "[Interface|Config]WindowPostion": Config setting
 //   "[pfx]Show[Name][ConfigUI|Interface]": Toggle DV
 class efd.LoreHound.lib.Mod {
-	// Mod info flags for disabling certain gui elements
-	// Passed as GuiFlags member
+	// ModData flags for disabling certain gui elements (Passed as GuiFlags)
 	public static var ef_ModGui_NoIcon:Number = 1 << 0;
 	public static var ef_ModGui_NoConfigWindow:Number = 1 << 1;
 	public static var ef_ModGui_Console:Number = ef_ModGui_NoIcon | ef_ModGui_NoConfigWindow;
 	public static var ef_ModGui_NoTopbar:Number = 1 << 2;
 	public static var ef_ModGui_None:Number = (1 << 3) - 1;
 
+	// ModData enum describing basic mod behaviour (Passed as Type)
 	//   Mod provides a interface on request which does minimal background processing (ex: Fashionista, UC)
 	//   Standard icon behaviours are open the interface on left, advanced options menu on right
 	//   Not sure what this would look like as a console style mod... some sort of DV triggered effect I suppose
@@ -144,6 +144,9 @@ class efd.LoreHound.lib.Mod {
 			ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
 			ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, HostMovie);
 			SetWindowScale.call(HostMovie, ResolutionScaleDV);
+			// TODO: Applying this at the host clip level is causing issues with VTIO topbars (and adding complications to other calculations in this mod)
+			//       Revert? Would require an upgrade catch to recalculate icon/window position settings
+			//       Time to do versioning on the library
 
 			if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
 				ConfigWindowEscTrigger = new EscapeStackNode();
@@ -195,10 +198,24 @@ class efd.LoreHound.lib.Mod {
 		ModLoadedDV.SetValue(true);
 	}
 
+	// The game itself toggles the mod's activation state (based on modules.xml criteria)
+	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
+		if (!state) {
+			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); } // DEPRECATED(v1.3.2): Temporary upgrade support
+			CloseConfigWindow();
+			return Config.SaveConfig();
+		} else {
+			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
+		}
+		EnabledByGame = state;
+		Enabled = state;
+	}
+
+	public function OnUnload():Void { Icon.FreeID(); }
+
+	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
+
 /// Configuration Settings
-
-	// TODO: Some reports of settings being lost, reverting to defaults (Lorehound v1.2.2). Investigate further for possible causes
-
 	private function InitializeModConfig(modInfo:Object):Void {
 		Config = new ConfigWrapper(modInfo.ArchiveName);
 		ConfigResetDV = DistributedValue.Create(ModResetVarName);
@@ -339,7 +356,6 @@ class efd.LoreHound.lib.Mod {
 	}
 
 /// Topbar registration
-
 	// Most container mods support the legacy VTIO interface
 	private function LinkWithTopbar():Void {
 		// Try to register now, in case they loaded first, otherwise signup to detect if they load
@@ -358,7 +374,7 @@ class efd.LoreHound.lib.Mod {
 			BringAboveTopbar(true);
 
 			// Adjust icon to be better suited for topbar integration
-			Icon.ConfigureForVTIO();
+			Icon.VTIOMode = true;
 
 			// Doing this more than once messes with Meeehr's, will have to find alternate workaround for ModFolder
 			if (!RegisteredWithTopbar) {
@@ -385,12 +401,10 @@ class efd.LoreHound.lib.Mod {
 				setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
 			}
 		} else {
-			// HACK: Workaround for ModFolder, which has a nasty habit of leaving the VTIO_IsLoaded flag set during reloads
-			//       Would be very nice to get in contact with Icarus on this
-			if (DistributedValue.GetDValue("ModFolder")) {
-				TraceMsg("Mod Folder is resetting the load state, permitting an additional registration");
-				RegisteredWithTopbar = false;
-			}
+			// Workaround for ModFolder, which has a nasty habit of leaving the VTIO_IsLoaded flag set during reloads
+			// Would be very nice to get in contact with Icarus on this
+			// Seem to have found a way to do this that doesn't cause problems with Meeehr's and doesn't require explicit checks for ModFolder
+			RegisteredWithTopbar = false;
 		}
 	}
 
@@ -410,8 +424,7 @@ class efd.LoreHound.lib.Mod {
 		//delete ViperDV;
 	}
 
-/// Mod Icon
-
+/// Icon
 	private function CreateIcon(modInfo:Object):Void {
 		var iconData:Object = modInfo.IconData ? modInfo.IconData : new Object();
 		var iconName:String = iconData.ResName ? iconData.ResName : ModName + "Icon";
@@ -451,8 +464,8 @@ class efd.LoreHound.lib.Mod {
 		Icon = ModIcon(MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", HostMovie, HostMovie.getNextHighestDepth(), iconData));
 	}
 
-/// Standard Icon Mouse Handlers
-
+	// Mouse handlers
+	//   See above or ModType descriptions for default hooking
 	private function ChangeModEnabled(dv:DistributedValue):Void {
 		var value:Boolean = dv != undefined ? dv.GetValue() : !Config.GetValue("Enabled");
 		Config.SetValue("Enabled", value);
@@ -480,8 +493,7 @@ class efd.LoreHound.lib.Mod {
 	}
 	private static function ToggleInterfaceTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
 
-/// Window Displays
-
+/// Window Display
 	private function OpenWindow(windowName:String, loadEvent:Function, closeEvent:Function, escNode:EscapeStackNode):MovieClip {
 		var clip:MovieClip = HostMovie.attachMovie(ModName + windowName, windowName, HostMovie.getNextHighestDepth());
 		clip.SignalContentLoaded.Connect(loadEvent, this); // Defer config bindings until content is loaded
@@ -585,23 +597,7 @@ class efd.LoreHound.lib.Mod {
 
 	private function CloseInterfaceWindow():Void { ShowInterfaceDV.SetValue(false); }
 
-	// The game itself toggles the mod's activation state (based on modules.xml criteria)
-	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
-		if (!state) {
-			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); } // DEPRECATED(v1.3.2): Temporary upgrade support
-			CloseConfigWindow();
-			return Config.SaveConfig();
-		} else {
-			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
-		}
-		EnabledByGame = state;
-		Enabled = state;
-	}
-
-	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
-
-	/// Data file loading
-
+/// Data File Loader
 	// Loads an XML file from a path local to the mod's directory
 	// The '.xml' suffix is added if not present
 	public function _LoadXmlAsynch(fileName:String, callback:Function):XML {
@@ -616,7 +612,7 @@ class efd.LoreHound.lib.Mod {
 	}
 	public static var LoadXmlAsynch:Function; // Static delegate
 
-	/// Text output utility functions
+/// Text Output
 	// Options object supports the following properties:
 	//   system:String - Name of subsystem to include in the prefix
 	//   noPrefix:Boolean - Will not display mod or subsystem name if true
@@ -696,14 +692,14 @@ class efd.LoreHound.lib.Mod {
 	public static var TraceMsg:Function;
 	public static var LogMsg:Function;
 
-	/// The following empty functions are provided as override hooks for subclasses to implement
-	private function DoInstall():Void { }
-	private function DoUpdate(newVersion:String, oldVersion:String):Void { }
+/// Subclass Extension Stubs
+	private function InstallMod():Void { }
+	private function UpdateMod(newVersion:String, oldVersion:String):Void { }
 	private function Activate():Void { }
 	private function Deactivate():Void { }
 	private function TopbarRegistered(firstTime:Boolean):Void { }
 
-	/// Properites and variables
+/// Properties and Variables
 	public function get Version():String { return Config.GetValue("Version"); }
 
 	public function get Enabled():Boolean { return _Enabled; }
