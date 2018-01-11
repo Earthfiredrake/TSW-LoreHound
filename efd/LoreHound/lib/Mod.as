@@ -1,4 +1,4 @@
-﻿// Copyright 2017, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -318,6 +318,7 @@ class efd.LoreHound.lib.Mod {
 
 /// Versioning and Upgrades
 	private function UpdateInstall():Void {
+		Config.ChangeDefault("Installed", true);
 		if (!Config.GetValue("Installed")) {
 			// Fresh install, use the actual default value instead of the update placeholder
 			Config.ResetValue("TopbarIntegration"); // DEPRECATED(v1.0.0): Temporary upgrade support
@@ -327,8 +328,8 @@ class efd.LoreHound.lib.Mod {
 			if (ShowConfigDV != undefined) {
 				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
 				// Decided against having the options menu auto open here
-				// Users might not realize that it's a one off event, and consider it a bug
-			}
+				// Users might not realize that it's a one off event
+			}			
 			return; // No existing version to update
 		}
 		var oldVersion:String = Config.GetValue("Version");
@@ -484,9 +485,7 @@ class efd.LoreHound.lib.Mod {
 		iconData.HostMovie = HostMovie;
 		iconData.Config = Config;
 
-		if (iconData.GetFrame) {
-			iconData.GetFrame = Delegate.create(this, iconData.GetFrame);
-		}
+		if (iconData.GetFrame) { iconData.GetFrame = Delegate.create(this, iconData.GetFrame); }
 
 		if (!iconData.LeftMouseInfo) {
 			if (modInfo.Type == e_ModType_Interface) {
@@ -804,7 +803,6 @@ class efd.LoreHound.lib.Mod {
 	public var Icon:ModIcon;
 
 	private var IsAboveTopbar:Boolean = false; // Display layer has been changed to render above topbar
-	// private var MeeehrDV:DistributedValue;
 	private var ViperDV:DistributedValue;
 	private var RegisteredWithTopbar:Boolean = false;
 

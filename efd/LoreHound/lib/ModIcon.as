@@ -1,4 +1,4 @@
-﻿// Copyright 2017, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -209,6 +209,13 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 					if (!VTIOMode) {
 						ConfigureForDefault();
 						Config.ResetValue("IconPosition");
+						if (GemManager != null) {
+							GemManager.lockAxis(2);
+							GemManager.removeEventListener("scrollWheel", this, "ChangeScale");
+							SignalGeometryChanged.Emit();
+						}
+					} else {
+						if (GemManager != null) { ManageGEM(false); }
 					}
 				} else {
 					VTIOMode = false;
@@ -216,6 +223,11 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 					if (oldValue != undefined) { // DEPRECATED(v1.0.0): Temporary upgrade support (use of undefined)
 						Config.NewSetting("IconScale", 100);
 						Config.NewSetting("IconPosition", new Point(10, 80 + IconID * 40));
+					}
+					if (GemManager != null) {
+						GemManager.lockAxis(0);
+						GemManager.addEventListener("scrollWheel", this, "ChangeScale");
+						SignalGeometryChanged.Emit();
 					}
 				}
 				break;

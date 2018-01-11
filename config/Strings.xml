@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- Copyright 2017, Earthfiredrake (Peloprata)
+<!-- Copyright 2017-2018, Earthfiredrake (Peloprata)
      Released under the terms of the MIT License
      https://github.com/Earthfiredrake/TSW-LoreHound -->
 
@@ -30,6 +30,7 @@
 		 <!-- Used by console style mods that lack icon notification -->
 		<Enabled en="Has been enabled" />
 		<Disabled en="Has been disabled" />
+		<!-- Warning for disabling VTIO topbar integration -->
 		<RemoveVTIO en="The topbar mod does not support removal of registered mods at runtime. An attempt to fake it has been made, but may result in unexpected behaviour. It is strongly recommended to properly finish the process with '/reloadui'." />
 	</General>
 	<GUI> <!-- Used for all GUI strings. GUI may not expand nicely for longer text -->
