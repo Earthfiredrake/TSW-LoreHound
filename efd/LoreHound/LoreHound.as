@@ -84,7 +84,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("ChatLevel", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
 
 		// Renaming and expanding options for v1.2
-		Config.NewSetting("FifoAlerts", LoreData.ef_LoreType_None); // FIFO onscreen alerts
+		Config.NewSetting("FifoAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // FIFO onscreen alerts
 		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // System chat alerts
 		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // Display onscreen waypoints for lore
 		Config.NewSetting("AlertForCollected", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they already have

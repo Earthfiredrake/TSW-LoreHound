@@ -40,8 +40,8 @@
 		<SettingGroupUncategorized en="Uncategorized Lore" />
 		<SettingGroupSpecialItem en="Related Items" />
 		<LoreSettingWP en="Show Waypoints" />
-		<LoreSettingFifo en="FIFO Alerts" />
-		<LoreSettingChat en="System Chat Messages" />
+		<LoreSettingFifo en="Pop-up Text" />
+		<LoreSettingChat en="System Chat" />
 		<LoreStatesTitle en="Notify for:" />
 		<LoreSettingUncollected en="Uncollected Lore" />
 		<LoreSettingCollected en="Already Collected Lore" />

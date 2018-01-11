@@ -24,6 +24,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		super();
 
 		// Get a unique ID for default layout calculations
+		// Note: System is not without flaws, subsequently added mods may just rearrange the IDs and stomp anyway
 		IconCountDV = DistributedValue.Create(Mod.DVPrefix + "NextIconID");
 		GetID();
 
@@ -124,7 +125,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	// Copy addtional properties and functions to the VTIO topbar's copy of the icon
 	// Note: ModFolder does not create a copy, so this is not used for that VTIO mod
-	public function CopyToTopbar(copy:ModIcon):ModIcon {
+	public function CopyToTopbar(copy:ModIcon):Void {
 		// Topbar copies the clip, so all the basic movie clip stuff is moved over by itself
 		//   - The current frame is reset to 0 though
 		// Topbar handles all layout so GEM system is not needed
@@ -139,7 +140,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.ModName = ModName;
 		copy.DevName = DevName;
 		copy.Config = Config;
-		copy._VTIOMode = true;
 		copy.Tooltip = Tooltip;
 
 		// Required functions (and function variables)
@@ -156,18 +156,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// Minimalist config changed, doesn't handle layout messages and has different behaviour on TopbarIntegration
 		Config.SignalValueChanged.Connect(CloneConfigChanged, copy);
-
-		// copy.gotoAndStop(_currentframe); // Match the current icons
-		return copy;
 	}
 
 	/// Config and state changes
 	private function ConfigLoaded():Void {
-		// Fires after Mod's version but before LoadComplete
+		// Fires after Mod's version, timing relative to LoadComplete subject to debate
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
 
 		// Set defaults to reflect UseTopbar status
-		// VTIO will not yet be active, and can not be assumed
+		// VTIO may not yet be active, and can not be assumed
 		if (Config.GetValue("TopbarIntegration", false)) {
 			ConfigureForDefault();
 		} else {

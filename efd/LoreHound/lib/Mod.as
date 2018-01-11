@@ -442,9 +442,10 @@ class efd.LoreHound.lib.Mod {
 			// And just to be different, ModFolder doesn't create a copy at all, it just uses the one we give it
 			// In which case we don't want to lose our current reference
 			if (HostMovie.Icon != undefined) {
-				Icon = Icon.CopyToTopbar(HostMovie.Icon);
+				Icon.CopyToTopbar(HostMovie.Icon);
+				Icon._visible = false; // Usually the topbar will do this for us, but it's not so good about it during a re-register
+				Icon = HostMovie.Icon;
 				Icon.Refresh();
-				HostMovie.ModIcon._visible = false; // Usually the topbar will do this for us, but it's not so good about it during a re-register
 			}
 			TopbarRegistered(!RegisteredWithTopbar);
 			RegisteredWithTopbar = true;
