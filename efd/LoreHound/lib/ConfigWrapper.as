@@ -61,6 +61,10 @@ class efd.LoreHound.lib.ConfigWrapper {
 		DirtyFlag = true;
 	}
 
+	public function HasSetting(key:String):Boolean {
+		return Settings.hasOwnProperty(key);
+	}
+
 	// Get a reference to the setting (value, defaultValue) tuple object
 	// Useful if a subcomponent needs to view but not change a small number of settings
 	// Hooking up ValueChanged event requires at least temporary access to Config object

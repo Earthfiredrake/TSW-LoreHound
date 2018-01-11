@@ -35,7 +35,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		Version : "1.3.2",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
-		IconData : { UpdateState : UpdateIcon,
+		IconData : { GetFrame : GetIconFrame,
 					 ExtraTooltipInfo : IconTooltip }
 	};
 
@@ -111,7 +111,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		switch(setting) {
 			case "Enabled":
 			case "QueuedReports":
-				UpdateIcon();
+				Icon.Refresh();
 				break;
 			default: break;
 		}
@@ -197,7 +197,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		return category != LoreData.ef_LoreType_Uncategorized && category != LoreData.ef_LoreType_None;
 	}
 
-	private function DoUpdate(newVersion:String, oldVersion:String):Void {
+	private function UpdateMod(newVersion:String, oldVersion:String):Void {
 		// Minimize settings clutter by purging auto-report records of newly categorized IDs
 		AutoReport.CleanupReports(IsCategorizedLore);
 
@@ -251,23 +251,16 @@ class efd.LoreHound.LoreHound extends Mod {
 		AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 
-	private function UpdateIcon():Void {
-		Icon.RefreshTooltip();
-		if (Config.GetValue("Enabled")) { // If game disables mod, it isn't visible at all, so only user disables matter
+	private function GetIconFrame():String {
+		if (Config.GetValue("Enabled")) { // If game disables mod, icon isn't visible at all, so only user disables matter
 			if (Config.GetValue("TrackDespawns")) {
 				for (var id:String in TrackedLore) {
-					if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) {
-						Icon.gotoAndStop("alerted");
-						return;
-					}
+					if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) { return "alerted"; }
 				}
 			}
-			if (AutoReport.NumReportsPending > 0) {
-				Icon.gotoAndStop("reporting");
-				return;
-			}
-			Icon.gotoAndStop("active");
-		} else { Icon.gotoAndStop("inactive"); }
+			if (AutoReport.NumReportsPending > 0) {	return "reporting";	}
+			return "active";
+		} else { return "inactive"; }
 	}
 
 	private function IconTooltip():String {
@@ -376,7 +369,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, and returns the same value :(
 		// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
 		Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-		UpdateIcon();
+		Icon.Refresh();
 	}
 
 	private function TryConfirmLoreID(lore:LoreData, repeat:Number):Boolean {
@@ -442,7 +435,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				}
 			}
 			delete TrackedLore[despawnedId];
-			UpdateIcon(); // May have removed last despawn tracking lore
+			Icon.Refresh();
 		}
 	}
 
@@ -450,7 +443,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Don't need to clear waypoints, playfield change resets waypoint interface
 		delete TrackedLore;
 		TrackedLore = new Object();
-		UpdateIcon();
+		Icon.Refresh();
 	}
 
 	/// Lore identification

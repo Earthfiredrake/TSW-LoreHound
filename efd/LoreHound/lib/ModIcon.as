@@ -50,10 +50,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		GUIScaleDV.SignalChanged.Connect(SetTopbarPositions, this);
 		TopbarLayoutDV.SignalChanged.Connect(SetTopbarPositions, this);
 
-		// UpdateState customization won't be completed anyway
-		// If custom state could persist between sessions, the mod should confirm it on load
-		// UpdateState();
-
 		TraceMsg("Icon created");
 	}
 
@@ -131,7 +127,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 				// Note: Settings are not restored here,
 				GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
 				_visible = true; // If cloned, will have been made invisible
-				UpdateState(); // Mod will have already updated the target icon
+				Refresh();
 			}
 		}
 	}
@@ -158,7 +154,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// Required functions (and function variables)
 		copy.TraceMsg = TraceMsg;
-		copy.UpdateState = UpdateState;
+		copy.Refresh = Refresh;
+		copy.GetFrame = GetFrame;
 		copy.GetTooltipData = GetTooltipData;
 		copy.OpenTooltip = OpenTooltip;
 		copy.RefreshTooltip = RefreshTooltip;
@@ -190,7 +187,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		}
 
 		// Update to reflect loaded values
-		UpdateState();
+		Refresh();
 		var pos = Config.GetValue("IconPosition");
 		if (pos.equals(new Point(-1, -1))) {
 			// No value was loaded (to replace invalid initial default)
@@ -208,7 +205,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch (setting) {
-			case "Enabled": { UpdateState(); break; }
+			case "Enabled": { Refresh(); break; }
 			case "IconPosition": {
 				if (OnBaseTopbar) {
 					_x = newValue;
@@ -245,14 +242,19 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	// Minimalist ConfigChanged for the cloned copy created by VTIO/Meeehr
 	// This is mostly to split off TopbarIntegration behaviour
 	private function CloneConfigChanged(setting:String, newValue, oldValue):Void {
-		if (setting == "Enabled") { UpdateState(); }
+		if (setting == "Enabled") { Refresh(); }
 		if (setting == "TopbarIntegration") { _visible = newValue; } // Can't actually remove the cloned icon safely, so just hide/reveal it for now
 	}
 
-	// Basic state update, can be overriden by mod through init objects
-	public function UpdateState():Void {
-		gotoAndStop(Config.GetValue("Enabled") ? "active" : "inactive");
-		RefreshTooltip();
+	// Trigger a re-evaluation of the current icon frame and reloads the tooltip if open
+	public function Refresh():Void {
+		gotoAndStop(GetFrame());
+		if (Tooltip) { OpenTooltip(); }
+	}
+
+	// Default icon frame selector, may be overriden via init object
+	private function GetFrame():String {
+		return Config.GetValue("Enabled") ? "active" : "inactive";
 	}
 
 	/// Layout and GEM handling
@@ -348,10 +350,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 			delay = 0;
 		}
 		Tooltip = TooltipManager.GetInstance().ShowTooltip(undefined, TooltipInterface.e_OrientationVertical, delay, GetTooltipData());
-	}
-
-	public function RefreshTooltip():Void {
-		if (Tooltip) { OpenTooltip(); }
 	}
 
 	private function CloseTooltip():Void {
