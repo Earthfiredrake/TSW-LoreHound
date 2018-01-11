@@ -32,9 +32,10 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Dev/debug settings at top so commenting out leaves no hanging ','
 		// Trace : true,
 		Name : "LoreHound",
-		Version : "1.3.2",
+		Version : "1.3.3",
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
+		LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}],
 		IconData : { GetFrame : GetIconFrame,
 					 ExtraTooltipInfo : IconTooltip }
 	};

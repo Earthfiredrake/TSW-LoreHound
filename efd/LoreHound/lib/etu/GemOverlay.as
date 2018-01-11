@@ -79,7 +79,7 @@ class efd.LoreHound.lib.etu.GemOverlay extends UIComponent {
 		topLeft.x -= bounds.xMin * target._xscale / 100;
 		topLeft.y -= bounds.yMin * target._yscale / 100;
 
-		// If parent scale is not 100, the waypoint runs away from the overlay, this seems to correct for that
+		// If parent scale is not 100, the target runs away from the overlay, this seems to correct for that
 		topLeft.x *= target._parent._xscale / 100;
 		topLeft.y *= target._parent._yscale / 100;
 

@@ -34,20 +34,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		Config.NewSetting("IconPosition", new Point(-1, -1));
 		Config.NewSetting("IconScale", 100);
 		// Defer the hookup of the on-change events until after loading is complete, to avoid accidental topbar changes
-		if (Config.IsLoaded) {
-			ConfigLoaded();
-		} else {
-			Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
-		}
+		if (Config.IsLoaded) { ConfigLoaded(); }
+		else { Config.SignalConfigLoaded.Connect(ConfigLoaded, this); }
 
 		GlobalSignal.SignalSetGUIEditMode.Connect(ManageGEM, this);
 		SignalGeometryChanged = new Signal();
 
 		ResolutionDV = DistributedValue.Create("DisplayResolution");
-		GUIScaleDV = DistributedValue.Create("GUIResolutionScale");
 		TopbarLayoutDV = DistributedValue.Create("TopMenuAlignment");
 		ResolutionDV.SignalChanged.Connect(SetTopbarPositions, this);
-		GUIScaleDV.SignalChanged.Connect(SetTopbarPositions, this);
 		TopbarLayoutDV.SignalChanged.Connect(SetTopbarPositions, this);
 
 		TraceMsg("Icon created");
@@ -55,9 +50,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	private function VerifyIDCount(dv:DistributedValue):Void {
 		// If ID already in use, push to next value
-		if (dv.GetValue() == IconID) {
-			dv.SetValue(IconID + 1);
-		}
+		if (dv.GetValue() == IconID) { dv.SetValue(IconID + 1); }
 	}
 
 	private function GetID():Void {
@@ -72,10 +65,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	public function FreeID():Void {
 		if ( IconID == -1) { return; } // IconID not assigned
 		IconCountDV.SignalChanged.Disconnect(VerifyIDCount, this);
-		// Next free ID is this one, unless it's already been set lower
-		if (IconCountDV.GetValue() > IconID) {
-			IconCountDV.SetValue(IconID);
-		}
+		// Next free ID is this one, unless there's already a lower one
+		if (IconCountDV.GetValue() > IconID) { IconCountDV.SetValue(IconID); }
 		IconID = -1;
 	}
 
@@ -91,13 +82,12 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	private function SetTopbarPositions():Void {
 		if (OnBaseTopbar) {
-			var scale:Number = GUIScaleDV.GetValue();
 			var resolution:Point = ResolutionDV.GetValue();
-			DefaultTopbarX = (resolution.x / 2 + 100 + IconID * 20) / scale;
-			TopbarY = TopbarLayoutDV.GetValue() ? (resolution.y - 25) / scale : 2;
+			DefaultTopbarX = (resolution.x / 2 + 110 + IconID * 20);
+			TopbarY = TopbarLayoutDV.GetValue() ? (resolution.y - 25) : 2;
 			Config.ChangeDefault("IconPosition", DefaultTopbarX);
 			_y = TopbarY;
-			var iconScale:Number = 56.25 / scale; // HACK: Based on 32x32 initial and 18x18 target icon sizes
+			var iconScale:Number = 56.25; // HACK: Based on 32x32 initial and 18x18 target icon sizes
 			_xscale = iconScale;
 			_yscale = iconScale;
 		}
@@ -158,7 +148,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		copy.GetFrame = GetFrame;
 		copy.GetTooltipData = GetTooltipData;
 		copy.OpenTooltip = OpenTooltip;
-		copy.RefreshTooltip = RefreshTooltip;
 		copy.CloseTooltip = CloseTooltip;
 		copy.LeftMouseInfo = LeftMouseInfo;
 		copy.RightMouseInfo = RightMouseInfo;
@@ -188,17 +177,19 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		// Update to reflect loaded values
 		Refresh();
-		var pos = Config.GetValue("IconPosition");
-		if (pos.equals(new Point(-1, -1))) {
-			// No value was loaded (to replace invalid initial default)
-			// Either this is a first load or VTIO has been (but may no longer be) active
-			Config.ResetValue("IconPosition"); // Will update to default position via ConfigChanged callback
-		} else {
-			if (OnBaseTopbar) {
-				_x = pos;
+		if (!VTIOMode) {
+			var pos = Config.GetValue("IconPosition");
+			if (pos.equals(new Point(-1, -1))) {
+				// No value was loaded (to replace invalid initial default)
+				// Either this is a first load or VTIO has been (but may no longer be) active
+				Config.ResetValue("IconPosition"); // Will update to default position via ConfigChanged callback
 			} else {
-				_x = pos.x;
-				_y = pos.y;
+				if (OnBaseTopbar) {
+					_x = pos;
+				} else {
+					_x = pos.x;
+					_y = pos.y;
+				}
 			}
 		}
 	}
@@ -207,18 +198,14 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		switch (setting) {
 			case "Enabled": { Refresh(); break; }
 			case "IconPosition": {
-				if (OnBaseTopbar) {
-					_x = newValue;
-				} else {
+				if (OnBaseTopbar) {	_x = newValue; }
+				else {
 					_x = newValue.x;
 					_y = newValue.y;
 				}
 				break;
 			}
-			case "IconScale": {
-				UpdateScale();
-				break;
-			}
+			case "IconScale": {	UpdateScale(); break; }
 			case "TopbarIntegration": {
 				if (newValue) {
 					// Mod will have already responded, so will already be registered with VTIO if possible
@@ -229,7 +216,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 				} else {
 					VTIOMode = false;
 					OnBaseTopbar = false;
-					if (oldValue != undefined) { // DEPRECATED(v1.3.2): Temporary upgrade support (use of undefined)
+					if (oldValue != undefined) { // DEPRECATED(v1.0.0): Temporary upgrade support (use of undefined)
 						Config.NewSetting("IconScale", 100);
 						Config.NewSetting("IconPosition", new Point(10, 80 + IconID * 40));
 					}
@@ -253,9 +240,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	// Default icon frame selector, may be overriden via init object
-	private function GetFrame():String {
-		return Config.GetValue("Enabled") ? "active" : "inactive";
-	}
+	private function GetFrame():String { return Config.GetValue("Enabled") ? "active" : "inactive"; }
 
 	/// Layout and GEM handling
 	private function UpdateScale():Void {
@@ -263,18 +248,15 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		_yscale = Config.GetValue("IconScale");
 	}
 
-	private function ManageGEM(unlocked:Boolean):Void {
-		if (unlocked && !GemManager) {
+	private function ManageGEM(unlock:Boolean):Void {
+		if (unlock && !GemManager) {
 			GemManager = GemController.create("GuiEditModeInterface", HostMovie, HostMovie.getNextHighestDepth(), this);
 			GemManager.lockAxis(0);
-			if (OnBaseTopbar) {
-				GemManager.lockAxis(2);
-			} else {
-				GemManager.addEventListener( "scrollWheel", this, "ChangeScale" );
-			}
+			if (OnBaseTopbar) {	GemManager.lockAxis(2); }
+			else { GemManager.addEventListener( "scrollWheel", this, "ChangeScale" ); }
 			GemManager.addEventListener( "endDrag", this, "ChangePosition" );
 		}
-		if (!unlocked) {
+		if (!unlock) {
 			GemManager.removeMovieClip();
 			GemManager = null;
 		}
@@ -295,15 +277,9 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	/// Input event handlers
 	private function onMousePress(buttonID:Number):Void {
 		switch(buttonID) {
-			case 1: // Left mouse button
-				LeftMouseInfo.Action();
-				break;
-			case 2: // Right mouse button
-				RightMouseInfo.Action();
-				break;
-			default:
-				TraceMsg("Unexpected mouse button press: " + buttonID);
-				break;
+			case 1: { LeftMouseInfo.Action(); break; }
+			case 2: { RightMouseInfo.Action(); break; }
+			default: { TraceMsg("Unexpected mouse button press: " + buttonID); }
 		}
 	}
 
@@ -338,7 +314,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		if (RightMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipRight", RightMouseInfo.Tooltip())); }
 		var extra:String = ExtraTooltipInfo();
 		if (extra) { tooltipStrings.push(extra); }
-		data.AddDescription("<font " + TooltipTextFont + ">" + tooltipStrings.join('\n') + "</font>");
+		if (tooltipStrings.length > 0) { data.AddDescription("<font " + TooltipTextFont + ">" + tooltipStrings.join('\n') + "</font>"); }
 
 		return data;
 	}
@@ -390,7 +366,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private var SignalGeometryChanged:Signal;
 
 	private var ResolutionDV:DistributedValue;
-	private var GUIScaleDV:DistributedValue;
 	private var TopbarLayoutDV:DistributedValue;
 	private var DefaultTopbarX:Number;
 	private var TopbarY:Number;

@@ -21,8 +21,8 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.ModIcon;
 
-// Mod Framework v1.0.0
-// Infrequently incremented when a change to the framework requires extra processing on updates
+// Mod Framework v1.1.0
+// See ModInfo.LibUpgrades for upgrade requirements
 
 // The framework reserves the following DistributedValue names (where [pfx] is a developer specific prefix (I use 'efd'), and [Name] is the mod name):
 //   "[pfx][Name]Loaded": Set to true when the mod is fully loaded and initialized
@@ -30,7 +30,8 @@ import efd.LoreHound.lib.ModIcon;
 //   "[pfx][Name]ResetConfig": Trigger to reset settings to defaults from chat
 //   "[pfx]Show[Name]Interface": Exists for e_ModType_Interface mods; Toggle mod interface window
 //   "[pfx]Show[Name]ConfigUI": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set; Toggle mod settings window
-//   "[pfx]NextIconID": Used to create unique offsets on default icon placements, hopefully reducing icon stacks when using multiple mods
+//   "[pfx]NextIconID": Used to create unique offsets on default icon placements, hopefully reducing icon pileups when using multiple [pfx] mods
+//   "[pfx]DebugMode": Toggles debug trace messages for all [pfx] mods, may also enable other debug/dev tools
 //   "VTIO_IsLoaded", "VTIO_RegisterAddon": VTIO hooks, use of these for other reasons may cause problems with many mods
 
 // Base for mod classes
@@ -76,7 +77,7 @@ class efd.LoreHound.lib.Mod {
 	//     The name of the mod, for display and used to generate a variety of default identifiers
 	//   Version:String (required, placeholder default "0.0.0")
 	//     Current build version
-	//     Expects "#.#.#[.alpha|.beta]" format but does not verify
+	//     Expects "#.#.#[.alpha|.beta]" format (does not enforce, but may cause issues with upgrade system)
 	//   Type:e_ModType (optional, default e_ModType_Interface)
 	//     Values described above
 	//   ArchiveName (optional, default undefined (uses parameter passed by game))
@@ -158,11 +159,6 @@ class efd.LoreHound.lib.Mod {
 		if ((modInfo.GuiFlags & ef_ModGui_Console) != ef_ModGui_Console) {
 			HostMovie = hostMovie; // Not needed for console style mods
 			ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
-			ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, HostMovie);
-			SetWindowScale.call(HostMovie, ResolutionScaleDV);
-			// TODO: Applying this at the host clip level is causing issues with VTIO topbars (and adding complications to other calculations in this mod)
-			//       Revert? Would require an upgrade catch to recalculate icon/window position settings
-			//       Time to do versioning on the library
 
 			if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
 				ConfigWindowEscTrigger = new EscapeStackNode();
@@ -237,7 +233,7 @@ class efd.LoreHound.lib.Mod {
 	//   "Version": Triggers upgrades (and rollback notifications)
 	//   "Enabled": Exists for e_ModType_Reactive mods
 	//   "TopbarIntegration": Exists if GuiFlag ef_ModGui_NoTopbar is not set
-	//   "IconPosition": Deleted if VTIO mod is handling layout
+	//   "IconPosition": Deleted if VTIO mod is handling layout; otherwise, a single (X) coordinate with TopbarIntegration or a Point without it
 	//   "IconScale": Deleted if integrated with any topbar
 	//   "InterfaceWindowPosition": Exists for e_ModType_Interface mods
 	//   "ConfigWindowPosition": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set
@@ -367,6 +363,25 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function UpdateLib(oldVersion:String):Void {
+		// v1.1: changes how GUIResolutionScale is used, and adjusts saved ui locations to compensate
+		if (CompareVersions("1.1.0", oldVersion) > 0) {
+			var scale:Number = ResolutionScaleDV.GetValue();
+			if (Config.HasSetting("InterfaceWindowPosition")) {
+				var pos:Point = Config.GetValue("InterfaceWindowPosition");
+				Config.SetValue("InterfaceWindowPosition", new Point(pos.x * scale, pos.y * scale));
+			}
+			if (Config.HasSetting("ConfigWindowPosition")) {
+				var pos:Point = Config.GetValue("ConfigWindowPosition");
+				Config.SetValue("ConfigWindowPosition", new Point(pos.x * scale, pos.y * scale));
+			}
+			if (Config.HasSetting("IconPosition")) {
+				// Either a Point or a Number, would be much simpler if Point handled the *= operator
+				// Duplication of SetValue is due to error that (pos *= scale) was attempting to assign a Number to a Point
+				//   Despite explicitly restricting that branch to things that aren't points...
+				var pos = Config.GetValue("IconPosition");
+				Config.SetValue("IconPosition", Config.GetValue("TopbarIntegration") ? pos * scale :  new Point(pos.x * scale, pos.y * scale));
+			}
+		}
 	}
 
 	// Compares two version strings (format "#.#.#[.alpha|.beta]")
@@ -455,12 +470,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	// This needs to be deferred so that the disconnection doesn't muddle the ongoing processing
-	private function DetachTopbarListeners():Void {
-		//MeeehrDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
-		ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this);
-		//delete MeeehrDV;
-		//delete ViperDV;
-	}
+	private function DetachTopbarListeners():Void {	ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this); }
 
 /// Icon
 	private function CreateIcon(modInfo:Object):Void {
@@ -548,6 +558,8 @@ class efd.LoreHound.lib.Mod {
 		var position:Point = Config.GetValue(windowName + "Position");
 		clip._x = position.x;
 		clip._y = position.y;
+		SetWindowScale.call(clip, ResolutionScaleDV);
+		ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, clip);
 
 		escNode.SignalEscapePressed.Connect(TriggerWindowClose, clip);
 		EscapeStack.Push(escNode);
@@ -557,6 +569,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function WindowClosed(windowClip:MovieClip, windowName:String, escNode:EscapeStackNode):Void {
+		ResolutionScaleDV.SignalChanged.Disconnect(SetWindowScale, windowClip);
 		escNode.SignalEscapePressed.Disconnect(TriggerWindowClose, windowClip);
 
 		ReturnWindowToVisibleBounds(windowClip, Config.GetDefault(windowName + "Position"));
