@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -24,15 +24,21 @@ import efd.LoreHound.lib.ModIcon;
 // Mod Framework v1.1.0
 // See ModInfo.LibUpgrades for upgrade requirements
 
-// The framework reserves the following DistributedValue names (where [pfx] is a developer specific prefix (I use 'efd'), and [Name] is the mod name):
-//   "[pfx][Name]Loaded": Set to true when the mod is fully loaded and initialized
-//   "[pfx][Name]Enabled": Exists for e_ModType_Reactive mods; "Soft" disable that doesn't prevent loading on restart (Modules.xml toggle var does); Corresponds to "Enabled" config setting
-//   "[pfx][Name]ResetConfig": Trigger to reset settings to defaults from chat
-//   "[pfx]Show[Name]Interface": Exists for e_ModType_Interface mods; Toggle mod interface window
-//   "[pfx]Show[Name]ConfigUI": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set; Toggle mod settings window
-//   "[pfx]NextIconID": Used to create unique offsets on default icon placements, hopefully reducing icon pileups when using multiple [pfx] mods
-//   "[pfx]DebugMode": Toggles debug trace messages for all [pfx] mods, may also enable other debug/dev tools
-//   "VTIO_IsLoaded", "VTIO_RegisterAddon": VTIO hooks, use of these for other reasons may cause problems with many mods
+//   As part of ongoing attempts at consistent naming, the following DistributedValue names are reserved for use by the framework or Modules.xml:
+//   [pfx] is a developer unique prefix (I use 'efd'), [Name] is the name of the mod
+//   Unique per mod name:
+//     "[pfx]GameEnables[Name]: The variable defined in Modules.xml as a hard disable for the mod; will disable all features (including icon) and prevent loading in future
+//     "[pfx][Name]Enabled": Exists for e_ModType_Reactive mods; "Soft" disable that retains icon and doesn't prevent loading in future; Corresponds to "Enabled" config setting
+//     "[pfx][Name]Loaded": Set to true when the mod is fully loaded and initialized
+//     "[pfx][Name]Config: Name of archive in which main settings are saved (Mods may use secondary archives for some settings)
+//     "[pfx][Name]ResetConfig": Trigger to reset settings to defaults from chat
+//     "[pfx]Show[Name]Interface": Exists for e_ModType_Interface mods; Toggle mod interface window
+//     "[pfx]Show[Name]ConfigUI": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set; Toggle mod settings window
+//   Framework shared (Unique per developer):
+//     "[pfx]NextIconID": Used to create unique offsets on default icon placements, hopefully reducing icon pileups when using multiple [pfx] mods
+//     "[pfx]DebugMode": Toggles debug trace messages for all [pfx] mods, may also enable other debug/dev tools
+//   From other mods:
+//     "VTIO_IsLoaded", "VTIO_RegisterAddon": VTIO hooks, use of these for other reasons may cause problems with many mods
 
 // Base for mod classes
 //   Handles initialization and general mod behaviours:
@@ -56,6 +62,7 @@ class efd.LoreHound.lib.Mod {
 	// ModData flags for disabling certain gui elements (ModInfo.GuiFlags)
 	public static var ef_ModGui_NoIcon:Number = 1 << 0;
 	public static var ef_ModGui_NoConfigWindow:Number = 1 << 1;
+	// Note: Flash builder doesn't do constant propagation properly, complains that ef_ModGui_Console is not compile time constant
 	public static var ef_ModGui_Console:Number = ef_ModGui_NoIcon | ef_ModGui_NoConfigWindow;
 	public static var ef_ModGui_NoTopbar:Number = 1 << 2;
 	public static var ef_ModGui_None:Number = (1 << 3) - 1;
@@ -180,19 +187,17 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function StringsLoaded(success:Boolean):Void {
-		if (success) {
-			TraceMsg("Localized strings loaded");
-			SystemsLoaded.LocalizedText = true;
-			CheckLoadComplete();
-		} else {
-			// Localization support unavailable, not localized
-			ErrorMsg("Unable to load string table", { fatal : true });
-		}
+		if (success) { UpdateLoadProgress("LocalizedText"); }
+		else { ErrorMsg("Unable to load string table", { fatal : true }); } // Localization support unavailable, not localized
 	}
 
-	private function CheckLoadComplete():Void {
-		for (var key:String in SystemsLoaded) {
-			if (!SystemsLoaded[key]) { return; }
+	// Notify when a core subsystem has finished loading to ensure that LoadComplete properly triggers
+	// Also a convenient place to override and trigger events that require multiple subsystems to be loaded
+	private function UpdateLoadProgress(loadedSystem:String):Boolean {
+		TraceMsg(loadedSystem + " Loaded");
+		SystemsLoaded[loadedSystem] = true;
+		for (var system:String in SystemsLoaded) {
+			if (!SystemsLoaded[system]) { return false; }
 		}
 		TraceMsg("Is fully loaded");
 		LoadComplete();
@@ -261,11 +266,7 @@ class efd.LoreHound.lib.Mod {
 		// Change notification hook may be deferred until load, if needed
 	}
 
-	private function ConfigLoaded():Void {
-		TraceMsg("Config loaded");
-		SystemsLoaded.Config = true;
-		CheckLoadComplete();
-	}
+	private function ConfigLoaded():Void { UpdateLoadProgress("Config"); }
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch(setting) {
@@ -305,7 +306,6 @@ class efd.LoreHound.lib.Mod {
 				break;
 			}
 			default: // Setting does not push changes (is checked on demand)
-				break;
 		}
 	}
 
@@ -329,7 +329,7 @@ class efd.LoreHound.lib.Mod {
 				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
 				// Decided against having the options menu auto open here
 				// Users might not realize that it's a one off event
-			}			
+			}
 			return; // No existing version to update
 		}
 		var oldVersion:String = Config.GetValue("Version");

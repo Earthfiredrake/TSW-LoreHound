@@ -1,3 +1,7 @@
+# Copyright 2018, Earthfiredrake
+# Released under the terms of the MIT License
+# https://github.com/Earthfiredrake/TSW-LoreHound
+
 import sys
 import os.path
 

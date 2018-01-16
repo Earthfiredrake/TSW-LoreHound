@@ -179,9 +179,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				}
 			}
 			delete IndexFile;
-			TraceMsg("Lore category data loaded");
-			SystemsLoaded.CategoryIndex = true;
-			CheckLoadComplete();
+			UpdateLoadProgress("CategoryIndex");
 		} else {
 			// Loading is asynchronous, not localized
 			// Currently localization appears to load first, but I won't count on it

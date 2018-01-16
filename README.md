@@ -37,17 +37,20 @@ Additional Options
 Settings are saved account wide and will be shared across characters. If you'd prefer unique settings for each character, renaming "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this for the first time, as it will be unable to transfer existing settings anyway.
 
 ## Installation
-The packaged release should be unzipped (including the internal LoreHound folder) into the appropriate folder:
-<br/>TSW: [TSW Directory]\Data\Gui\Customized\Flash.
-<br/>SWL: [SWL Directory]\Data\Gui\Custom\Flash.
+The packaged release should be unzipped (including the internal folder) into the listed folder:
+<br/>SWL: [SWL Directory]\Data\Gui\Custom\Flash
+<br/>TSW: [TSW Directory]\Data\Gui\Customized\Flash
 
-The safest method for upgrading (required for installing) is to have the client closed and delete any existing .bxml files in the LoreHound directory. Hotpatching (using /reloadui) works as long as neither Modules.xml or LoginPrefs.xml (stable since v1.0.0, but I may forget to update this) have changed.
+The safest method for upgrading (required for installing) is to have the client closed and delete any existing .bxml files in the LoreHound directory. Hotpatching (using /reloadui) works as long as neither Modules.xml or LoginPrefs.xml have changed.
 
 An internal update system *should* carry forward settings from a limited range of previous versions (currently back to v1.0.0) Attempting to upgrade an earlier version will reset all settings to defaults, unless upgrades are staged to each in between major version.
 
 If updating v0.1.1-alpha a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
 
 ## Change Log
+Version Next
++ Change to Modules.xml & LoginPrefs.xml (standardization of DV names)
+
 Version 1.3.3
 + Classification improvements
   + KD: More initially invisible lore now in the triggered category

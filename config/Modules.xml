@@ -4,9 +4,9 @@
     movie       = "LoreHound\LoreHound.swf"
     depth_layer = "Middle"
     sub_depth   = "10"
-    variable    = "efdReleaseTheLoreHound"
+    variable    = "efdGameEnablesLoreHound"
 	config_name = "efdLoreHoundConfig"
-    criteria    = "efdReleaseTheLoreHound &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
+    criteria    = "efdGameEnablesLoreHound &amp;&amp; (guimode &amp; (GUIMODEFLAGS_INPLAY | GUIMODEFLAGS_ENABLEALLGUI))"
 	flags       = "GMF_CFG_STORE_USER_CONFIG | GMF_DONT_UNLOAD"
   />
 </Root>
