@@ -24,6 +24,7 @@ import efd.LoreHound.lib.AutoReport;
 import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
+import efd.LoreHound.lib.ModIcon;
 
 import efd.LoreHound.LoreData;
 
@@ -36,7 +37,8 @@ class efd.LoreHound.LoreHound extends Mod {
 		Type : e_ModType_Reactive,
 		MinUpgradableVersion : "1.0.0",
 		LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}],
-		IconData : { GetFrame : GetIconFrame,
+		IconData : { Factory : ModIcon.CreateIcon,
+	                 GetFrame : GetIconFrame,
 					 ExtraTooltipInfo : IconTooltip }
 	};
 
