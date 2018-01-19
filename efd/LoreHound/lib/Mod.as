@@ -13,11 +13,13 @@ import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
 import com.GameInterface.Utils; // Chat messages *shrug*
 import com.Utils.Archive;
+import com.Utils.Signal;
 
 // TODO: Component based behaviour system for lighter weight mods
 //       Objective is to remove at least some of these imports
 //       Possibly split out some other subsystems and mod behaviours
 import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.sys.config.Versioning;
 import efd.LoreHound.lib.LocaleManager;
 
 // Mod Framework v1.1.0
@@ -41,8 +43,7 @@ import efd.LoreHound.lib.LocaleManager;
 //     "VTIO_IsLoaded", "VTIO_RegisterAddon": VTIO hooks, use of these for other reasons may cause problems with many mods
 
 // Base for mod classes
-//   Handles initialization and general mod behaviours:
-//     Setting serialization and change notification (via ConfigWrapper)
+//   Handles initialization and general mod behaviours: (Many of these require Config)
 //     Versioning and upgrade detection
 //     Topbar integration (VTIO will still list mods without icons in the installed mod list)
 //     Handling interface and configuration windows
@@ -50,10 +51,11 @@ import efd.LoreHound.lib.LocaleManager;
 //     Standardized chat output
 //     Text localization and string file (via LocaleManager)
 //   Additional subsystems that may be included
-//     ModIcon: Icon display with topbar integration and GEM layout options
-//     AutoReport: Mail based reporting system for errors or other information
+//     Config (ConfigWrapper.as): Setting serialization and change notification
+//     Icon (ModIcon.as): Icon display with topbar integration and GEM layout options (Depends on Config)
+//     AutoReport: Mail based reporting system for errors or other information (Depends on Config)
 //   Subclass is responsible for:
-//     Initialization data
+//     Initialization data, including subsystems and their dependencies
 //     Additional setting definitions
 //     Processing version upgrades
 //     Icon and window content (usually in .fla library under default names)
@@ -63,8 +65,7 @@ class efd.LoreHound.lib.Mod {
 /// Initialization and Cleanup
 	// ModData flags for disabling certain gui elements (ModInfo.GuiFlags)
 	public static var ef_ModGui_NoConfigWindow:Number = 1 << 0;
-	public static var ef_ModGui_NoTopbar:Number = 1 << 1;
-	public static var ef_ModGui_None:Number = (1 << 2) - 1;
+	public static var ef_ModGui_None:Number = (1 << 1) - 1;
 
 	// ModData enum describing basic mod behaviour (ModInfo.Type)
 	//   Mod provides a interface on request which does minimal background processing (ex: Fashionista, UC)
@@ -84,10 +85,6 @@ class efd.LoreHound.lib.Mod {
 	//   Version:String (required, placeholder default "0.0.0")
 	//     Current build version
 	//     Expects "#.#.#[.alpha|.beta]" format (does not enforce, but may cause issues with upgrade system)
-	//   Type:e_ModType (optional, default e_ModType_Interface)
-	//     Values described above
-	//   ArchiveName (optional, default undefined (uses parameter passed by game))
-	//     Name of archive to use for main config if overriding the one provided by the game
 	//   MinUpgradableVersion:String (optional, default "0.0.0")
 	//     The earliest version from which the current build supports direct update with setting migration
 	//     If a prior version upgrades, settings will be reset to defaults to protect against invalid values
@@ -98,30 +95,25 @@ class efd.LoreHound.lib.Mod {
 	//     This will allow the framework to properly handle these infrequent updates
 	//     These only need to be retained back to the MinUpgradableVersion
 	//     Default behaviour assumes the current version has been in use as far back as upgrades are permitted
+	//   Type:e_ModType (optional, default e_ModType_Interface)
+	//     Values described above
 	//   GuiFlags:ef_ModGui (optional, default undefined)
 	//     Set flags to disable certain gui elements. Valid flags are:
 	//       ef_ModGui_NoConfigWindow: Do not use a config window
 	//         Topbar integration will use tne ModEnabledDV as config target
-	//       ef_ModGui_NoTopbar: Disable topbar integration (VTIO or built in)
 	//       ef_ModGui_None: Disables all gui elements
-	//   IconData:Object (optional, any undefined sub-values will use their own defaults)
-	//     Factory:Function(Mod, ModInfo, IconData): A factory function used to create the icon for the mod
-	//       If this is not present, no icon will be generated
-	//     ResName:String (optional, default ModName + "Icon")
-	//       The name of the library resource to use as graphical element for the icon
-	//     All other members are applied as initializers to the ModIcon object prior to construction
-	//     These values are set internally and will not be passed if provided:
-	//       ModObj, ModName, DevName, HostMovie, Config
-	//     These functions, which will be called in the context of ModObj, may be provided as overrides:
-	//       GetFrame: Returns the name of the icon frame to be displayed based on current mod state
-	//       LeftMouseInfo: Mouse handler as described below
-	//       RightMouseInfo: Mouse handler as described below
-	//         Mouse handler object defining two functions:
-	//           Action: Called when that mouse button is pressed on the icon
-	//           Tooltip: Returns a string describing the action for part of the tooltip
-	//       ExtraTooltipInfo: Returns a string of additional info to append to the tooltip
+	//   Subsystems:Object (optional, default undefined)
+	//     A set of keyed pairs Subsystems["Key"] = {Init:Function(Mod, InitObj), InitObj:Object}
+	//     Init is a factory method to initialize the required subsystem
+	//     InitObj may be adjusted internally prior to the call
+	//     Some subsystems have dependencies, Mod ensures correct initialization order but the mod author is responsible for including all dependencies
+	//     For full details on dependencies, and param contents, consult the subsystem .as files
 	//   Trace (optional, default false)
-	//     Enables debug trace messages
+	//     Enables debug trace messages, usually defined first for ease of commenting out
+
+	//   ArchiveName (optional, default parameter passed by game engine to OnModuleActivated)
+	//     Name of archive to use for main config if overriding the one provided by the game
+
 	public function Mod(modInfo:Object, hostMovie:MovieClip) {
 		FifoMsg = Delegate.create(this, _FifoMsg);
 		ChatMsg = Delegate.create(this, _ChatMsg);
@@ -134,6 +126,8 @@ class efd.LoreHound.lib.Mod {
 		GlobalDebugDV = DistributedValue.Create(DVPrefix + "DebugMode");
 		GlobalDebugDV.SignalChanged.Connect(SetDebugMode, this);
 		DebugTrace = modInfo.Trace || GlobalDebugDV.GetValue();
+
+ 		SignalLoadCompleted = new Signal();
 
 		ModListDV = DistributedValue.Create(DVPrefix + "ListMods");
 		ModListDV.SignalChanged.Connect(ReportVersion, this);
@@ -148,9 +142,8 @@ class efd.LoreHound.lib.Mod {
 			// Dev message, not localized
 			ErrorMsg("Mod expects a version number");
 		}
+		Version = modInfo.Version;
 		if (!modInfo.Type) { modInfo.Type = e_ModType_Interface; }
-		MinUpgradableVersion = modInfo.MinUpgradableVersion ? modInfo.MinUpgradableVersion : "0.0.0";
-		LibUpgrades = modInfo.LibUpgrades;
 
 		SystemsLoaded = { Config: false, LocalizedText: false }
 		ModLoadedDV = DistributedValue.Create(ModLoadedVarName);
@@ -158,7 +151,7 @@ class efd.LoreHound.lib.Mod {
 		if (modInfo.Type == e_ModType_Reactive) {
 			ModEnabledDV = DistributedValue.Create(ModEnabledVarName);
 			ModEnabledDV.SetValue(true);
-			ModEnabledDV.SignalChanged.Connect(ChangeModEnabled, this);
+			ModEnabledDV.SignalChanged.Connect(ToggleUserEnabled, this);
 		}
 
 		LocaleManager.Initialize();
@@ -184,7 +177,8 @@ class efd.LoreHound.lib.Mod {
 
 		InitializeModConfig(modInfo);
 
-		Icon = modInfo.IconData.Factory(this, modInfo, modInfo.IconData);
+		LinkVTIO = modInfo.Subsystems.LinkVTIO.Init(this, modInfo.Subsystems.LinkVTIO.InitObj);
+		Icon = modInfo.Subsystems.Icon.Init(this, modInfo.Subsystems.Icon.InitObj);
 	}
 
 	private function StringsLoaded(success:Boolean):Void {
@@ -208,18 +202,17 @@ class efd.LoreHound.lib.Mod {
 	//       Investigate and fix. Low priority, currently SystemsLoaded is being cleared/largely unused
 	private function LoadComplete():Void {
 		delete SystemsLoaded; // No longer required
-		UpdateInstall();
+		UpdateManager.UpdateInstall();
 		// TODO: Load icon invisibly, and only make it visible when loading is successfully complete?
-		// DEPRECATED(v1.0.0): Temporary upgrade support (use of 'undefined')
-		var integration:Boolean = Config.GetValue("TopbarIntegration", false);
-		if (integration == undefined || integration) { LinkWithTopbar(); }
+		SignalLoadCompleted.Emit();
 		ModLoadedDV.SetValue(true);
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
 	public function GameToggleModEnabled(state:Boolean, archive:Archive) {
 		if (!state) {
-			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); } // DEPRECATED(v1.0.0): Temporary upgrade support
+			// DEPRECATED(v1.0.0): Temporary upgrade support
+			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); }
 			CloseConfigWindow();
 			return Config.SaveConfig();
 		} else {
@@ -234,12 +227,8 @@ class efd.LoreHound.lib.Mod {
 
 	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
 
-	private function ReportVersion(dv:DistributedValue):Void {
-		if (dv.GetValue()) {
-			ChatMsg(Version);
-			dv.SetValue(false);
-		}
-	}
+	// TODO: Won't work if I toggle it back to false immediately... is there a better solution than this?
+	private function ReportVersion(dv:DistributedValue):Void { ChatMsg(Version); }
 
 /// Configuration Settings
 	// The framework reserves the following Config setting names for internal use:
@@ -248,70 +237,47 @@ class efd.LoreHound.lib.Mod {
 	//   "Enabled": Exists for e_ModType_Reactive mods
 	//   "InterfaceWindowPosition": Exists for e_ModType_Interface mods
 	//   "ConfigWindowPosition": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set
-	//   "TopbarIntegration": Exists if GuiFlag ef_ModGui_NoTopbar is not set
 	//   Icon settings are handled by ModIcon, and will only exist if an icon is in use
 	//   "IconPosition": Deleted if VTIO mod is handling layout; otherwise, a single (X) coordinate with TopbarIntegration or a Point without it
 	//   "IconScale": Deleted if integrated with any topbar
+	//   "TopbarIntegration": VTIO integration without an icon is implied by attachment of VTIOHelper
 
 	private function InitializeModConfig(modInfo:Object):Void {
 		Config = new ConfigWrapper(modInfo.ArchiveName);
 		ConfigResetDV = DistributedValue.Create(ModResetVarName);
 		ConfigResetDV.SignalChanged.Connect(ResetConfig, this);
 
-		Config.NewSetting("Version", modInfo.Version);
-		Config.NewSetting("Installed", false); // Will always be saved as true, only remains false if settings do not exist
+		UpdateManager = new Versioning(this, modInfo);
+
 		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
-		if (!(modInfo.GuiFlags & ef_ModGui_NoTopbar)) {
-			Config.NewSetting("TopbarIntegration", true);
-			// Will have a value before saving, temporary undefined used to coerce consistent behaviour on upgrade
-			Config.SetValue("TopbarIntegration", undefined); // DEPRECATED(v1.0.0): Temporary upgrade support
-			ViperDV = DistributedValue.Create("VTIO_IsLoaded");
-		}
 		if (ShowInterfaceDV != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
 		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
 
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
-		// Change notification hook may be deferred until load, if needed
 	}
 
 	private function ConfigLoaded():Void { UpdateLoadProgress("Config"); }
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
-		switch(setting) {
-			case "Enabled": {
-				if (newValue && SystemsLoaded != undefined) {
-					// May not have loaded localization system
-					ErrorMsg("Failed to load required information, and cannot be enabled");
-					for (var key:String in SystemsLoaded) {
-						if (!SystemsLoaded[key]) { ErrorMsg("Missing: " + key, { noPrefix : true }); }
-					}
-					Config.SetValue("Enabled", false);
-				} else {
-					Enabled = newValue;
-					ModEnabledDV.SetValue(newValue);
-					if (Icon == undefined) {
-						// No Icon, probably means it's a console style mod
-						// Provide alternate notification
-						ChatMsg(LocaleManager.GetString("General", newValue ? "Enabled" : "Disabled"));
-					}
+		if (setting == "Enabled") {
+			if (newValue && SystemsLoaded != undefined) {
+				// May not have loaded localization system
+				ErrorMsg("Failed to load required information, and cannot be enabled");
+				for (var key:String in SystemsLoaded) {
+					if (!SystemsLoaded[key]) { ErrorMsg("Missing: " + key, { noPrefix : true }); }
 				}
-				break;
-			}
-			case "TopbarIntegration": {
-				if (ViperDV.GetValue()) {
-					if (newValue) { LinkWithTopbar(); }
-					else {
-						DetachTopbarListeners();
-						// NOTE: A /reloadui is strongly recommended after "detaching" from a VTIO topbar
-						//       As VTIO does not provide a method of de-registering, the mod tries to fake it (to varied success)
-						ChatMsg(LocaleManager.GetString("General", "RemoveVTIO"));
-					}
+				Config.SetValue("Enabled", false);
+			} else {
+				Enabled = newValue;
+				ModEnabledDV.SetValue(newValue);
+				if (Icon == undefined) {
+					// No Icon, probably means it's a console style mod
+					// Provide alternate notification
+					ChatMsg(LocaleManager.GetString("General", newValue ? "Enabled" : "Disabled"));
 				}
-				break;
 			}
-			default: // Setting does not push changes (is checked on demand)
 		}
 	}
 
@@ -322,174 +288,31 @@ class efd.LoreHound.lib.Mod {
 		}
 	}
 
-/// Versioning and Upgrades
-	private function UpdateInstall():Void {
-		Config.ChangeDefault("Installed", true);
-		if (!Config.GetValue("Installed")) {
-			// Fresh install, use the actual default value instead of the update placeholder
-			Config.ResetValue("TopbarIntegration"); // DEPRECATED(v1.0.0): Temporary upgrade support
-			InstallMod(); // Mod specific install behaviour
-			Config.SetValue("Installed", true);
-			ChatMsg(LocaleManager.GetString("General", "Installed"));
-			if (ShowConfigDV != undefined) {
-				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
-				// Decided against having the options menu auto open here
-				// Users might not realize that it's a one off event
-			}
-			return; // No existing version to update
-		}
-		var oldVersion:String = Config.GetValue("Version");
-		var newVersion:String = Config.GetDefault("Version");
-		var versionChange:Number = CompareVersions(newVersion, oldVersion);
-		if (versionChange != 0) { // The version changed, either updated or reverted
-			if (versionChange > 0) {
-				// Verify upgrade restrictions
-				if (CompareVersions(MinUpgradableVersion, oldVersion) > 0) {
-					ChatMsg(LocaleManager.FormatString("General", "NoMigration", oldVersion));
-					Config.ResetAll();
-				} else {
-					for (var i:Number = 0; i < LibUpgrades.length; ++i) {
-						if (CompareVersions(LibUpgrades[i].mod, oldVersion) >= 0) {
-							UpdateLib(LibUpgrades[i].lib); // Library updates
-							break;
-						}
-					}
-					UpdateMod(newVersion, oldVersion); // Mod specific updates
-				}
-			}
-			// Reset the version number to the new version
-			Config.ResetValue("Version");
-			ChatMsg(LocaleManager.FormatString("General", versionChange > 0 ? "Update" : "Revert", newVersion));
-			if (ShowConfigDV != undefined) {
-				ChatMsg(LocaleManager.GetString("General", "ReviewSettings"), { noPrefix : true });
-			}
-		}
-		// No longer required
-		delete MinUpgradableVersion;
-		delete LibUpgrades;
-	}
+/// Standard Icon Mouse Behaviour Packages
+	public var IconMouse_ToggleUserEnabled:Object = { Action : ToggleUserEnabled, Tooltip : ToggleUserEnabledTooltip };
+	public var IconMouse_ToggleInterfaceWindow:Object = { Action : ToggleInterfaceWindow, Tooltip : ToggleInterfaceWindowTooltip };
+	public var IconMouse_ToggleConfigWindow:Object = { Action : ToggleConfigWindow, Tooltip : ToggleConfigWindowTooltip };
 
-	private function UpdateLib(oldVersion:String):Void {
-		// v1.1: changes how GUIResolutionScale is used, and adjusts saved ui locations to compensate
-		if (CompareVersions("1.1.0", oldVersion) > 0) {
-			var scale:Number = ResolutionScaleDV.GetValue();
-			if (Config.HasSetting("InterfaceWindowPosition")) {
-				var pos:Point = Config.GetValue("InterfaceWindowPosition");
-				Config.SetValue("InterfaceWindowPosition", new Point(pos.x * scale, pos.y * scale));
-			}
-			if (Config.HasSetting("ConfigWindowPosition")) {
-				var pos:Point = Config.GetValue("ConfigWindowPosition");
-				Config.SetValue("ConfigWindowPosition", new Point(pos.x * scale, pos.y * scale));
-			}
-			if (Config.HasSetting("IconPosition")) {
-				// Either a Point or a Number, would be much simpler if Point handled the *= operator
-				// Duplication of SetValue is due to error that (pos *= scale) was attempting to assign a Number to a Point
-				//   Despite explicitly restricting that branch to things that aren't points...
-				var pos = Config.GetValue("IconPosition");
-				Config.SetValue("IconPosition", Config.GetValue("TopbarIntegration") ? pos * scale :  new Point(pos.x * scale, pos.y * scale));
-			}
-		}
-	}
-
-	// Compares two version strings (format "#.#.#[.alpha|.beta]")
-	// Return value encodes the field at which they differ (1: major, 2: minor, 3: build, 4: prerelease tag)
-	// If positive, then the first version is higher, negative means first version was lower
-	// A return of 0 indicates that the versions were the same
-	public static function CompareVersions(firstVer:String, secondVer:String):Number {
-		var first:Array = firstVer.split(".");
-		var second:Array = secondVer.split(".");
-		for (var i = 0; i < Math.min(first.length, second.length); ++i) {
-			if (first[i] != second[i]) {
-				if (i < 3) {
-					return Number(first[i]) < Number(second[i]) ? -(i + 1) : i + 1;
-				} else {
-					// One's alpha and the other is beta, all other values the same
-					return first[i] == "alpha" ? -4 : 4;
-				}
-			}
-		}
-		// Version number is the same, but one may still have a pre-release tag
-		if (first.length != second.length) {
-			return first.length > second.length ? -4 : 4;
-		}
-		return 0;
-	}
-
-/// Topbar registration
-	// Most container mods support the legacy VTIO interface
-	private function LinkWithTopbar():Void {
-		// Try to register now, in case they loaded first, otherwise signup to detect if they load
-		DoTopbarRegistration(ViperDV);
-		ViperDV.SignalChanged.Connect(DoTopbarRegistration, this);
-	}
-
-	private function DoTopbarRegistration(dv:DistributedValue):Void {
-		if (dv.GetValue()) {
-			Config.SetValue("TopbarIntegration", true); // DEPRECATED(v1.0.0) Temporary upgrade support
-
-			// TODO: Completing icon extraction
-			// Adjust icon to be better suited for topbar integration
-			Icon.VTIOMode = true;
-
-			// Doing this more than once messes with Meeehr's, will have to find alternate workaround for ModFolder
-			if (!RegisteredWithTopbar) {
-				// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
-				//       Both are capable of handling "undefined" or otherwise invalid icon names
-				var topbarInfo:Array = [ModName, DevName, Version, ShowConfigDV != undefined ? ConfigWindowVarName : ModEnabledVarName, Icon.toString()];
-				DistributedValue.SetDValue("VTIO_RegisterAddon", topbarInfo.join('|'));
-			}
-			// TODO: Completing icon extraction
-			// VTIO creates its own icon, use it as our target for changes instead
-			// Can't actually remove ours though, Meeehr's redirects event handling oddly
-			// (It calls back to the original clip, using the new clip as the "this" instance)
-			// And just to be different, ModFolder doesn't create a copy at all, it just uses the one we give it
-			// In which case we don't want to lose our current reference
-			if (HostMovie.Icon != undefined) {
-				Icon.CopyToTopbar(HostMovie.Icon);
-				Icon._visible = false; // Usually the topbar will do this for us, but it's not so good about it during a re-register
-				Icon = HostMovie.Icon;
-				Icon.Refresh();
-			}
-			TopbarRegistered(!RegisteredWithTopbar);
-			RegisteredWithTopbar = true;
-			// Once registered, topbar DVs are no longer required; except by ModFolder which has a nasty habit of failing to register the first time around
-			if (!DistributedValue.GetDValue("ModFolder")) {
-				// Deferred to prevent mangling ongoing signal handling
-				setTimeout(Delegate.create(this, DetachTopbarListeners), 1, dv);
-			}
-		} else {
-			// Workaround for ModFolder, which has a nasty habit of leaving the VTIO_IsLoaded flag set during reloads
-			// Would be very nice to get in contact with Icarus on this
-			// Seem to have found a way to do this that doesn't cause problems with Meeehr's and doesn't require explicit checks for ModFolder
-			RegisteredWithTopbar = false;
-		}
-	}
-
-	// This needs to be deferred so that the disconnection doesn't muddle the ongoing processing
-	private function DetachTopbarListeners():Void {	ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this); }
-
-/// Icon mouse events
-	// Standard icon mouse handlers, called in local context
-	//   See ModIcon.CreateIcon or ModType descriptions for default hooking
-	public function ChangeModEnabled(dv:DistributedValue):Void {
+	// Implementations
+	private function ToggleUserEnabled(dv:DistributedValue):Void {
 		var value:Boolean = dv != undefined ? dv.GetValue() : !Config.GetValue("Enabled");
 		Config.SetValue("Enabled", value);
 	}
-	public function ToggleModTooltip():String {
+	private function ToggleUserEnabledTooltip():String {
 		return LocaleManager.GetString("GUI", Config.GetValue("Enabled") ? "TooltipModOff" : "TooltipModOn");
 	}
 
-	public function ToggleConfigWindow():Void {
-		if (!ShowConfigDV.GetValue()) { ShowConfigDV.SetValue(true);}
-		else { TriggerWindowClose.apply(ConfigWindowClip); }
-	}
-	public function ToggleConfigTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
-
-	public function ToggleInterfaceWindow():Void {
+	private function ToggleInterfaceWindow():Void {
 		if (! ShowInterfaceDV.GetValue()) {	ShowInterfaceDV.SetValue(true); }
 		else { TriggerWindowClose.apply(InterfaceWindowClip); }
 	}
-	public function ToggleInterfaceTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
+	private function ToggleInterfaceWindowTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
+
+	private function ToggleConfigWindow():Void {
+		if (!ShowConfigDV.GetValue()) { ShowConfigDV.SetValue(true);}
+		else { TriggerWindowClose.apply(ConfigWindowClip); }
+	}
+	private function ToggleConfigWindowTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
 
 /// Window Display
 	private function OpenWindow(windowName:String, loadEvent:Function, closeEvent:Function, escNode:EscapeStackNode):MovieClip {
@@ -694,14 +517,14 @@ class efd.LoreHound.lib.Mod {
 	public static var LogMsg:Function;
 
 /// Subclass Extension Stubs
-	private function InstallMod():Void { }
-	private function UpdateMod(newVersion:String, oldVersion:String):Void { }
+	public function InstallMod():Void { }
+	public function UpdateMod(newVersion:String, oldVersion:String):Void { }
 	private function Activate():Void { }
 	private function Deactivate():Void { }
 	private function TopbarRegistered(firstTime:Boolean):Void { }
 
 /// Properties and Variables
-	public function get Version():String { return Config.GetValue("Version"); }
+	public var Version:String;
 
 	public function get Enabled():Boolean { return _Enabled; }
 	public function set Enabled(value:Boolean):Void {
@@ -727,8 +550,6 @@ class efd.LoreHound.lib.Mod {
 
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
-	private var MinUpgradableVersion:String; // Minimum installed version for setting migration during update; Discarded after update
-	private var LibUpgrades:Array; // List of library version upgrades as {mod:version, lib:version} pairs; Discarded after update
 	private var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for cross-mod integration
 	private var ModListDV:DistributedValue;
 
@@ -740,6 +561,7 @@ class efd.LoreHound.lib.Mod {
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;
+	private var UpdateManager:Versioning;
 	private var ConfigResetDV:DistributedValue; // DV so that it can be flagged from chat when nothing else works
 	private var ShowConfigDV:DistributedValue; // Needs to be DV as topbars use it for providing settings from the mod list; if undefined, no config window is available
 	private var ResolutionScaleDV:DistributedValue;
@@ -752,9 +574,9 @@ class efd.LoreHound.lib.Mod {
 
 	public var HostMovie:MovieClip;
 	public var Icon:MovieClip;
+	private var LinkVTIO:Object;
 
-	private var ViperDV:DistributedValue;
-	private var RegisteredWithTopbar:Boolean = false;
+	public var SignalLoadCompleted:Signal;
 
 	private var DebugTrace:Boolean;
 	private var GlobalDebugDV:DistributedValue; // Used to quickly toggle trace or other debug features of all efd mods

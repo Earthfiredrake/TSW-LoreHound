@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -25,39 +25,45 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 import efd.LoreHound.lib.ModIcon;
+import efd.LoreHound.lib.sys.config.Versioning;
+import efd.LoreHound.lib.sys.VTIOHelper;
 
 import efd.LoreHound.LoreData;
 
 class efd.LoreHound.LoreHound extends Mod {
-	private var ModInfo:Object = {
-		// Dev/debug settings at top so commenting out leaves no hanging ','
-		// Trace : true,
-		Name : "LoreHound",
-		Version : "1.3.3",
-		Type : e_ModType_Reactive,
-		MinUpgradableVersion : "1.0.0",
-		LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}],
-		IconData : { Factory : ModIcon.CreateIcon,
-	                 GetFrame : GetIconFrame,
-					 ExtraTooltipInfo : IconTooltip }
-	};
+/// Initialization
+	// Function wrapper eliminates compile-constant requirements, permits more flexibility in filling it out
+	private function GetModInfo():Object {
+		return {
+			// Dev/debug settings at top so commenting out leaves no hanging ','
+			// Trace : true,
+			Name : "LoreHound",
+			Version : "1.3.3",
+			MinUpgradableVersion : "1.0.0",
+			LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}],
+			Type : e_ModType_Reactive,
+			Subsystems : {
+				Icon : {
+					Init : ModIcon.Create,
+					InitObj : {
+						GetFrame : GetIconFrame,
+						LeftMouseInfo : IconMouse_ToggleConfigWindow,
+						RightMouseInfo : IconMouse_ToggleUserEnabled,
+						ExtraTooltipInfo : IconTooltip
+					}
+				},
+				LinkVTIO : {
+					Init : VTIOHelper.Create,
+					InitObj : {
+						ConfigDV : "efdShowLoreHoundConfigUI" // ConfigWindowVarName is not yet properly initialized
+					}
+				}
+			}
+		};
+	}
 
-	// Category flags for extended information
-	private static var ef_Details_None:Number = 0;
-	public static var ef_Details_Location:Number = 1 << 0; // Playfield name and coordinate vector
-	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
-	public static var ef_Details_DynelId:Number = 1 << 2;
-	public static var ef_Details_Timestamp:Number = 1 << 3;
-	private static var ef_Details_StatDump:Number = 1 << 4; // Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined
-	private static var ef_Details_All:Number = (1 << 5) - 1;
-
-	// Flags for ongoing icon states
-	private static var ef_IconState_Alert = 1 << 0;
-	private static var ef_IconState_Report = 1 << 1;
-
-	/// Initialization
 	public function LoreHound(hostMovie:MovieClip) {
-		super(ModInfo, hostMovie);
+		super(GetModInfo(), hostMovie);
 		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
 		// - Perhaps flash does static evaluation and decides to collapse constant variables?
 		// - Regardless of the why, this will let me tweak these at runtime
@@ -78,7 +84,17 @@ class efd.LoreHound.LoreHound extends Mod {
 		TraceMsg("Initialized");
 	}
 
+/// Settings
 	// TODO: Some reports of settings being lost, reverting to defaults (v1.2.2). Investigate further for possible causes
+
+	// Category flags for extended information
+	private static var ef_Details_None:Number = 0;
+	public static var ef_Details_Location:Number = 1 << 0; // Playfield name and coordinate vector
+	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	public static var ef_Details_DynelId:Number = 1 << 2;
+	public static var ef_Details_Timestamp:Number = 1 << 3;
+	private static var ef_Details_StatDump:Number = 1 << 4; // (Hidden) Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined
+	private static var ef_Details_All:Number = (1 << 5) - 1;
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
@@ -204,7 +220,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		// Version specific updates
 		//   Some upgrades may reflect unreleased builds, for consistency on develop branch
-		if (CompareVersions("1.1.0.alpha", oldVersion) > 0) {
+		if (Versioning.CompareVersions("1.1.0.alpha", oldVersion) > 0) {
 			// Renaming setting due to recent events
 			Config.SetValue("ExtraTesting", Config.GetValue("CheckNewContent"));
 			// May have lost the config settings for the auto report system :(
@@ -213,7 +229,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				ChatMsg(LocaleManager.GetString("Patch", "AutoReportRepair"));
 			}
 		}
-		if (CompareVersions("1.2.0.alpha", oldVersion) > 0) {
+		if (Versioning.CompareVersions("1.2.0.alpha", oldVersion) > 0) {
 			// Rename *level settings to *alert
 			Config.SetValue("FifoAlerts", Config.GetValue("FifoLevel"));
 			Config.SetValue("ChatAlerts", Config.GetValue("ChatLevel"));

@@ -22,48 +22,66 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
+// Icon subsystem implementation
+// Dependencies: Config
+// Init function: Create
+// InitObj: (optional, any undefined sub-values will use their own defaults)
+//     ResName:String (optional, default ModName + "Icon")
+//       The name of the library resource to use as graphical element for the icon
+//     All other members are applied as initializers to the ModIcon object prior to construction
+//     These functions, which will be called in the context of ModObj, may be provided as overrides:
+//       GetFrame:
+//			Returns the name of the icon frame to be displayed based on current mod state
+//			Default uses existence and state of Config("Enabled") to return "active"|"inactive"
+//       LeftMouseInfo: Mouse handler as described below, default undefined
+//       RightMouseInfo: Mouse handler as described below, default undefined
+//         Mouse handler objects define two functions:
+//           Action: Called when the icon is pressed with the linked mouse button
+//           Tooltip: Returns a descriptive string to add to the tooltip
+//         Standard mouse handlers defined in Mod:
+//           IconMouse_ToggleUserEnabled: Toggles the Config("Enabled") setting
+//           IconMouse_ToggleInterfaceWindow: Toggles the mod interface window DV
+//           IconMouse_ToggleConfigWindow: Toggles the mod config window DV
+//       ExtraTooltipInfo: Returns a string of additional info to append to the tooltip, default undefined
+
 class efd.LoreHound.lib.ModIcon extends MovieClip {
 	/// Initialization
-	public static function CreateIcon(mod:Mod, modInfo:Object, iconData:Object):MovieClip {
-		if (iconData == undefined) { iconData = modInfo.IconData ? modInfo.IconData : new Object(); }
-		var iconName:String = iconData.ResName ? iconData.ResName : mod.ModName + "Icon";
-		delete iconData.ResName;
-
-		iconData.ModObj = mod;
-		iconData.ModName = mod.ModName;
-		iconData.DevName = mod.DevName;
-		iconData.HostMovie = mod.HostMovie;
-		iconData.Config = mod.Config;
-
-		if (iconData.GetFrame) { iconData.GetFrame = Delegate.create(mod, iconData.GetFrame); }
-
-		if (!iconData.LeftMouseInfo) {
-			if (modInfo.Type == Mod.e_ModType_Interface) {
-				iconData.LeftMouseInfo = { Action : Delegate.create(mod, mod.ToggleInterfaceWindow), Tooltip : Delegate.create(mod, mod.ToggleInterfaceTooltip) };
-			} else if (modInfo.Type == Mod.e_ModType_Reactive && !(modInfo.GuiFlags & Mod.ef_ModGui_NoConfigWindow)) {
-				iconData.LeftMouseInfo = { Action : Delegate.create(mod, mod.ToggleConfigWindow), Tooltip : Delegate.create(mod, mod.ToggleConfigTooltip) };
-			}
-		} else {
-			iconData.LeftMouseInfo.Action = Delegate.create(mod, iconData.LeftMouseInfo.Action);
-			iconData.LeftMouseInfo.Tooltip = Delegate.create(mod, iconData.LeftMouseInfo.Tooltip);
+	public static function Create(mod:Mod, initObj:Object):MovieClip {
+		// Check dependencies
+		if (!mod.Config) {
+			Mod.ErrorMsg("Subsystem dependency missing: Config", {system : "ModIcon"});
+			return undefined;
 		}
-		if (!iconData.RightMouseInfo) {
-			if (modInfo.Type == Mod.e_ModType_Reactive) {
-				iconData.RightMouseInfo = { Action : Delegate.create(mod, mod.ChangeModEnabled), Tooltip : Delegate.create(mod, mod.ToggleModTooltip) };
-			} else if (modInfo.Type == Mod.e_ModType_Interface && !(modInfo.GuiFlags & Mod.ef_ModGui_NoConfigWindow)) {
-				iconData.RightMouseInfo = { Action : Delegate.create(mod, mod.ToggleConfigWindow), Tooltip : Delegate.create(mod, mod.ToggleConfigTooltip) };
-			}
-		}  else {
-			iconData.RightMouseInfo.Action = Delegate.create(mod, iconData.LeftMouseInfo.Action);
-			iconData.RightMouseInfo.Tooltip = Delegate.create(mod, iconData.LeftMouseInfo.Tooltip);
-		}
-		if (iconData.ExtraTooltipInfo) { iconData.ExtraTooltipInfo = Delegate.create(mod, iconData.ExtraTooltipInfo); }
 
-		return MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", mod.HostMovie, mod.HostMovie.getNextHighestDepth(), iconData);
+		if (!initObj) { initObj = new Object(); }
+
+		// Check for overloaded Icon resource name
+		var iconName:String = initObj.ResName ? initObj.ResName : mod.ModName + "Icon";
+		delete initObj.ResName;
+
+		// Add Mod to init object, as unable to pass parameters to constructor
+		initObj.ModObj = mod;
+
+		// Wrap callbacks as delegates in Mod context
+		if (initObj.GetFrame) { initObj.GetFrame = Delegate.create(mod, initObj.GetFrame); }
+		if (initObj.LeftMouseInfo) {
+			initObj.LeftMouseInfo.Action = Delegate.create(mod, initObj.LeftMouseInfo.Action);
+			initObj.LeftMouseInfo.Tooltip = Delegate.create(mod, initObj.LeftMouseInfo.Tooltip);
+		}
+		if (initObj.RightMouseInfo) {
+			initObj.RightMouseInfo.Action = Delegate.create(mod, initObj.RightMouseInfo.Action);
+			initObj.RightMouseInfo.Tooltip = Delegate.create(mod, initObj.RightMouseInfo.Tooltip);
+		}
+		if (initObj.ExtraTooltipInfo) { initObj.ExtraTooltipInfo = Delegate.create(mod, initObj.ExtraTooltipInfo); }
+
+		return MovieClipHelper.attachMovieWithRegister(iconName, ModIcon, "ModIcon", mod.HostMovie, mod.HostMovie.getNextHighestDepth(), initObj);
 	}
 
-	public function ModIcon() {
+	private function ModIcon() {
 		super();
+
+		// Get local copies of commonly used ModObj members
+		Config = ModObj.Config;
 
 		// Get a unique ID for default layout calculations
 		// Note: System is not without flaws, subsequently added mods may just rearrange the IDs and stomp anyway
@@ -72,6 +90,9 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 		filters = [ShadowFilter];
 
+		Config.NewSetting("TopbarIntegration", true);
+		// Will have a value before saving, temporary undefined used to coerce consistent behaviour on upgrade
+		Config.SetValue("TopbarIntegration", undefined); // DEPRECATED(v1.0.0): Temporary upgrade support
 		// These need to be set with *some* default, so that any saved value is loaded
 		// Actual values/defaults will be sorted out after the load, depending on TopbarIntegration and VTIO states
 		Config.NewSetting("IconPosition", new Point(-1, -1));
@@ -157,6 +178,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 				GlobalSignal.SignalSetGUIEditMode.Disconnect(ManageGEM, this);
 			} else {
 				// Restores the state
+				ModObj.Icon = ModObj.HostMovie.ModIcon;
 				GetID();
 				filters = [ShadowFilter];
 				// Note: Settings are not restored here,
@@ -181,8 +203,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		//     - These two in particular could make further customizing icon behaviour after registration risky
 
 		// Required variables
-		copy.ModName = ModName;
-		copy.DevName = DevName;
+		copy.ModObj = ModObj;
 		copy.Config = Config;
 		copy.Tooltip = Tooltip;
 
@@ -294,13 +315,13 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	}
 
 	// Default icon frame selector, may be overriden via init object
-	private function GetFrame():String { return Config.GetValue("Enabled") ? "active" : "inactive"; }
+	private function GetFrame():String { return Config.GetValue("Enabled", true) ? "active" : "inactive"; }
 
 	/// Layout and GEM handling
 	private function BringAboveTopbar(above:Boolean):Void {
 		if (above != IsAboveTopbar) {
-			if (above) { SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2); }
-			else { SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(HostMovie), _global.Enums.ViewLayer.e_ViewLayerMiddle, 10); }
+			if (above) { SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(ModObj.HostMovie), _global.Enums.ViewLayer.e_ViewLayerTop, 2); }
+			else { SFClipLoader.SetClipLayer(SFClipLoader.GetClipIndex(ModObj.HostMovie), _global.Enums.ViewLayer.e_ViewLayerMiddle, 10); }
 			IsAboveTopbar = above;
 		}
 	}
@@ -312,7 +333,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 
 	private function ManageGEM(unlock:Boolean):Void {
 		if (unlock && !GemManager) {
-			GemManager = GemController.create("GuiEditModeInterface", HostMovie, HostMovie.getNextHighestDepth(), this);
+			GemManager = GemController.create("GuiEditModeInterface", ModObj.HostMovie, ModObj.HostMovie.getNextHighestDepth(), this);
 			GemManager.lockAxis(0);
 			if (OnBaseTopbar) {	GemManager.lockAxis(2); }
 			else { GemManager.addEventListener( "scrollWheel", this, "ChangeScale" ); }
@@ -363,8 +384,8 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 		data.m_Padding = TooltipPadding;
 		data.m_MaxWidth = TooltipWidth; // The content does not affect the layout, so unless something that does (edge of screen perhaps?) gets in the way, this is how wide it will be
 
-		data.m_Title = "<font " + TooltipTitleFont + "><b>" + ModName + "</b></font>";
-		var credit:String = LocaleManager.FormatString("GUI", "TooltipCredit", Config.GetValue("Version"), DevName);
+		data.m_Title = "<font " + TooltipTitleFont + "><b>" + ModObj.ModName + "</b></font>";
+		var credit:String = LocaleManager.FormatString("GUI", "TooltipCredit", Config.GetValue("Version"), Mod.DevName);
 		data.m_SubTitle = "<font " + TooltipCreditFont + ">" + credit + "</font>";
 		data.m_Color = TooltipTitleColor;
 
@@ -413,9 +434,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private static var TooltipCreditFont:String = "size='10'";
 	private static var TooltipTextFont:String = "size='11'";
 
-	private var ModName:String;
-	private var DevName:String;
-
 	private var ModObj:Mod;
 	private var Config:ConfigWrapper;
 	private var _VTIOMode:Boolean = false;
@@ -425,7 +443,6 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	// GUI layout variables do not need to be copied for topbar icon
 	private var IsAboveTopbar:Boolean = false;
 	private var OnBaseTopbar:Boolean = false;
-	private var HostMovie:MovieClip;
 	private var GemManager:GemController;
 	private var SignalGeometryChanged:Signal;
 
