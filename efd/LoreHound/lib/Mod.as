@@ -2,14 +2,10 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import flash.geom.Point;
-
 import gfx.utils.Delegate;
 
 import com.GameInterface.Chat; // FIFO messages
 import com.GameInterface.DistributedValue;
-import com.GameInterface.EscapeStack;
-import com.GameInterface.EscapeStackNode;
 import com.GameInterface.Log;
 import com.GameInterface.Utils; // Chat messages *shrug*
 import com.Utils.Archive;
@@ -19,7 +15,8 @@ import com.Utils.Signal;
 //       Objective is to remove at least some of these imports
 //       Possibly split out some other subsystems and mod behaviours
 import efd.LoreHound.lib.ConfigWrapper;
-import efd.LoreHound.lib.sys.config.Versioning;
+import efd.LoreHound.lib.sys.config.Versioning; // To be rolled into config
+import efd.LoreHound.lib.sys.Window; // This useage to be rolled into config
 import efd.LoreHound.lib.LocaleManager;
 
 // Mod Framework v1.1.0
@@ -31,10 +28,10 @@ import efd.LoreHound.lib.LocaleManager;
 //     "[pfx]GameEnables[Name]: The variable defined in Modules.xml as a hard disable for the mod; will disable all features (including icon) and prevent loading in future
 //     "[pfx][Name]Enabled": Exists for e_ModType_Reactive mods; "Soft" disable that retains icon and doesn't prevent loading in future; Corresponds to "Enabled" config setting
 //     "[pfx][Name]Loaded": Set to true when the mod is fully loaded and initialized
-//     "[pfx][Name]Config: Name of archive in which main settings are saved (Mods may use secondary archives for some settings)
-//     "[pfx][Name]ResetConfig": Trigger to reset settings to defaults from chat
-//     "[pfx]Show[Name]Interface": Exists for e_ModType_Interface mods; Toggle mod interface window
-//     "[pfx]Show[Name]ConfigUI": Exists if GuiFlag ef_ModGui_NoConfigWindow is not set; Toggle mod settings window
+//     "[pfx][Name]Config: Name of archive in which main settings are saved (Mods may use secondary archives for some settings), defined in xml configuration, usually used with the Config system
+//     "[pfx][Name]ResetConfig": Trigger to reset settings to defaults from chat, created by the Config subsystem
+//     "[pfx]Show[Name]ConfigWindow": Toggles the settings window, created by the Config subsystem
+//     "[pfx]Show[Name]InterfaceWindow": Toggles an interface window, if one was included in ModData
 //   Framework shared (Unique per developer, but that may change):
 //     "[pfx]ListMods": Causes all installed framework mods to report their current version to system chat
 //     "[pfx]NextIconID": Used to create unique offsets on default icon placements, hopefully reducing icon pileups when using multiple [pfx] mods
@@ -159,24 +156,10 @@ class efd.LoreHound.lib.Mod {
 		LocaleManager.LoadStringFile("Strings");
 
 		HostMovie = hostMovie; // Not needed for console style mods
-		ResolutionScaleDV = DistributedValue.Create("GUIResolutionScale");
-
-		if (!(modInfo.GuiFlags & ef_ModGui_NoConfigWindow)) {
-			ConfigWindowEscTrigger = new EscapeStackNode();
-			ShowConfigDV = DistributedValue.Create(ConfigWindowVarName);
-			ShowConfigDV.SetValue(false);
-			ShowConfigDV.SignalChanged.Connect(ShowConfigWindowChanged, this);
-		}
-
-		if (modInfo.Type == e_ModType_Interface) {
-			InterfaceWindowEscTrigger = new EscapeStackNode();
-			ShowInterfaceDV = DistributedValue.Create(InterfaceWindowVarName);
-			ShowInterfaceDV.SetValue(false);
-			ShowInterfaceDV.SignalChanged.Connect(ShowInterfaceWindowChanged, this);
-		}
 
 		InitializeModConfig(modInfo);
 
+		InterfaceWindow = modInfo.Subsystems.Interface.Init(this, modInfo.Subsystems.Interface.InitObj);
 		LinkVTIO = modInfo.Subsystems.LinkVTIO.Init(this, modInfo.Subsystems.LinkVTIO.InitObj);
 		Icon = modInfo.Subsystems.Icon.Init(this, modInfo.Subsystems.Icon.InitObj);
 	}
@@ -213,7 +196,7 @@ class efd.LoreHound.lib.Mod {
 		if (!state) {
 			// DEPRECATED(v1.0.0): Temporary upgrade support
 			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); }
-			CloseConfigWindow();
+			// TODO: CloseConfigWindow(); other windows?
 			return Config.SaveConfig();
 		} else {
 			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
@@ -251,14 +234,15 @@ class efd.LoreHound.lib.Mod {
 
 		if (ModEnabledDV != undefined) { Config.NewSetting("Enabled", true); } // Whether mod is enabled by the player
 
-		if (ShowInterfaceDV != undefined) { Config.NewSetting("InterfaceWindowPosition", new Point(20, 30)); }
-		if (ShowConfigDV != undefined) { Config.NewSetting("ConfigWindowPosition", new Point(20, 30)); }
-
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 		Config.SignalValueChanged.Connect(ConfigChanged, this);
+
+		ConfigWindow = Window.Create(this, {WindowName : "ConfigWindow", LoadEvent : Delegate.create(this, ConfigWindowLoaded)});
 	}
 
 	private function ConfigLoaded():Void { UpdateLoadProgress("Config"); }
+
+	private function ConfigWindowLoaded(windowContent:Object):Void { windowContent.AttachConfig(Config); }
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		if (setting == "Enabled") {
@@ -303,123 +287,14 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	private function ToggleInterfaceWindow():Void {
-		if (! ShowInterfaceDV.GetValue()) {	ShowInterfaceDV.SetValue(true); }
-		else { TriggerWindowClose.apply(InterfaceWindowClip); }
+		InterfaceWindow.ToggleWindow();
 	}
 	private function ToggleInterfaceWindowTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowInterface"); }
 
 	private function ToggleConfigWindow():Void {
-		if (!ShowConfigDV.GetValue()) { ShowConfigDV.SetValue(true);}
-		else { TriggerWindowClose.apply(ConfigWindowClip); }
+		ConfigWindow.ToggleWindow();
 	}
 	private function ToggleConfigWindowTooltip():String { return LocaleManager.GetString("GUI", "TooltipShowSettings"); }
-
-/// Window Display
-	private function OpenWindow(windowName:String, loadEvent:Function, closeEvent:Function, escNode:EscapeStackNode):MovieClip {
-		var clip:MovieClip = HostMovie.attachMovie(ModName + windowName, windowName, HostMovie.getNextHighestDepth());
-		clip.SignalContentLoaded.Connect(loadEvent, this); // Defer config bindings until content is loaded
-
-		var localeTitle:String = LocaleManager.FormatString("GUI", windowName + "Title", ModName);
-		clip.SetTitle(localeTitle, "left");
-		clip.SetPadding(10);
-		clip.SetContent(ModName + windowName + "Content");
-		clip.ShowCloseButton(true);
-		clip.ShowStroke(false);
-		clip.ShowRezieButton(false);
-		clip.ShowFooter(false);
-
-		var position:Point = Config.GetValue(windowName + "Position");
-		clip._x = position.x;
-		clip._y = position.y;
-		SetWindowScale.call(clip, ResolutionScaleDV);
-		ResolutionScaleDV.SignalChanged.Connect(SetWindowScale, clip);
-
-		escNode.SignalEscapePressed.Connect(TriggerWindowClose, clip);
-		EscapeStack.Push(escNode);
-		clip.SignalClose.Connect(closeEvent, this);
-
-		return clip;
-	}
-
-	private function WindowClosed(windowClip:MovieClip, windowName:String, escNode:EscapeStackNode):Void {
-		ResolutionScaleDV.SignalChanged.Disconnect(SetWindowScale, windowClip);
-		escNode.SignalEscapePressed.Disconnect(TriggerWindowClose, windowClip);
-
-		ReturnWindowToVisibleBounds(windowClip, Config.GetDefault(windowName + "Position"));
-		Config.SetValue(windowName + "Position", new Point(windowClip._x, windowClip._y));
-
-		windowClip.removeMovieClip();
-	}
-
-	private static function ReturnWindowToVisibleBounds(window:MovieClip, defaults:Point):Void {
-		var visibleBounds = Stage.visibleRect;
-		if (window._x < 0) { window._x = 0; }
-		else if (window._x + window.m_Background._width > visibleBounds.width) {
-			window._x = visibleBounds.width - window.m_Background._width;
-		}
-		if (window._y < defaults.y) { window._y = defaults.y; }
-		else if (window._y + window.m_Background._height > visibleBounds.height) {
-			window._y = visibleBounds.height - window.m_Background._height;
-		}
-	}
-
-	private function TriggerWindowClose():Void {
-		var target:Object = this;
-		target.SignalClose.Emit(target);
-		target.m_Content.Close();
-	}
-
-	private function SetWindowScale(scaleDV:DistributedValue):Void {
-		var scale:Number = scaleDV.GetValue() * 100;
-		var target:Object = this;
-		target._xscale = scale;
-		target._yscale = scale;
-	}
-
-	private function ShowConfigWindowChanged(dv:DistributedValue):Void {
-		if (dv.GetValue()) { // Open window
-			if (ModLoadedDV.GetValue() == false) {
-				dv.SetValue(false);
-				Mod.ErrorMsg("Did not load properly, and has been disabled.");
-				return;
-			}
-			if (ConfigWindowClip == null) {
-				ConfigWindowClip = OpenWindow("ConfigWindow", ConfigWindowLoaded, CloseConfigWindow, ConfigWindowEscTrigger);
-			}
-		} else { // Close window
-			if (ConfigWindowClip != null) {
-				WindowClosed(ConfigWindowClip, "ConfigWindow", ConfigWindowEscTrigger);
-				ConfigWindowClip = null;
-			}
-		}
-	}
-
-	private function ConfigWindowLoaded():Void { ConfigWindowClip.m_Content.AttachConfig(Config); }
-
-	private function CloseConfigWindow():Void { ShowConfigDV.SetValue(false); }
-
-	private function ShowInterfaceWindowChanged(dv:DistributedValue):Void {
-		if (dv.GetValue()) { // Open window
-			if (ModLoadedDV.GetValue() == false) {
-				dv.SetValue(false);
-				Mod.ErrorMsg("Did not load properly, and has been disabled.");
-				return;
-			}
-			if (InterfaceWindowClip == null)
-			{
-				InterfaceWindowClip = OpenWindow("InterfaceWindow", InterfaceWindowLoaded, CloseInterfaceWindow, InterfaceWindowEscTrigger);
-			}
-		} else {// Close window
-			if (InterfaceWindowClip != null) {
-				WindowClosed(InterfaceWindowClip, "InterfaceWindow", InterfaceWindowEscTrigger);
-				InterfaceWindowClip = null;
-			}
-		}
-	}
-
-	private function InterfaceWindowLoaded():Void { }
-
-	private function CloseInterfaceWindow():Void { ShowInterfaceDV.SetValue(false); }
 
 /// Data File Loader
 	// Loads an XML file from a path local to the mod's directory
@@ -541,8 +416,8 @@ class efd.LoreHound.lib.Mod {
 	public function get ModLoadedVarName():String { return DVPrefix + ModName + "Loaded"; }
 	public function get ModEnabledVarName():String { return DVPrefix + ModName + "Enabled"; }
 	public function get ModResetVarName():String { return DVPrefix + ModName + "ResetConfig"; }
-	public function get ConfigWindowVarName():String { return DVPrefix + "Show" + ModName + "ConfigUI"; }
-	public function get InterfaceWindowVarName():String { return DVPrefix + "Show" + ModName + "Interface"; }
+	public function get ConfigWindowVarName():String { return DVPrefix + "Show" + ModName + "ConfigWindow"; }
+	public function get InterfaceWindowVarName():String { return DVPrefix + "Show" + ModName + "InterfaceWindow"; }
 
 	// Customize based on mod authorship
 	public static var DevName:String = "Peloprata";
@@ -550,7 +425,7 @@ class efd.LoreHound.lib.Mod {
 
 	public var ModName:String;
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
-	private var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for cross-mod integration
+	public var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for cross-mod integration
 	private var ModListDV:DistributedValue;
 
 	private var _Enabled:Boolean = false;
@@ -561,20 +436,15 @@ class efd.LoreHound.lib.Mod {
 	// Enabled by player is a persistant config setting
 
 	public var Config:ConfigWrapper;
+	private var ConfigWindow:Window;
 	private var UpdateManager:Versioning;
 	private var ConfigResetDV:DistributedValue; // DV so that it can be flagged from chat when nothing else works
-	private var ShowConfigDV:DistributedValue; // Needs to be DV as topbars use it for providing settings from the mod list; if undefined, no config window is available
-	private var ResolutionScaleDV:DistributedValue;
-	private var ConfigWindowClip:MovieClip = null;
-	private var ConfigWindowEscTrigger:EscapeStackNode;
 
-	private var ShowInterfaceDV:DistributedValue; // Provided as DV for /setoption force opening of interface
-	private var InterfaceWindowClip:MovieClip = null;
-	private var InterfaceWindowEscTrigger:EscapeStackNode;
+	private var InterfaceWindow:Object; // Ducktyped Window
 
 	public var HostMovie:MovieClip;
-	public var Icon:MovieClip;
-	private var LinkVTIO:Object;
+	public var Icon:MovieClip; // Ducktyped ModIcon
+	private var LinkVTIO:Object; // Ducktyped VTIOHelper
 
 	public var SignalLoadCompleted:Signal;
 

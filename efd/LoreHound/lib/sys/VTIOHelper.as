@@ -11,7 +11,6 @@ import efd.LoreHound.lib.Mod;
 
 // LinkVTIO subsystem implementation
 // Dependencies: None (Icon and Config optional)
-// Init function: Create
 // InitObj:
 //   ConfigDV:String (default undefined) Name of DistributedValue to attach to the VTIO mod's configuration UI
 // Handles registration with VTIO compatible topbar and container mods

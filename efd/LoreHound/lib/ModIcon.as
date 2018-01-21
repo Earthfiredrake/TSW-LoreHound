@@ -23,8 +23,11 @@ import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
 // Icon subsystem implementation
-// Dependencies: Config
-// Init function: Create
+// Dependencies:
+//   Subsystems: Config, Localization
+//   Library Symbols:
+//     [ModName]Icon: Movieclip containing the icon to be displayed, with any alternate icon modes as labeled frames
+//       (Symbol name may be overriden, see InitObj.ResName)
 // InitObj: (optional, any undefined sub-values will use their own defaults)
 //     ResName:String (optional, default ModName + "Icon")
 //       The name of the library resource to use as graphical element for the icon
