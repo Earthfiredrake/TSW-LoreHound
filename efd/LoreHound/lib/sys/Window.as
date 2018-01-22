@@ -72,12 +72,13 @@ class efd.LoreHound.lib.sys.Window {
 
 	public function OpenWindow():MovieClip {
 		var clip:MovieClip = ModObj.HostMovie.attachMovie(ModObj.ModName + "Window", WindowName, ModObj.HostMovie.getNextHighestDepth());
+
 		clip.SignalContentLoaded.Connect(TriggerLoadEvent, this); // Defer config bindings until content is loaded
+		clip.SetContent(ModObj.ModName + WindowName + "Content");
 
 		var localeTitle:String = LocaleManager.FormatString("GUI", WindowName + "Title", ModObj.ModName);
 		clip.SetTitle(localeTitle, "left");
 		clip.SetPadding(10);
-		clip.SetContent(ModObj.ModName + WindowName + "Content");
 		clip.ShowCloseButton(true);
 		clip.ShowStroke(false);
 		clip.ShowResizeButton(false); // TODO: Should be possible to set and use this

@@ -1,11 +1,11 @@
-﻿// Copyright 2017, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
 import gfx.controls.CheckBox;
 import gfx.core.UIComponent;
 
-import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.LoreHound;
 import efd.LoreHound.LoreData;

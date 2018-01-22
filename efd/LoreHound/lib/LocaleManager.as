@@ -1,4 +1,4 @@
-﻿// Copyright 2017, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -11,7 +11,6 @@ import efd.LoreHound.lib.Mod;
 // Provides string localization features, consisting of two major components:
 //   Parses xml files containing categorized strings (ie: Strings.xml) and stores the localized strings in a globally available lookup table
 //   Parses and evaluates string formatted xml tags for subsystem data loaders, for localized data provision
-//   In all cases strings will be localized as
 
 // Format specification:
 //   <CategoryKey>
@@ -24,7 +23,7 @@ import efd.LoreHound.lib.Mod;
 //       Categories may be re-opened and extended after initial definition, but re-defined StringKeys will replace the originals
 //     fmtSrc -> (cat="CategoryKey" str="StringKey") | rbd="id=# category=#" | (en="english/default" [fr="french"][de="german"])
 
-//   Multiple fmtSrcs are permitted, but they will be evaluated in order of precidence, and will ignore any results after finding an accur
+//   Multiple fmtSrcs are permitted, but they will be evaluated in order of precidence, and will ignore any results after finding a valid source
 //     str: Sourced from the string file, and must be already loaded, mostly used when other mod data repeatedly uses generic string segments
 //     rdb: Sourced from the game resource database for the user's language
 //     en+[fr/de]: Localization support is dependent on the mod developer, or end user customization. "en" will be used by default if actual locale is unavailable
@@ -36,7 +35,7 @@ import efd.LoreHound.lib.Mod;
 //     Params can also have the fmt tag applied, which may be useful if attempting to merge multiple strings
 
 // Can also be used on individual string tags by other loaders to parse localized strings, without adding them to the lookup table
-// In this usage, the category tag is omitted, and the tag attribute of the "String" xml tag is ignored
+// In this usage, the category tag is omitted, and the name of the "StringKey" xml tag is ignored
 
 // Also provides some formatting utilities for strings and simplified lookups for common UI elements
 

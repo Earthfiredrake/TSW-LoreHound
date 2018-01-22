@@ -7,8 +7,8 @@ import gfx.utils.Delegate;
 import com.GameInterface.DistributedValue;
 import com.Utils.Archive;
 
-import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.Mod;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.sys.config.Versioning;
 import efd.LoreHound.lib.sys.Window;
 

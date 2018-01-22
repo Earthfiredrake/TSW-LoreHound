@@ -6,7 +6,6 @@ import flash.geom.Point; // DEPRECATED(v1.0.0): Temporary upgrade support
 
 import com.GameInterface.DistributedValue; // DEPRECATED(v1.0.0): Temporary upgrade support
 
-import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 

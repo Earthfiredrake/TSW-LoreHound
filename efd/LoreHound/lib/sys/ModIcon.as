@@ -18,7 +18,6 @@ import GUIFramework.SFClipLoader;
 import efd.LoreHound.lib.etu.GemController;
 import efd.LoreHound.lib.etu.MovieClipHelper;
 
-import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
@@ -47,7 +46,7 @@ import efd.LoreHound.lib.Mod;
 //           IconMouse_ToggleConfigWindow: Toggles the mod config window DV
 //       ExtraTooltipInfo: Returns a string of additional info to append to the tooltip, default undefined
 
-class efd.LoreHound.lib.ModIcon extends MovieClip {
+class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 	/// Initialization
 	public static function Create(mod:Mod, initObj:Object):MovieClip {
 		// Check dependencies

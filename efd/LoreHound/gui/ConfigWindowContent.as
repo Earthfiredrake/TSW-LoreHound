@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -11,7 +11,7 @@ import gfx.utils.Delegate;
 import com.Components.WindowComponentContent;
 
 import efd.LoreHound.gui.LoreCategorySettingGroup;
-import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 import efd.LoreHound.LoreHound;

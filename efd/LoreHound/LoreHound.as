@@ -21,12 +21,12 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
 import efd.LoreHound.lib.AutoReport;
-import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
-import efd.LoreHound.lib.ModIcon;
 import efd.LoreHound.lib.sys.ConfigManager;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.sys.config.Versioning;
+import efd.LoreHound.lib.sys.ModIcon;
 import efd.LoreHound.lib.sys.VTIOHelper;
 
 import efd.LoreHound.LoreData;

@@ -1,4 +1,4 @@
-﻿// Copyright 2017-2018, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -6,7 +6,7 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character; // To prevent self mailing
 import com.GameInterface.Tradepost;
 
-import efd.LoreHound.lib.ConfigWrapper;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 

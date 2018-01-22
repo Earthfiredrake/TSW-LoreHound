@@ -26,7 +26,7 @@ import efd.LoreHound.lib.Mod;
 //   ConfigWrappers must decend directly from other ConfigWrappers, they won't load properly if nested within other types
 //     TODO: This may be an issue, and should be fixed if possible
 
-class efd.LoreHound.lib.ConfigWrapper {
+class efd.LoreHound.lib.sys.config.ConfigWrapper {
 	// ArchiveName is distributed value to be saved to for top level config wrappers
 	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
 	// Also leave it undefined if loading/saving to the game's provided config.
