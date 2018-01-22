@@ -113,7 +113,10 @@ class efd.LoreHound.lib.Mod {
 		}
 		Version = modInfo.Version;
 
-		SystemsLoaded = { Config: false, LocalizedText: false }
+		SystemsLoaded = { LocalizedText: false };
+		if (modInfo.Subsystems.Config != undefined) {
+			SystemsLoaded.Config = false;
+		}
 		ModLoadedDV = DistributedValue.Create(ModLoadedVarName);
 		ModLoadedDV.SetValue(false);
 		if (modInfo.Type == e_ModType_Reactive) {
@@ -170,7 +173,7 @@ class efd.LoreHound.lib.Mod {
 		if (!state) {
 			// DEPRECATED(v1.0.0): Temporary upgrade support
 			if (Config.GetValue("TopbarIntegration") == undefined) { Config.SetValue("TopbarIntegration", false); }
-			// TODO: CloseConfigWindow(); other windows?
+			ConfigHost.ConfigWindow.CloseWindow();
 			return Config.SaveConfig();
 		} else {
 			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}

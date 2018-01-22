@@ -61,7 +61,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				LinkVTIO : {
 					Init : VTIOHelper.Create,
 					InitObj : {
-						ConfigDV : "efdShowLoreHoundConfigUI" // ConfigWindowVarName is not yet properly initialized
+						ConfigDV : "efdShowLoreHoundConfigWindow" // ConfigWindowVarName is not yet properly initialized
 					}
 				}
 			}
