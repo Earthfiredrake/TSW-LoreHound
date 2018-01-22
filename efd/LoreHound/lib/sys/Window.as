@@ -25,6 +25,12 @@ import efd.LoreHound.lib.Mod;
 
 class efd.LoreHound.lib.sys.Window {
 	public static function Create(mod:Mod, initObj:Object):Window {
+		// Check dependencies
+		if (!mod.Config) {
+			Mod.ErrorMsg("Subsystem dependency missing: Config", {system : "Window"});
+			return undefined;
+		}
+
 		return new Window(mod, initObj);
 	}
 

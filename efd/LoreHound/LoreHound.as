@@ -25,6 +25,7 @@ import efd.LoreHound.lib.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 import efd.LoreHound.lib.ModIcon;
+import efd.LoreHound.lib.sys.ConfigManager;
 import efd.LoreHound.lib.sys.config.Versioning;
 import efd.LoreHound.lib.sys.VTIOHelper;
 
@@ -39,10 +40,15 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Trace : true,
 			Name : "LoreHound",
 			Version : "1.3.3",
-			MinUpgradableVersion : "1.0.0",
-			LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}],
 			Type : e_ModType_Reactive,
 			Subsystems : {
+				Config : {
+					Init : ConfigManager.Create,
+					InitObj : {
+						MinUpgradableVersion : "1.0.0",
+						LibUpgrades : [{mod : "1.3.2", lib : "1.0.0"}]
+					}
+				},
 				Icon : {
 					Init : ModIcon.Create,
 					InitObj : {

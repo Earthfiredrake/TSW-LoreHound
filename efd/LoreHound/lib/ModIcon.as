@@ -438,7 +438,7 @@ class efd.LoreHound.lib.ModIcon extends MovieClip {
 	private static var TooltipTextFont:String = "size='11'";
 
 	private var ModObj:Mod;
-	private var Config:ConfigWrapper;
+	private var Config:Object; // Local copy of ModObj.Config; Ducktyped ConfigWrapper
 	private var _VTIOMode:Boolean = false;
 
 	private var Tooltip:TooltipInterface;

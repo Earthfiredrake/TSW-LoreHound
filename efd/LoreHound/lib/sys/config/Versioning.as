@@ -109,7 +109,7 @@ class efd.LoreHound.lib.sys.config.Versioning {
 	}
 
 	private var ModObj:Mod;
-	private var Config:ConfigWrapper; // Local copy of ModObj.Config
+	private var Config:Object; // Local copy of ModObj.Config; Ducktyped ConfigWrapper
 	private var MinUpgradableVersion:String; // Minimum installed version allowing setting migration during update
 	private var LibUpgrades:Array; // List of library version upgrades as {mod:version, lib:version} pairs
 }
