@@ -187,8 +187,12 @@ class efd.LoreHound.lib.Mod {
 
 	private function SetDebugMode(dv:DistributedValue):Void { DebugTrace = dv.GetValue(); }
 
-	// TODO: Won't work if I toggle it back to false immediately... is there a better solution than this?
-	private function ReportVersion(dv:DistributedValue):Void { ChatMsg(Version); }
+	// Each mod ends up getting two notifications, whichever mod is "first" gets a true+false, other mods get false+false
+	private function ReportVersion(dv:DistributedValue):Void {
+		if (dv.GetValue()) { dv.SetValue(false); }
+		if (!VersionReported) { ChatMsg(Version); }
+		VersionReported = !VersionReported;
+	}
 
 /// Configuration Settings
 	private function ConfigLoaded():Void { UpdateLoadProgress("Config"); }
@@ -363,6 +367,7 @@ class efd.LoreHound.lib.Mod {
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
 	public var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for cross-mod integration
 	private var ModListDV:DistributedValue;
+	private var VersionReported:Boolean = false;
 
 	private var _Enabled:Boolean = false;
 	private var EnabledByGame:Boolean = false;
