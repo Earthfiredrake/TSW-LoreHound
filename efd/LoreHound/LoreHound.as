@@ -378,21 +378,21 @@ class efd.LoreHound.LoreHound extends Mod {
 			else { return; } // Dynel is not lore
 		}
 
-		ProcessAndNotify(new LoreData(dynel, categorizationId, loreType, CategoryIndex[categorizationId].loreID), 0);
+		var lore:LoreData = new LoreData(dynel, categorizationId, loreType, CategoryIndex[categorizationId].loreID);
+
+		ProcessAndNotify(lore, 0);
+
+		TrackedLore[dynelId.toString()] = lore;
+		// Registers despawn callback for lore tracking systems (spam reduction, waypoint cleanup and despawn notifications)
+		// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, but returns the same value :(
+		// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
+		Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
+		Icon.Refresh();
 	}
 
 	// Callback for timeout delegate if loreId is uninitialized
 	private function ProcessAndNotify(lore:LoreData, repeat:Number):Void {
-		if (TryConfirmLoreID(lore, repeat) && FilterLore(lore)) {
-			SendLoreNotifications(lore);
-		}
-		var dynelId:ID32 = lore.DynelID;
-		TrackedLore[dynelId.toString()] = lore;
-		// Registers despawn callback for lore tracking systems (spam reduction, waypoint cleanup and despawn notifications)
-		// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, and returns the same value :(
-		// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
-		Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-		Icon.Refresh();
+		if (TryConfirmLoreID(lore, repeat) && FilterLore(lore)) { SendLoreNotifications(lore); }
 	}
 
 	private function TryConfirmLoreID(lore:LoreData, repeat:Number):Boolean {
@@ -401,42 +401,36 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Reclassify based on ID#, in case it's a lore that detects as the wrong type
 			lore.Type = ClassifyID(lore.CategorizationID, lore.LoreID);
 			return true;
-		} else if (lore.Type == LoreData.ef_LoreType_Placed ||
-			repeat > 5) { return true; }
+		} else if (repeat >= 3) { return true; }
 		setTimeout(Delegate.create(this, ProcessAndNotify), 1, lore, repeat + 1);
 		return false;
 	}
 
 	private function FilterLore(lore:LoreData):Boolean {
 		// Only process special items that are currently spawned
-		if (lore.Type == LoreData.ef_LoreType_SpecialItem &&
-			!lore.DynelInst.GetStat(12, 2)) {
-			return false;
-		}
+		if (lore.Type == LoreData.ef_LoreType_SpecialItem && !lore.DynelInst.GetStat(12, 2)) { return false; }
 
 		// Filters lore based on user notification settings
 		if (lore.LoreID == 0) {
-			if (lore.Type == LoreData.ef_LoreType_Placed) { // Most likely inactive event lore
+			if (lore.IsInactiveEventLore) {
 				if (Config.GetValue("IgnoreOffSeasonLore")) { return false; }
-			} else { // Persisting partial initialization
-				TraceMsg("LoreID not available, limiting analysis");
-			}
+			} else { TraceMsg("LoreID not available, limited analysis"); }
 		} else { // Tests require a valid LoreID
+			// TODO: If having lore popping up in error when changing zones is still an issue
+			//       Consider doing a test here to see if the player data is properly loaded
 			if (lore.IsKnown) {
 				if (!(lore.Type & Config.GetValue("AlertForCollected"))) { return false; }
 			} else {
 				if (!(lore.Type & Config.GetValue("AlertForUncollected"))) { return false; }
 			}
 		}
-		// Pass conditions
-		if ((Config.GetValue("FifoAlerts") & lore.Type) ||
-			(Config.GetValue("ChatAlerts") & lore.Type) ||
-			(Config.GetValue("WaypointAlerts") & lore.Type) ||
-			(lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
-			Config.GetValue("CartographerLogDump")){ return true; }
 
-		// No notifications are to be made
-		return false;
+		// Verify that at least one notification is needed
+		return (Config.GetValue("FifoAlerts") & lore.Type) ||
+			   (Config.GetValue("ChatAlerts") & lore.Type) ||
+			   (Config.GetValue("WaypointAlerts") & lore.Type) ||
+			   (lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
+			    Config.GetValue("CartographerLogDump");
 	}
 
 	/// Lore proximity tracking
@@ -609,31 +603,20 @@ class efd.LoreHound.LoreHound extends Mod {
 			return LocaleManager.FormatString("LoreHound", "LoreName", topic, catCode, index);
 		}
 
-		// Deal with missing IDs
-		switch (lore.Type) {
-			case LoreData.ef_LoreType_Placed:
-				// All the unidentified common lore I ran into matched up with event/seasonal lore
-				// Though not all the event/seasonal lore exists in this disabled state
-				// For lore in accessible locations (ie, not event instances):
-				// - Samhain lores seem to be mostly absent (double checked in light of Polaris drone... really seems to be absent)
-				// - Other event lores seem to be mostly present
-				// (There are, of course, exceptions)
-				return LocaleManager.GetString("LoreHound", lore.CategorizationID == c_ShroudedLoreCategory ? "InactiveShrouded" : "InactiveEvent");
-			default:
-				// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
-				// The only reason to see this now is if the automatic redetection system failed
-				return LocaleManager.GetString("LoreHound", "IncompleteDynel");
-		}
+		// Inactive event lore won't have a valid ID if it can be detected at all
+		if (lore.IsShroudedLore) { return LocaleManager.GetString("LoreHound", "InactiveShrouded"); }
+		if (lore.IsInactiveEventLore) { return LocaleManager.GetString("LoreHound", "InactiveEvent"); }
+		// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
+		// The only reason to see this now is if the automatic redetection system failed, or if some other bug occured
+		return LocaleManager.GetString("LoreHound", "IncompleteDynel");
 	}
 
 	// This info is ommitted from FIFO messages
 	// Uncategorized lore always requests some info for identification purposes
 	private function GetDetailStrings(lore:LoreData):Array {
-		var details:Number = Config.GetValue("Details");
-		if (lore.Type == LoreData.ef_LoreType_Uncategorized) {
-			details |= ef_Details_Location | ef_Details_FormatString;
-		}
 		var detailStrings:Array = new Array();
+		var details:Number = Config.GetValue("Details");
+		if (lore.Type == LoreData.ef_LoreType_Uncategorized) { details |= ef_Details_Location | ef_Details_FormatString; }
 
 		var dynel:Dynel = lore.DynelInst;
 		if (details & ef_Details_Location) {
@@ -678,9 +661,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if ((Config.GetValue("WaypointAlerts") & lore.Type) && !(lore.Type & LoreData.ef_LoreType_Despawn)) {
 			CreateWaypoint(lore.DynelInst, messageStrings[0]);
 		}
-		if (Config.GetValue("FifoAlerts") & lore.Type) {
-			FifoMsg(messageStrings[1]);
-		}
+		if (Config.GetValue("FifoAlerts") & lore.Type) { FifoMsg(messageStrings[1]); }
 		if (Config.GetValue("ChatAlerts") & lore.Type) {
 			ChatMsg(messageStrings[2], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) });
 			for (var i:Number = 0; i < detailStrings.length; ++i) {
@@ -772,7 +753,6 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Variables
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
-	private static var c_ShroudedLoreCategory:Number = 7993128; // Keep ending up with special cases for this particular one
 
 	private static var c_MaxWaypointRange:Number = 50; // Maximum display range for waypoints, in metres
 

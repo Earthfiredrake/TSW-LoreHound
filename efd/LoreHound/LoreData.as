@@ -1,4 +1,4 @@
-﻿// Copyright 2017, Earthfiredrake (Peloprata)
+﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
@@ -27,7 +27,7 @@ class efd.LoreHound.LoreData {
 		DynelID = dynel.GetID();
 		CategorizationID = formatStrID;
 		Type = type;
-		LoreIDCache = overrideID;
+		_LoreID = overrideID;
 	}
 
 	// Extracts the format string ID from the xml localization formatting tag
@@ -39,40 +39,37 @@ class efd.LoreHound.LoreData {
 	}
 
 	public function get LoreID():Number {
-		if (!LoreIDCache) {
-			LoreIDCache = DynelInst.GetStat(e_Stats_LoreId, 2);
-		}
-		return LoreIDCache;
+		if (!_LoreID) { _LoreID = DynelInst.GetStat(e_Stats_LoreId, 2); }
+		return _LoreID;
 	}
 
-	public function get IsInactiveEventLore():Boolean {
-		return (Type == ef_LoreType_Placed && LoreID == 0);
-	}
+	// Heuristic, may occasionally eat a problematic placed lore
+	public function get IsInactiveEventLore():Boolean { return LoreID == 0 && (Type == ef_LoreType_Placed || IsShroudedLore); }
 
-	public function get IsKnown():Boolean {
-		return !Lore.IsLocked(LoreID);
-	}
+	public function get IsShroudedLore():Boolean { return CategorizationID == 7993128; }
 
-	public function get Topic():String {
-		return Lore.GetDataNodeById(LoreID).m_Parent.m_Name;
-	}
+	public function get IsKnown():Boolean { return !Lore.IsLocked(LoreID); }
 
-	public function get Source():Number {
-		// 0 == Buzzing; 1 == Black Signal
-		return Lore.GetTagViewpoint(LoreID);
-	}
+	public function get Topic():String { return Lore.GetDataNodeById(LoreID).m_Parent.m_Name; }
+
+	// 0 == Buzzing; 1 == Black Signal
+	public function get Source():Number { return Lore.GetTagViewpoint(LoreID); }
 
 	public function get Index():Number {
-		var source:Number = Source;
-		var siblings:Array = Lore.GetDataNodeById(LoreID).m_Parent.m_Children;
-		var index:Number = 1; // Lore entries start count at 1
-		for (var i:Number = 0; i < siblings.length; ++i) {
-			var sibling:Number = siblings[i].m_Id;
-			if (LoreID == sibling) { return index; }
-			if (Lore.GetTagViewpoint(sibling) == source) {
-				++index;
+		if (_Index == undefined) {
+			var source:Number = Source;
+			var siblings:Array = Lore.GetDataNodeById(LoreID).m_Parent.m_Children;
+			var index:Number = 1; // Lore entries start count at 1
+			for (var i:Number = 0; i < siblings.length; ++i) {
+				var sibling:Number = siblings[i].m_Id;
+				if (LoreID == sibling) {
+					_Index = index;
+					break;
+				}
+				if (Lore.GetTagViewpoint(sibling) == source) { ++index; }
 			}
 		}
+		return _Index;
 	}
 
 	// Variables
@@ -83,5 +80,6 @@ class efd.LoreHound.LoreData {
 	public var CategorizationID:Number;
 	public var Type:Number;
 
-	private var LoreIDCache:Number;
+	private var _LoreID:Number;
+	private var _Index:Number;
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- Copyright 2017, Earthfiredrake (Peloprata)
+<!-- Copyright 2017-2018, Earthfiredrake
      Released under the terms of the MIT License
      https://github.com/Earthfiredrake/TSW-LoreHound -->
 
@@ -21,7 +21,6 @@
 			<Reclassify loreID="7864" category="Trigger" /> <!-- Lilith #9, spawns after fight -->
 			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires mission -->
 		</ID>
-		<ID value="7993128" /> <!-- Shrouded lore (End of Days); (Presently intentionally miscategorized for simpler event lore handling) -->
 	</Category>
 	<Category name="Trigger"> <!-- Will spawn at fixed location once a condition is met -->
 		<!-- Despawn timers, and whether they spawn server or client side may vary -->
@@ -33,6 +32,7 @@
 		<ID value="7647985" /> <!-- Fac5 (Post boss lore spawn) -->
 		<ID value="7647986" /> <!-- Fac3 (Post boss lore spawn) -->
 		<ID value="7573298" /> <!-- HE6 (Post boss lore spawn), also used for Faust Omega "Knowledge" room -->
+		<ID value="7993128" /> <!-- Shrouded lore (End of Days), bird proximity -->
 		<ID value="8507997" /> <!-- CK carpark (HiE BS #1) spawns (on top floor) upon reaching bottom floor -->
 		<ID value="8508000" /> <!-- CK carpark (HiE BS #2) spawns after picking up the evidence -->
 		<ID value="8397708" /> <!-- Niflheim; Present under tree -->

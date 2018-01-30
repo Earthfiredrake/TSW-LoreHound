@@ -50,6 +50,9 @@ If updating v0.1.1-alpha a clean reinstall is recommended. Remove the existing m
 ## Change Log
 Version Next
 + Change to Modules.xml & LoginPrefs.xml (standardization of DV names)
++ Shrouded Lore (if it ever comes back) now properly categorized as triggered (still obeys Offseason setting)
++ Listed by "/setoption efdListMods true"
++ Various backend improvements
 
 Version 1.3.3
 + Classification improvements
@@ -65,7 +68,7 @@ Version 1.3.3
 	+ Default topbar location should be just to the right of the middle of the screen
     + Workaround for bug with ModFolder when doing /reloadui
     + Fixed a layout issue affecting Meeehr and Viper topbars
-  + Default settings have been changed to better reflect common usage (I do eventually listen to criticism)    
+  + Default settings have been changed to better reflect common usage (I do eventually listen to criticism)
 	+ Will now get lots of notifications for all types of uncollected lore by default
 	+ This affects fresh installs, upgrades will retain existing settings
   + Strings.xml has had a minor format change
