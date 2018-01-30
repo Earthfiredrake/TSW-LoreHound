@@ -50,6 +50,7 @@ If updating v0.1.1-alpha a clean reinstall is recommended. Remove the existing m
 ## Change Log
 Version Next
 + Change to Modules.xml & LoginPrefs.xml (standardization of DV names)
++ Onscreen markers no longer truncate long names and mostly keep them onscreen
 + Shrouded Lore (if it ever comes back) now properly categorized as triggered (still obeys Offseason setting)
 + Listed by "/setoption efdListMods true"
 + Various backend improvements
@@ -168,9 +169,9 @@ Version 0.1.1-alpha
 The following issues are known to exist in the most recent release:
 + There appear to be five uncategorized lore IDs somewhere in the game
   + One is believed to be event related and unavailable at the moment
-+ Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them or issuing alerts that should be disabled.
-+ Text field labels are truncated to fixed sizes
-  + Lore topics may cause waypoint labels to be truncated, hiding the #
++ Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them or issuing alerts that should be disabled
+  + Have been having problems reproducing this one recently
++ Settings window labels are truncated to fixed sizes
   + Custom or translated settings menu text may have size issues, if you want to provide translations I can tweak the label sizes to compensate
 + The waypoint colour customization interface is a bit kludgey
 

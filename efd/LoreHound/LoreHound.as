@@ -745,6 +745,20 @@ class efd.LoreHound.LoreHound extends Mod {
 				waypoint.m_Waypoint.m_ScreenPositionY = scrPos.y;
 				waypoint.m_Waypoint.m_DistanceToCam = dynel.GetCameraDistance(0);
 
+				// Improve name display so that it doesn't trim long names and is readable while waypoint off the sides of the screen
+				// Will still end up being cut off when near, but not over, the edges of the screen
+				waypoint["i_NameText"].autoSize = "center";
+				switch (waypoint.m_Direction) {
+					case "left" : {
+						waypoint["i_NameText"]._x = 0;
+						break;
+					}
+					case "right" : {
+						waypoint["i_NameText"]._x = -waypoint["i_NameText"].textWidth;
+						break;
+					}
+				}
+
 				waypoint.Update(Stage.visibleRect.width);
 				waypoint = undefined;
 			}
