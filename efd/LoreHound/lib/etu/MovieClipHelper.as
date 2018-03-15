@@ -2,7 +2,7 @@
 // Released under the terms of the MIT License
 // https://github.com/eltorqiro/TSW-Utils
 // Modified for LoreHound:
-//   Copyright 2017, Earthfiredrake (Peloprata)
+//   Copyright 2017, Earthfiredrake
 //   Used and released under the terms of the MIT License
 //   https://github.com/Earthfiredrake/TSW-LoreHound
 

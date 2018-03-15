@@ -546,7 +546,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				var dynel:Dynel = lore.DynelInst;
 				var pos:Vector3 = dynel.GetPosition(0);
 				var posStr:String = 'x="'+ Math.round(pos.x) + '" y="' + Math.round(pos.z) + '" z="' + Math.round(pos.y) + '"';
-				messageStrings.push('<!-- ' + AttemptIdentification(lore) + ' --> <Lore zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' loreID="' + lore.LoreID + '" />');
+				messageStrings.push('<!-- ' + AttemptIdentification(lore) + ' --> <Lore loreID="' + lore.LoreID +  '" zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' />');
 			}
 		}
 		return messageStrings;

@@ -170,7 +170,8 @@ The following issues are known to exist in the most recent release:
 + There appear to be five uncategorized lore IDs somewhere in the game
   + One is believed to be event related and unavailable at the moment
 + Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them or issuing alerts that should be disabled
-  + Have been having problems reproducing this one recently
+  + Have been having problems reproducing this one reliably
++ There seems to be an issue where it starts sending duplicate notifications, possibly related to lost connections, will investigate further but repro may be random
 + Settings window labels are truncated to fixed sizes
   + Custom or translated settings menu text may have size issues, if you want to provide translations I can tweak the label sizes to compensate
 + The waypoint colour customization interface is a bit kludgey

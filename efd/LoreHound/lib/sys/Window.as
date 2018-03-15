@@ -146,3 +146,49 @@ class efd.LoreHound.lib.sys.Window {
 	private var EscNode:EscapeStackNode;
 	private var WindowClip:MovieClip = null;
 }
+
+// Mouse Events
+// There are far too many and each of the three levels of API tweaks them, but here's some notes
+// Any object can get global event notifications by passing an object with a set of event handlers to Mouse.addListener():
+//   Flash defines the following events for it (with the first set of parameters):
+//     onMouseDown() (button:Number, targetPath:String, mouseIdx:Number, x:Number, y:Number, dblClick:Boolean)
+//     onMouseMove() (mouseIdx:Number, x:Number, y:Number)
+//     onMouseUp() (button:Number, targetPath:String, mouseIdx:Number, x:Number, y:Number)
+///    onMouseWheel(delta:Number, scrollTarget:Object) (delta:Number, targetPath:String, mouseIdx:Number, x:Number, y:Number)
+//   Scaleform uses different parameters (the second set of parameters)
+//     x,y values will always be in the global coordinate frame
+//     targetPath is the full display path name of the topmost clip under the mouse (likely with the restrictions described for some MovieClip handlers below)
+//     button values are Mouse["LEFT"|"RIGHT"|"MIDDLE"] (can use . notation if linked to the CLIK library)
+//     mouseIdx is only important if there are multiple mice/cursors, which there aren't
+// MovieClips can have event handlers added directly to the clip:
+//   Some behave as global events
+//     May only apply to left clicks, further research needed
+//     onMouseDown()
+//     onMouseMove()
+//     onMouseUp()
+//   Some only fire if the clip is immediately under the mouse:
+//     These ignore invisible clips and also drawn lines (though not filled areas)
+//     They also only apply to LEFT mouse clicks
+//     onPress()
+//     onRelease() // Only if released over this clip
+//     onReleaseOutside() // If was pressed over this clip, but released elsewhere
+//     onRollOver()
+//     onRollOut() // Will not trigger if any mouse button is pressed
+//     onDragOver() // An already pressed mouse rolled over
+//     onDragOut() // Pressed over this clip, then rolled out
+//   It is unclear if Scaleform modifies the parameters of the first group,
+//   Two parameters are added to each of the second group, value is questionable but, for reference:
+//     All get a mouseIdx as the first parameter
+//     Press/Release get a keyboard(-1) | mouse(0) event source flag
+//     Roll/Drag get a nextingIdx, which only matters if there are multiple cursors
+//   Scaleform adds events to handle the other mouse buttons (RIGHT or MIDDLE)
+//     They use the extra parameters above, and a third parameter for the mouse button
+//     onPressAux(), onReleaseAux(), onReleaseOutsideAux(), onDragOverAux(), onDragOutAux()
+//   The TSW/SWL API adds (from GUIFramework.MouseHandling):
+//     These will apply to the highest visible clip, with the function defined, under the mouse
+//     onMousePress(buttonIdx:Number, clickCount:Number)
+//       Triggered by any mouse button, counts sequential clicks within a timeout
+//     onMouseRelease(buttonIdx:Number)
+//       Appears to unify onRelease and onReleaseAux
+//     onMouseWheel(delta:Number)
+//       A local version of the global event
