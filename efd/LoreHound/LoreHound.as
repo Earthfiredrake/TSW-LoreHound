@@ -37,10 +37,9 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function GetModInfo():Object {
 		return {
 			// Dev/debug settings at top so commenting out leaves no hanging ','
-			// Trace : true,
+			// Debug : true,
 			Name : "LoreHound",
 			Version : "1.3.3",
-			Type : e_ModType_Reactive,
 			Subsystems : {
 				Config : {
 					Init : ConfigManager.Create,
@@ -258,7 +257,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function Activate():Void {
 		AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
-		HostMovie.onEnterFrame = Delegate.create(this, UpdateWaypoints);
+		HostClip.onEnterFrame = Delegate.create(this, UpdateWaypoints);
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
@@ -270,7 +269,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		// Detection notices between the deactivate-activate pair have a strange habit of providing the correct LoreId, but being unable to link to an actual lore object
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
-		delete HostMovie.onEnterFrame;
+		delete HostClip.onEnterFrame;
 		AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 

@@ -45,7 +45,6 @@ class efd.LoreHound.lib.sys.ConfigManager {
 	}
 
 	public function ConfigManager(mod:Mod, initObj:Object) {
-		ModObj = mod;
 		Config = new ConfigWrapper(initObj.ArchiveName);
 		mod.Config = Config;
 
@@ -66,7 +65,6 @@ class efd.LoreHound.lib.sys.ConfigManager {
 		}
 	}
 
-	private var ModObj:Mod;
 	private var Config:ConfigWrapper;
 	public var ConfigWindow:Window;
 

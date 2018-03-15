@@ -5,6 +5,7 @@
 import gfx.utils.Delegate;
 
 import com.GameInterface.DistributedValue;
+import com.Utils.WeakPtr;
 
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
@@ -21,7 +22,7 @@ class efd.LoreHound.lib.sys.VTIOHelper {
 	}
 
 	private function VTIOHelper(mod:Mod, initObj:Object) {
-		ModObj = mod;
+		ModPtr = new WeakPtr(mod);
 		ConfigDV = initObj.ConfigDV;
 		ViperDV = DistributedValue.Create("VTIO_IsLoaded");
 		mod.SignalLoadCompleted.Connect(LoadCompleted, this);
@@ -43,9 +44,9 @@ class efd.LoreHound.lib.sys.VTIOHelper {
 	}
 
 	private function LoadCompleted():Void {
-		if (!ModObj.Config) { LinkWithTopbar(); return; } // Config not in use, auto link
+		if (!ModPtr.Get().Config) { LinkWithTopbar(); return; } // Config not in use, auto link
 		// DEPRECATED(v1.0.0): Temporary upgrade support (use of 'undefined')
-		var integration:Boolean = ModObj.Config.GetValue("TopbarIntegration", false);
+		var integration:Boolean = ModPtr.Get().Config.GetValue("TopbarIntegration", false);
 		if (integration == undefined || integration) { LinkWithTopbar(); }
 	}
 
@@ -59,30 +60,30 @@ class efd.LoreHound.lib.sys.VTIOHelper {
 
 	private function DoTopbarRegistration(dv:DistributedValue):Void {
 		if (dv.GetValue()) {
-			ModObj.Config.SetValue("TopbarIntegration", true); // DEPRECATED(v1.0.0) Temporary upgrade support
+			var mod:Mod = ModPtr.Get();
+			mod.Config.SetValue("TopbarIntegration", true); // DEPRECATED(v1.0.0) Temporary upgrade support
 
 			// TODO: Completing icon extraction
 			// Adjust icon to be better suited for topbar integration
-			ModObj.Icon.VTIOMode = true;
+			mod.Icon.VTIOMode = true;
 
 			// Doing this more than once messes with Meeehr's, will have to find alternate workaround for ModFolder
 			if (!RegisteredWithTopbar) {
 				// Note: Viper's *requires* all five values, regardless of whether the icon exists or not
 				//       Both are capable of handling "undefined" or otherwise invalid icon names
-				var topbarInfo:Array = [ModObj.ModName, Mod.DevName, ModObj.Version, ConfigDV, ModObj.Icon.toString()];
+				var topbarInfo:Array = [mod.ModName, Mod.DevName, mod.Version, ConfigDV, mod.Icon.toString()];
 				DistributedValue.SetDValue("VTIO_RegisterAddon", topbarInfo.join('|'));
 			}
-			// TODO: Completing icon extraction
 			// VTIO creates its own icon, use it as our target for changes instead
 			// Can't actually remove ours though, Meeehr's redirects event handling oddly
 			// (It calls back to the original clip, using the new clip as the "this" instance)
 			// And just to be different, ModFolder doesn't create a copy at all, it just uses the one we give it
 			// In which case we don't want to lose our current reference
-			if (ModObj.HostMovie.Icon != undefined) {
-				ModObj.Icon.CopyToTopbar(ModObj.HostMovie.Icon);
-				ModObj.Icon._visible = false; // Usually the topbar will do this for us, but it's not so good about it during a re-register
-				ModObj.Icon = ModObj.HostMovie.Icon;
-				ModObj.Icon.Refresh();
+			if (mod.HostClip.Icon != undefined) {
+				mod.Icon.CopyToTopbar(mod.HostClip.Icon);
+				mod.Icon._visible = false; // Usually the topbar will do this for us, but it's not so good about it during a re-register
+				mod.Icon = mod.HostClip.Icon;
+				mod.Icon.Refresh();
 			}
 			RegisteredWithTopbar = true;
 			// WORKAROUND: ModFolder has a nasty habit of leaving the VTIO_IsLoaded flag set during reloads
@@ -102,7 +103,7 @@ class efd.LoreHound.lib.sys.VTIOHelper {
 	// This needs to be deferred so that the disconnection doesn't muddle the ongoing processing
 	private function DetachTopbarListeners():Void {	ViperDV.SignalChanged.Disconnect(DoTopbarRegistration, this); }
 
-	private var ModObj:Mod;
+	private var ModPtr:WeakPtr;
 	private var ViperDV:DistributedValue;
 	private var ConfigDV:String;
 	private var RegisteredWithTopbar:Boolean = false;
