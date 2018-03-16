@@ -215,6 +215,7 @@ class efd.LoreHound.lib.Mod {
 			Enabled = newState;
 			if (newState) { Activate(); }
 			else { Deactivate(); }
+			Icon.Refresh();
 		}
 	}
 

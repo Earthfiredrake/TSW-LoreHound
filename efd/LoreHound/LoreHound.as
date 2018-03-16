@@ -274,7 +274,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	}
 
 	private function GetIconFrame():String {
-		if (Config.GetValue("Enabled")) { // If game disables mod, icon isn't visible at all, so only user disables matter
+		if (Enabled) { // If game disables mod, icon isn't visible at all, so only user disables matter
 			if (Config.GetValue("TrackDespawns")) {
 				for (var id:String in TrackedLore) {
 					if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) { return "alerted"; }

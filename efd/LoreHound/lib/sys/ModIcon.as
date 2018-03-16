@@ -74,7 +74,8 @@ class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 		Debug = new DebugUtils("ModIcon");
 
 		// Get local copies of commonly used ModObj members
-		Config = ModPtr.Get().Config;
+		var mod:Mod = ModPtr.Get();
+		Config = mod.Config;
 
 		// Get a unique ID for default layout calculations
 		// Note: System is not without flaws, subsequently added mods may just rearrange the IDs and stomp anyway
@@ -254,7 +255,6 @@ class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 
 	private function ConfigChanged(setting:String, newValue, oldValue):Void {
 		switch (setting) {
-			case "Enabled": { Refresh(); break; }
 			case "IconPosition": {
 				if (OnBaseTopbar) {	_x = newValue; }
 				else {
@@ -300,7 +300,6 @@ class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 	// Minimalist ConfigChanged for the cloned copy created by VTIO/Meeehr
 	// This is mostly to split off TopbarIntegration behaviour
 	private function CloneConfigChanged(setting:String, newValue, oldValue):Void {
-		if (setting == "Enabled") { Refresh(); }
 		if (setting == "TopbarIntegration") { _visible = newValue; } // Can't actually remove the cloned icon safely, so just hide/reveal it for now
 	}
 
@@ -311,7 +310,7 @@ class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 	}
 
 	// Default icon frame selector, may be overriden via init object
-	private function GetFrame():String { return Config.GetValue("Enabled", true) ? "active" : "inactive"; }
+	private function GetFrame():String { return this["Enabled"] ? "active" : "inactive"; }
 
 	/// Layout and GEM handling
 	private function BringAboveTopbar(above:Boolean):Void {
