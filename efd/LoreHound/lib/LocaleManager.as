@@ -6,6 +6,7 @@ import com.Utils.Format;
 import com.Utils.LDBFormat;
 import com.Utils.Signal;
 
+import efd.LoreHound.lib.DebugUtils;
 import efd.LoreHound.lib.Mod;
 
 // Provides string localization features, consisting of two major components:
@@ -52,7 +53,7 @@ class efd.LoreHound.lib.LocaleManager {
 		if (StringFile == undefined) {
 			StringFile = Mod.LoadXmlAsynch(fileName, StringsLoaded);
 		} else {
-			Mod.ErrorMsg("Already loading string file, wait for SignalStringsLoaded before starting subsequent files");
+			DebugUtils.ErrorMsgS("Loading in progress, wait for SignalStringsLoaded before starting subsequent files", { sysName: "Localization" });
 		}
 	}
 
@@ -73,7 +74,7 @@ class efd.LoreHound.lib.LocaleManager {
 		if (success) { AddStrings(StringFile.firstChild); }
 		else {
 			// Bypass localization for obvious reasons
-			Mod.ErrorMsg("Could not load localized strings", { system : "Localization" });
+			DebugUtils.ErrorMsgS("Could not load localized strings", { sysName : "Localization" });
 		}
 		delete StringFile;
 		SignalStringsLoaded.Emit(success);

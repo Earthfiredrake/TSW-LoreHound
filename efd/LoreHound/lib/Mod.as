@@ -14,8 +14,9 @@ import efd.LoreHound.lib.DebugUtils;
 // TODO: Finish tidying up the last components
 import efd.LoreHound.lib.LocaleManager;
 
-// Mod Framework v1.1.0
-// See ModInfo.LibUpgrades for upgrade requirements
+// Mod Framework v1.1.1
+// Revision numbers are for internal merge tracking only, and do not require an upgrade notification
+// See ConfigManager for notification format
 
 //   The following DistributedValue names are reserved for use by the framework; some are hard-coded, some are just convenient standardized names:
 //   [pfx] is a developer unique prefix (I use 'efd'), [Name] is the name of the mod
@@ -89,13 +90,8 @@ class efd.LoreHound.lib.Mod {
 	//       Would like to make this a more flexible component based system
 
 	public function Mod(modInfo:Object, hostClip:MovieClip) {
-		Debug = DebugUtils.StaticInit(modInfo.Name || "Unnamed", DVPrefix, modInfo.Debug);
+		Debug = DebugUtils.StaticInit(modInfo.Name || "Unnamed", DevName, DVPrefix, modInfo.Debug);
 		DebugUtils.SignalFatalError.Connect(OnFatalError, this);
-
-		// TEMP: Compatibility shim while migrating from Mod to DebugUtils
-		ErrorMsg = DebugUtils.ErrorMsgS;
-		TraceMsg = DebugUtils.TraceMsgS;
-		LogMsg = DebugUtils.LogMsgS;
 
 		FifoMsg = Delegate.create(this, _FifoMsg);
 		ChatMsg = Delegate.create(this, _ChatMsg);
@@ -195,12 +191,13 @@ class efd.LoreHound.lib.Mod {
 		if (newValue && SystemsLoaded != undefined) {
 			Debug.ErrorMsg("Failed to load required components, and cannot be enabled");
 			for (var key:String in SystemsLoaded) {
-				if (!SystemsLoaded[key]) { Debug.ErrorMsg("Missing: " + key, { mlCont : true }); }
+				if (!SystemsLoaded[key]) { Debug.ErrorMsg("Missing: " + key, { noHeader : true }); }
 			}
 			dv.SetValue(false);
 		} else {
 			CheckEnableState();
 			Config.SetValue("Enabled", ModEnabledDV.GetValue());
+			// TODO: This is getting called twice when changing characters... why?
 			if (Icon == undefined) {
 				// No Icon, probably means it's a console style mod
 				// Provide alternate notification
@@ -318,9 +315,6 @@ class efd.LoreHound.lib.Mod {
 	// Recommend wrapping the call in a local version, that inserts an identifer for the subcomponent involved
 	public static var FifoMsg:Function;
 	public static var ChatMsg:Function;
-	public static var ErrorMsg:Function;
-	public static var TraceMsg:Function;
-	public static var LogMsg:Function;
 
 /// Subclass Extension Stubs
 	public function InstallMod():Void { }

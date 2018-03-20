@@ -12,7 +12,7 @@ import com.GameInterface.DistributedValue;
 import com.Utils.Archive;
 import com.Utils.Signal;
 
-import efd.LoreHound.lib.Mod;
+import efd.LoreHound.lib.DebugUtils;
 
 // WARNING: Recursive or cyclical data layout is verboten.
 //   A config setting holding a reference to a direct ancestor will cause infinite recursion during serialization.
@@ -20,17 +20,19 @@ import efd.LoreHound.lib.Mod;
 // Basic types, Archive and Point all use built in serialization support
 // Array is repacked as Archive
 //   Default serialization does not differentiate between single element array and lone variable
-//   Repacking allows recreation of the datastructure without relying on internal information
+//   It also tends to lose any gaps in the array structure
+//   Repacking allows two way serialization without needing to explicitly identify arrays before loading
 // Object and ConfigWrapper are also repacked as Archive
 //   To differentiate these uses of Archive the setting name "ArchiveType" is reserved for internal use
-//   ConfigWrappers must decend directly from other ConfigWrappers, they won't load properly if nested within other types
+//   ConfigWrappers must descend directly from other ConfigWrappers, they won't load properly if nested within other types
 //     TODO: This may be an issue, and should be fixed if possible
 
 class efd.LoreHound.lib.sys.config.ConfigWrapper {
-	// ArchiveName is distributed value to be saved to for top level config wrappers
-	// Leave archiveName undefined for nested config wrappers (unless they are saved seperately)
-	// Also leave it undefined if loading/saving to the game's provided config.
+	// ArchiveName is distributed value name used by top level config wrappers
+	// Leave archiveName undefined for nested config wrappers (unless they are saved externally)
+	// Also leave undefined if loading/saving to the default config specified in Modules.xml
 	public function ConfigWrapper(archiveName:String) {
+		Debug = new DebugUtils("Config");
 		ArchiveName = archiveName;
 		Settings = new Object();
 		SignalValueChanged = new Signal();
@@ -43,9 +45,9 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 	//   - Provide a subconfig wrapper, if the settings are specific to the mod
 	//   - Provide its own archive, if it's a static module that can share the settings between uses
 	public function NewSetting(key:String, defaultValue):Void {
-		if (key == "ArchiveType") { TraceMsg("'" + key + "' is a reserved setting name."); return; } // Reserved
-		if (Settings[key] != undefined) { TraceMsg("Setting '" + key + "' redefined, existing definition will be overwritten."); }
-		if (IsLoaded) { TraceMsg("Setting '" + key + "' added after loading archive will have default values."); }
+		if (key == "ArchiveType") { Debug.ErrorMsg("'" + key + "' is a reserved setting name."); return; } // Reserved
+		if (Settings[key] != undefined) { Debug.TraceMsg("Setting '" + key + "' redefined, existing definition will be overwritten."); }
+		if (IsLoaded) { Debug.TraceMsg("Setting '" + key + "' added after loading archive will have default values."); }
 		Settings[key] = {
 			value: CloneValue(defaultValue),
 			defaultValue: defaultValue
@@ -78,7 +80,7 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 		var setting:Object = GetSetting(key);
 		if (setting != undefined) { return GetSetting(key).value; }
 		else {
-			if (fallbackValue == undefined) { TraceMsg(key + " is not defined, and a fallback value was not specified" ); }
+			if (fallbackValue == undefined) { Debug.TraceMsg(key + " is not defined, and a fallback value was not specified" ); }
 			return fallbackValue;
 		}
 	}
@@ -175,7 +177,7 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 
 	// Reloads from cached archive, resets to last saved values, rather than default
 	public function Reload():Void {
-		if (!IsLoaded) { TraceMsg("Config never loaded, cannot reload."); return; }
+		if (!IsLoaded) { Debug.DevMsg("Config never loaded, cannot reload."); return; }
 		LoadConfig(CurrentArchive);
 	}
 
@@ -224,7 +226,7 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 						//   New sub-config
 						value.LoadConfig();
 					} else {
-						TraceMsg("Setting '" + key + "' could not be found in archive. (New setting?)");
+						Debug.TraceMsg("Setting '" + key + "' could not be found in archive. (New setting?)");
 					}
 					continue;
 				}
@@ -254,7 +256,7 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 					//       This problem also crops up in a few other locations
 					GetValue(key).FromArchive(element);
 					if (key == undefined) {
-						ErrorMsg("A config archive could not be linked to an immediate parent.");
+						Debug.ErrorMsg("A config archive could not be linked to an immediate parent.");
 					}
 					return null;
 				case "Array":
@@ -269,23 +271,11 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 				// Archive type is not supported
 				//   Caused by reversion when a setting has had its type changed
 				//   A bit late to be working this out though
-					TraceMsg("Setting '" + key + "' was saved with a type not supported by this version. Default values will be used.");
+					Debug.DevMsg("Setting '" + key + "' was saved with a type not supported by this version. Default values will be used.");
 					return null;
 			}
 		}
 		return element; // Basic type
-	}
-
-	private static function TraceMsg(msg:String, options:Object):Void {
-		if (options == undefined) { options = new Object(); }
-		options.system = "Config";
-		Mod.TraceMsg(msg, options);
-	}
-
-	private static function ErrorMsg(msg:String, options:Object):Void {
-		if (options == undefined) { options = new Object(); }
-		options.system = "Config";
-		Mod.ErrorMsg(msg, options);
 	}
 
 	public function get IsLoaded():Boolean { return CurrentArchive != undefined; }
@@ -303,19 +293,21 @@ class efd.LoreHound.lib.sys.config.ConfigWrapper {
 		return false;
 	}
 
-	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue):Void // Note: oldValue may not always be available
-	public var SignalConfigLoaded:Signal;
+	public var SignalValueChanged:Signal; // (settingName:String, newValue, oldValue); Note: oldValue not always available
+	public var SignalConfigLoaded:Signal; // No parameters
 
  	// The distributed value archive saved into the game settings which contains this config setting
 	// Usually only has a value for the root of the config tree
 	// Most options should be saved to the same archive, leaving this undefined in child nodes
 	// If a secondary archive is in use, providing a value will allow both archives to be unified in a single config wrapper
 	// Alternatively a config wrapper may elect to forgo the names, and offload the actual archive load/save through parameters
-	// Parameters take precidence over names
+	// Parameters take precedence over names
 	private var ArchiveName:String;
 	private var Settings:Object;
 
 	// A cache of the last loaded/saved archive
 	private var CurrentArchive:Archive;
 	private var DirtyFlag:Boolean = false;
+
+	private var Debug:DebugUtils;
 }

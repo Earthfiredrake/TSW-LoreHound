@@ -6,22 +6,25 @@ import com.GameInterface.DistributedValue;
 import com.GameInterface.Game.Character; // To prevent self mailing
 import com.GameInterface.Tradepost;
 
-import efd.LoreHound.lib.sys.config.ConfigWrapper;
+import efd.LoreHound.lib.DebugUtils;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
+import efd.LoreHound.lib.sys.config.ConfigWrapper;
 
 // Automated error/information reporting framework
 // Accepts arbitrary report items, as long as they have an:
 //   Accessible and comparable "id" attribute, to reduce duplicate reporting
 //   Accessible "text" attribute, providing the message to be dispatched
 // Compiles a list of unique(by ID) report items, testing both those in the queue, and those previously sent
-// When the user enters the bank interface it will attempt to send those reports automaticly by ingame mail
+// When the user enters the bank interface it will attempt to send those reports automatically by in-game mail
 // Queued reports, and a list of report IDs sent are stored as a Config object, and can be persisted by the mod if desired.
 
 class efd.LoreHound.lib.AutoReport {
 	private function AutoReport() { } // Static class, don't really need more than one/mod
 
 	public static function Initialize(modName:String, modVer:String, devCharName:String):ConfigWrapper {
+		Debug = new DebugUtils("AutoReport");
+
 		MailHeader = modName + ": Automated report (" + modVer + ")";
 		Recipient = devCharName;
 		MailTrigger = DistributedValue.Create("tradepost_window");
@@ -44,15 +47,15 @@ class efd.LoreHound.lib.AutoReport {
 	}
 
 	public static function AddReport(report:Object):Boolean {
-		if (!IsModActive) { TraceMsg("Inactive mod is queuing reports!"); }
+		if (!IsModActive) { Debug.DevMsg("Inactive mod is queueing reports!"); }
 		if (!IsEnabled) {
 			// Don't build up queue while system is disabled
 			return false;
 		}
 		// Verify that the report will fit in a mail
-		// Otherwise a single oversized report at the head of the queue could block it up eternally
+		// Otherwise a single oversize report at the head of the queue could block it up eternally
 		if (!(MailHeader.length + report.text.length < MaxMailLength)) {
-			TraceMsg("Report was too long to fit in mail and has been discarded.");
+			Debug.DevMsg("Single report was too long to fit in mail and has been discarded.");
 			return false;
 		}
 		// Ensure that report ids are only sent once
@@ -65,7 +68,7 @@ class efd.LoreHound.lib.AutoReport {
 		var queue:Array = Config.GetValue("QueuedReports");
 		if (contains(Config.GetValue("PriorReports"), function (id):Boolean { return id == report.id; }) ||
 			contains(queue, function (pending):Boolean { return pending.id == report.id; })) {
-				TraceMsg("Report ID #" + report.id + " is already pending or sent.");
+				Debug.TraceMsg("Report ID #" + report.id + " is already pending or sent.");
 				return false;
 		}
 		queue.push(report);
@@ -84,7 +87,7 @@ class efd.LoreHound.lib.AutoReport {
 			}
 		}
 		Config.SetValue("PriorReports", cleanArray);
-		TraceMsg("Sent report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
+		Debug.TraceMsg("Sent report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
 		cleanArray = new Array();
 		sourceArray = Config.GetValue("QueuedReports");
 		for (var i:Number = 0; i < sourceArray.length; ++i) {
@@ -93,7 +96,7 @@ class efd.LoreHound.lib.AutoReport {
 			}
 		}
 		Config.SetValue("QueuedReports", cleanArray);
-		TraceMsg("Queued report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
+		Debug.TraceMsg("Queued report cleanup removed " + (sourceArray.length - cleanArray.length) + " records, " + cleanArray.length + " records remain.");
 	}
 
 	private static function TriggerReports(dv:DistributedValue):Void {
@@ -106,7 +109,7 @@ class efd.LoreHound.lib.AutoReport {
 	private static function SendReport(attempt:Number):Void {
 		var queue:Array = Config.GetValue("QueuedReports");
 		if (queue.length > 0) {
-			// Compose the automated report message, splitting it if it would exceed our max mail length
+			// Compose the automated report message, splitting if it would exceed max mail length
 			var msg:String = MailHeader;
 			while (ReportsSent < queue.length && (msg.length + queue[ReportsSent].text.length) < MaxMailLength) {
 				msg += "\n" + queue[ReportsSent++].text;
@@ -168,12 +171,6 @@ class efd.LoreHound.lib.AutoReport {
 		Mod.ChatMsg(msg, options);
 	}
 
-	private static function TraceMsg(msg:String, options:Object):Void {
-		if (options == undefined) { options = new Object(); }
-		options.system = "AutoReport";
-		Mod.TraceMsg(msg, options);
-	}
-
 	public static function get IsEnabled():Boolean {
 		// This is only internal state
 		return Config.GetValue("Enabled") && Character.GetClientCharacter().GetName() != Recipient;
@@ -207,4 +204,6 @@ class efd.LoreHound.lib.AutoReport {
 	private static var MaxRetries = 5;
 	private static var RetryDelay = 10;
 	private static var MaxMailLength = 3000;
+
+	private static var Debug:DebugUtils;
 }

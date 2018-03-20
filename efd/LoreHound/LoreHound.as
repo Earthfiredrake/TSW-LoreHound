@@ -21,6 +21,7 @@ import com.Utils.ID32;
 import com.Utils.LDBFormat;
 
 import efd.LoreHound.lib.AutoReport;
+import efd.LoreHound.lib.DebugUtils;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 import efd.LoreHound.lib.sys.ConfigManager;
@@ -86,7 +87,7 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		IndexFile = LoadXmlAsynch("CategoryIndex", Delegate.create(this, CategoryIndexLoaded));
 
-		TraceMsg("Initialized");
+		Debug.TraceMsg("Initialized");
 	}
 
 /// Settings
@@ -208,9 +209,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Currently localization appears to load first, but I won't count on it
 			// There's also the possibility that it also failed to load
 			// Could check SystemsLoaded, but seems excessive for what should be a disabled state
-			ErrorMsg("Failed to load category index");
-			ErrorMsg("Mod cannot be enabled", { noPrefix : true });
-			Config.SetValue("Enabled", false);
+			Debug.ErrorMsg("Failed to load category index", { fatal : true });
 		}
 	}
 
@@ -413,7 +412,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (lore.LoreID == 0) {
 			if (lore.IsInactiveEventLore) {
 				if (Config.GetValue("IgnoreOffSeasonLore")) { return false; }
-			} else { TraceMsg("LoreID not available, limited analysis"); }
+			} else { Debug.DevMsg("LoreID not available, limited analysis"); }
 		} else { // Tests require a valid LoreID
 			// TODO: If having lore popping up in error when changing zones is still an issue
 			//       Consider doing a test here to see if the player data is properly loaded
@@ -521,7 +520,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				default:
 					// It should be impossible for the game data to trigger this state
 					// This message probably indicates a logical failure in the mod
-					TraceMsg("Error, lore type defaulted: " + lore.Type);
+					Debug.DevMsg("Lore type defaulted: " + lore.Type);
 					return;
 			}
 		}
@@ -569,7 +568,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					case 9240632: scarabColour = "ScarabColourGreen"; break;
 					case 9240636: scarabColour = "ScarabColourRed"; break;
 					default:
-						TraceMsg("Scarab colour filter failure!");
+						DebugUtils.DevMsgS("Scarab colour filter failure!");
 						return LDBFormat.Translate(lore.DynelInst.GetName());
 				}
 				return LocaleManager.FormatString("LoreHound", scarabColour, LDBFormat.Translate(lore.DynelInst.GetName()));
@@ -581,7 +580,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			var topic:String = lore.Topic;
 			var index:Number = lore.Index;
 			if (!(topic && index)) {
-				TraceMsg("Unknown topic or entry #, malformed lore ID: " + lore.LoreID);
+				DebugUtils.DevMsgS("Unknown topic or entry #, malformed lore ID: " + lore.LoreID);
 				return LocaleManager.GetString("LoreHound", "InvalidLoreID");
 			}
 			var catCode:String;
@@ -596,7 +595,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					// Consider setting up a report here, with LoreID as tag
 					// Low probability of it actually occuring, but knowing sooner rather than later might be nice
 					catCode = LocaleManager.GetString("LoreHound", "UnknownSource");
-					TraceMsg("Lore has unknown source: " + lore.Source);
+					DebugUtils.DevMsgS("Lore has unknown source: " + lore.Source);
 					break;
 			}
 			return LocaleManager.FormatString("LoreHound", "LoreName", topic, catCode, index);
@@ -679,7 +678,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (Config.GetValue("CartographerLogDump") && messageStrings.length > 3) {
 			// Situations where a log dump was not possible (despawns) would also not generate a report
 			// If generated report will always be in index 3, and log dump will always be in the last slot (either 3 or 4)
-			LogMsg(messageStrings[messageStrings.length - 1]);
+			Debug.LogMsg(messageStrings[messageStrings.length - 1]);
 			// Relevant details are already embedded
 		}
 	}

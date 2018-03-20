@@ -7,6 +7,7 @@ import flash.geom.Point;
 import com.GameInterface.DistributedValue;
 import com.Utils.WeakPtr;
 
+import efd.LoreHound.lib.DebugUtils;
 import efd.LoreHound.lib.LocaleManager;
 import efd.LoreHound.lib.Mod;
 
@@ -40,12 +41,12 @@ class efd.LoreHound.lib.sys.Window {
 	public static function Create(mod:Mod, initObj:Object):Window {
 		// Check required parameters
 		if (!initObj.WindowName) {
-			Mod.ErrorMsg("Name is a required parameter and may not be an empty string", {system : "Window"});
+			DebugUtils.ErrorMsgS("Name is a required parameter and may not be an empty string", {sysName : "Window"});
 			return undefined;
 		}
 		// Check dependencies
 		if (!mod.Config) {
-			Mod.ErrorMsg("Subsystem dependency missing: Config", {system : initObj.WindowName});
+			DebugUtils.ErrorMsgS("Subsystem dependency missing: Config", {sysName : initObj.WindowName});
 			return undefined;
 		}
 
@@ -73,11 +74,11 @@ class efd.LoreHound.lib.sys.Window {
 		var min:Point = limits.Min;
 		var max:Point = limits.Max;
 		if (min.x == undefined || min.y == undefined || max.x == undefined || max.y == undefined) {
-			Mod.ErrorMsg("Resize limits are not all defined, resize disabled", {system : WindowName});
+			DebugUtils.ErrorMsgS("Resize limits only partially defined, resize disabled", {sysName : WindowName});
 			return false;
 		}
 		if (min.x > max.x || min.y > max.y) {
-			Mod.ErrorMsg("Resize limits do not define a closed range, resize disabled", {system : WindowName});
+			DebugUtils.ErrorMsgS("Resize limits do not define a closed range, resize disabled", {sysName : WindowName});
 			return false;
 		}
 		// Hopefully that covers the most likely mistakes, most devs should realize negative or particularly small/large values aren't wise either
@@ -89,7 +90,7 @@ class efd.LoreHound.lib.sys.Window {
 		if (dv.GetValue()) {
 			if (!ModPtr.Get().ModLoadedDV.GetValue()) {
 				dv.SetValue(false);
-				Mod.ErrorMsg("Did not load properly, and has been disabled.");
+				DebugUtils.ErrorMsgS("Is disabled because it failed to load");
 				return;
 			}
 			if (WindowClip == null) { WindowClip = OpenWindow(); }
