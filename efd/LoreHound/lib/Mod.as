@@ -188,6 +188,7 @@ class efd.LoreHound.lib.Mod {
 	//  Flash triggered enable state DV has changed
 	private function ModEnabledChanged(dv:DistributedValue):Void {
 		var newValue:Boolean = dv.GetValue();
+		if (newValue == undefined) { Debug.DevMsg("A prior instance was not fully cleaned up before construction of a new instance"); }
 		if (newValue && SystemsLoaded != undefined) {
 			Debug.ErrorMsg("Failed to load required components, and cannot be enabled");
 			for (var key:String in SystemsLoaded) {
@@ -197,7 +198,6 @@ class efd.LoreHound.lib.Mod {
 		} else {
 			CheckEnableState();
 			Config.SetValue("Enabled", ModEnabledDV.GetValue());
-			// TODO: This is getting called twice when changing characters... why?
 			if (Icon == undefined) {
 				// No Icon, probably means it's a console style mod
 				// Provide alternate notification
@@ -223,6 +223,9 @@ class efd.LoreHound.lib.Mod {
 		ModLoadedDV.SetValue(false);
 		Icon.FreeID(); // TODO: Move this into Icon, probably by raising an event
 		removeMovieClip(Icon);
+		LoadXmlAsynch = undefined;
+		FifoMsg = undefined;
+		ChatMsg = undefined;
 	}
 
 	// Each mod ends up getting two notifications, whichever mod is first gets a true+false, other mods get false+false

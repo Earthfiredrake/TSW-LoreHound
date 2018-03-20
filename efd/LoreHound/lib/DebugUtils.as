@@ -10,7 +10,7 @@
 //           Note: Log file clears on startup, be sure to recover any logged data beforehand
 //   TraceMsg: Output only if debug flag is set
 //             ModName yellow, labeled Trace
-//   DevMsg: Output only for mod developer's character
+//   DevMsg: Output if debug flag is set, or for mod dev's character in release builds
 //           ModName orange, labeled Alert
 //   ErrorMsg: Output always
 //             ModName red, labeled ERROR
@@ -47,7 +47,7 @@ class efd.LoreHound.lib.DebugUtils {
 	}
 
 	public function DevMsg(message:String, options:Object): Void {
-		if (IsDev) { PostMsg("Alert", message, AlertColour, options); }
+		if (DebugMode || IsDev) { PostMsg("Alert", message, AlertColour, options); }
 	}
 
 	public function TraceMsg(message:String, options:Object):Void {
