@@ -40,7 +40,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Dev/debug settings at top so commenting out leaves no hanging ','
 			// Debug : true,
 			Name : "LoreHound",
-			Version : "1.3.3",
+			Version : "1.3.4",
 			Subsystems : {
 				Config : {
 					Init : ConfigManager.Create,
@@ -96,11 +96,12 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Category flags for extended information
 	private static var ef_Details_None:Number = 0;
 	public static var ef_Details_Location:Number = 1 << 0; // Playfield name and coordinate vector
-	public static var ef_Details_FormatString:Number = 1 << 1; // Trimmed contents of format string, to avoid automatic evaluation
+	public static var ef_Details_CategoryIDs:Number = 1 << 1; // String table ID# (indexing table 50200) and LoreID#
 	public static var ef_Details_DynelId:Number = 1 << 2;
 	public static var ef_Details_Timestamp:Number = 1 << 3;
 	private static var ef_Details_StatDump:Number = 1 << 4; // (Hidden) Repeatedly calls Dynel.GetStat() (limited by the constant below), recording any stat which is not 0 or undefined
 	private static var ef_Details_All:Number = (1 << 5) - 1;
+	private static var ef_Details_Default:Number = ef_Details_Location | ef_Details_Timestamp;
 
 	private function InitializeConfig(arConfig:ConfigWrapper):Void {
 		// Notification types
@@ -108,25 +109,24 @@ class efd.LoreHound.LoreHound extends Mod {
 		Config.NewSetting("ChatLevel", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // DEPRECATED(v1.2.0.alpha) : Renamed
 
 		// Renaming and expanding options for v1.2
-		Config.NewSetting("FifoAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // FIFO onscreen alerts
-		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // System chat alerts
-		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // Display onscreen waypoints for lore
+		Config.NewSetting("FifoAlerts",LoreData.ef_LoreType_Spawned); // FIFO onscreen alerts
+		Config.NewSetting("ChatAlerts", LoreData.ef_LoreType_Spawned); // System chat alerts
+		Config.NewSetting("WaypointAlerts", LoreData.ef_LoreType_Spawned); // Display onscreen waypoints for lore
 		Config.NewSetting("AlertForCollected", LoreData.ef_LoreType_Drop | LoreData.ef_LoreType_Uncategorized); // Alert the player for lore they already have
-		Config.NewSetting("AlertForUncollected", LoreData.ef_LoreType_All ^ LoreData.ef_LoreType_Despawn); // Alert the player for lore they haven't picked up yet
+		Config.NewSetting("AlertForUncollected", LoreData.ef_LoreType_Spawned); // Alert the player for lore they haven't picked up yet
 
 		Config.NewSetting("IgnoreUnclaimedLore", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
-		Config.NewSetting("IgnoreOffSeasonLore", true); // Ignore event lore if the event isn't running
 		Config.NewSetting("TrackDespawns", true); // Track timed lore comb drops, and notify when they despawn
 		Config.NewSetting("ShowWaypoints", true); // DEPRECATED(v1.2.0.alpha) : Renamed and expanded
 		Config.NewSetting("CheckNewContent", false); // DEPRECATED(v1.1.0.alpha): Renamed
-		Config.NewSetting("ExtraTesting", false); // Does extra tests to detect lore that isn't on the index list at all yet (ie: new content!)
+		Config.NewSetting("ExtraTesting", false); // Additional testing to detect lore that slips through or is uninformative (inactive event lore, malformed strings, new IDs)
 		Config.NewSetting("CartographerLogDump", false); // Dumps detected lore to the log file in a format which can easilly be extracted for Cartographer waypoint files
 		Config.NewSetting("WaypointColour", 0xFFAA00); // Colour of onscreen waypoints
 
 		// Extended information, regardless of this setting:
 		// - Is always ommitted from Fifo notifications, to minimize spam
 		// - Some fields are always included when detecting uncategorized lore, to help identify it
-		Config.NewSetting("Details", ef_Details_Location | ef_Details_Timestamp);
+		Config.NewSetting("Details", ef_Details_Default);
 
 		arConfig.SignalValueChanged.Connect(AutoReportConfigChanged, this);
 		Config.NewSetting("AutoReport", arConfig);
@@ -158,6 +158,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				break;
 			case "AlertForCollected":
 			case "AlertForUncollected":
+				// Spawn waypoints for detected lore that now meets the filter criteria
 				var addedTypes:Number = newValue & ~oldValue;
 				// var removedTypes:Number = oldValue & ~newValue;
 				for (var key:String in TrackedLore) {
@@ -170,14 +171,27 @@ class efd.LoreHound.LoreHound extends Mod {
 					}
 				}
 				break;
+			case "ExtraTesting":
+				for (var key:String in TrackedLore) {
+					var lore:LoreData = TrackedLore[key];
+					if (!lore.IsDataComplete &&
+						Config.GetValue("WaypointAlerts") & Config.GetValue("AlertForUncollected") & lore.Type) { // Use of binary & intentional
+						if (newValue) {
+							CreateWaypoint(lore.DynelInst, AttemptIdentification(lore));
+						} else {
+							// TODO: Remove waypoints here if attempting to reduce the on-update overhead
+						}
+					}
+				}
+				break;
 			case "WaypointColour":
-				// TODO: This is spamming the screen with stray waypoints whenever it changes
-				// Possibly because it's not having time to clear the existing waypoint before a new one registers overtop
-				//ClearWaypoints();
-				//for (var key:String in TrackedLore) {
-					//var lore:LoreData = TrackedLore[key];
-					// if (Config.GetValue("WaypointAlerts") & lore.Type) { CreateWaypoint(lore.DynelInst, AttemptIdentification(lore)); }
-				//}
+				for (var key:String in TrackedLore) {
+					var existing:Waypoint = WaypointSystem.m_CurrentPFInterface.m_Waypoints[key];
+					if (existing) {
+						existing.m_Color = newValue;
+						WaypointSystem.SlotWaypointColorChanged(TrackedLore[key].DynelID);
+					}
+				}
 				break;
 			default:
 				super.ConfigChanged(setting, newValue, oldValue);
@@ -256,25 +270,33 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	private function Activate():Void {
 		AutoReport.IsEnabled = true; // Only updates this component's view of the mod state
-		HostClip.onEnterFrame = Delegate.create(this, UpdateWaypoints);
+		HostClip.onEnterFrame = Delegate.create(this, FrameUpdate);
 		VicinitySystem.SignalDynelEnterVicinity.Connect(LoreSniffer, this);
 		Dynels.DynelGone.Connect(LoreDespawned, this);
 	}
 
 	private function Deactivate():Void {
-		// For most teleports this will be renabled before the despawn notification is sent
-		//   Oddly the despawn notification will be sent even if we deregister from the dynel stat
-		// When changing zones however, despawn and detection notices are both sent during the deactivated period
-		// Detection notices between the deactivate-activate pair have a strange habit of providing the correct LoreId, but being unable to link to an actual lore object
+		// For most local teleports the mod will be re-enabled before the despawn notification is sent
+		//   Oddly the despawn notification will be sent even if we deregister the dynel stat observer manually
+		// When changing zones, despawn and detection notices are both sent during the deactivated period
+		// Detection notices between the deactivate-activate pair often provide the correct LoreId,
+		//   but fail to link to an actual lore or player object
 		Dynels.DynelGone.Disconnect(LoreDespawned, this);
 		VicinitySystem.SignalDynelEnterVicinity.Disconnect(LoreSniffer, this);
 		delete HostClip.onEnterFrame;
 		AutoReport.IsEnabled = false; // Only updates this component's view of the mod state
 	}
 
+	private function FrameUpdate():Void {
+		UpdateLoreData();
+		UpdateWaypoints();
+	}
+
 	private function GetIconFrame():String {
 		if (Enabled) { // If game disables mod, icon isn't visible at all, so only user disables matter
-			if (Config.GetValue("TrackDespawns")) {
+			// Only show alerted flag if both tracking despawns and alerting for drop lore
+			if (Config.GetValue("TrackDespawns") &&
+				((Config.GetValue("AlertForCollected") | Config.GetValue("AlertForUncollected")) & LoreData.ef_LoreType_Drop)) {
 				for (var id:String in TrackedLore) {
 					if (TrackedLore[id].Type == LoreData.ef_LoreType_Drop) { return "alerted"; }
 				}
@@ -339,12 +361,15 @@ class efd.LoreHound.LoreHound extends Mod {
 	//     Have now tested the first 50 million indices, with mode 0
 	//     Have also tested the first 16 modes at the 2-3 million range with no observable difference between them
 	//     #12 - Consistently 7456524 across most lore dynels (including black signal)
-	//           It is not assigned for triggered lore that is placed invisibly...
+	//           It mnay not be assigned for triggered lore that is placed invisibly...
 	//           Unless a trigger is found that can proc on this value changing, it won't be particularly useful with lore detection
 	//           Further testing suggests it might be related to the model id
 	//           Can be used to determine colour of Dead Scarabs and spawn state of Bits of Joe
 	//     #23 and #112 - Copies of the format string ID #, matching values used in ClassifyID
 	//     #1050 - Unknown, usually 6 on lore, though other numbers have been observed (1 on scarabs)
+	//             Of interest: Marquard's Mansion #3 starts as 1, but then changes to 6 when triggered
+	//             Some inactive event lore detections are reporting 5
+	//             _global Stat enum CarsGroup? What does this mean?
 	//     #1102 - Copy of the Dynel instance identifier (dynelId.m_Instance)
 	//     #1374 - OverrideCursor, used for categorizing the Reticule interaction prompt (See CrosshairController)
 	//             New for SWL, Scarabs have value of 26, a couple lore samples have a value of 45, a bit of joe was 35
@@ -360,6 +385,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	//       - There are a number of other values in the 2 million range, though none matching 560
 	//     Unlisted values and missing IDs return 0
 	//     Testing unclaimed lore with alts did not demonstrate any notable differences in the reported stats
+	//     Testing of Dynel.SignalStatChanged indicated that it did not fire for the sample lore dynel :(
 
 	/// Lore detection and sorting
 	private function LoreSniffer(dynelId:ID32):Void {
@@ -370,7 +396,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		var categorizationId:Number = LoreData.GetFormatStrID(dynel);
 
 		// Categorize the detected item
-		var loreType:Number = ClassifyID(categorizationId);
+		var loreType:Number = ClassifyID(categorizationId, dynel.GetStat(e_Stats_LoreId, 2));
 		if (loreType == LoreData.ef_LoreType_None) {
 			if (Config.GetValue("ExtraTesting") && ExpandedDetection(dynel)) { loreType = LoreData.ef_LoreType_Uncategorized; } // It's so new it hasn't been added to the index list yet
 			else { return; } // Dynel is not lore
@@ -378,30 +404,19 @@ class efd.LoreHound.LoreHound extends Mod {
 
 		var lore:LoreData = new LoreData(dynel, categorizationId, loreType, CategoryIndex[categorizationId].loreID);
 
-		ProcessAndNotify(lore, 0);
-
 		TrackedLore[dynelId.toString()] = lore;
 		// Registers despawn callback for lore tracking systems (spam reduction, waypoint cleanup and despawn notifications)
 		// _global.enums.Property.e_ObjScreenPos seems like it would be more useful, but returns the same value :(
 		// Can't tell if it actually updates the value on a regular basis... as lore doesn't move
 		Dynels.RegisterProperty(dynelId.m_Type, dynelId.m_Instance, _global.enums.Property.e_ObjPos);
-		Icon.Refresh();
+
+		FilterAndNotify(lore);
 	}
 
 	// Callback for timeout delegate if loreId is uninitialized
-	private function ProcessAndNotify(lore:LoreData, repeat:Number):Void {
-		if (TryConfirmLoreID(lore, repeat) && FilterLore(lore)) { SendLoreNotifications(lore); }
-	}
-
-	private function TryConfirmLoreID(lore:LoreData, repeat:Number):Boolean {
-		// Passthrough on valid lore ID, placed event lore, or if several retries all fail
-		if (lore.LoreID) {
-			// Reclassify based on ID#, in case it's a lore that detects as the wrong type
-			lore.Type = ClassifyID(lore.CategorizationID, lore.LoreID);
-			return true;
-		} else if (repeat >= 3) { return true; }
-		setTimeout(Delegate.create(this, ProcessAndNotify), 1, lore, repeat + 1);
-		return false;
+	private function FilterAndNotify(lore:LoreData):Void {
+		if (FilterLore(lore)) { SendLoreNotifications(lore); }
+		Icon.Refresh();
 	}
 
 	private function FilterLore(lore:LoreData):Boolean {
@@ -409,29 +424,29 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (lore.Type == LoreData.ef_LoreType_SpecialItem && !lore.DynelInst.GetStat(12, 2)) { return false; }
 
 		// Filters lore based on user notification settings
-		if (lore.LoreID == 0) {
-			if (lore.IsInactiveEventLore) {
-				if (Config.GetValue("IgnoreOffSeasonLore")) { return false; }
-			} else { Debug.DevMsg("LoreID not available, limited analysis"); }
-		} else { // Tests require a valid LoreID
-			// TODO: If having lore popping up in error when changing zones is still an issue
-			//       Consider doing a test here to see if the player data is properly loaded
-			if (lore.IsKnown) {
-				if (!(lore.Type & Config.GetValue("AlertForCollected"))) { return false; }
-			} else {
-				if (!(lore.Type & Config.GetValue("AlertForUncollected"))) { return false; }
-			}
-		}
+		if (!lore.IsDataComplete && !Config.GetValue("ExtraTesting")) { return false; }
+		// TODO: If having lore popping up in error when changing zones is still an issue
+		//       Consider doing a test here to see if the player data is properly loaded
+		if (!(lore.Type & Config.GetValue(lore.IsKnown ? "AlertForCollected" : "AlertForUncollected"))) { return false; }
 
 		// Verify that at least one notification is needed
-		return (Config.GetValue("FifoAlerts") & lore.Type) ||
-			   (Config.GetValue("ChatAlerts") & lore.Type) ||
-			   (Config.GetValue("WaypointAlerts") & lore.Type) ||
+		return (lore.Type & (Config.GetValue("FifoAlerts") | Config.GetValue("ChatAlerts") | Config.GetValue("WaypointAlerts"))) ||
 			   (lore.Type == LoreData.ef_LoreType_Uncategorized && AutoReport.IsEnabled) ||
 			    Config.GetValue("CartographerLogDump");
 	}
 
-	/// Lore proximity tracking
+/// Lore proximity tracking
+
+	// Updates lore data for those dynels which loaded with incomplete data
+	private function UpdateLoreData():Void {
+		for (var id:String in TrackedLore) {
+			var lore:LoreData = TrackedLore[id];
+			if (!lore.IsDataComplete && lore.RefreshLoreID()) {
+				lore.Type = ClassifyID(lore.CategorizationID, lore.LoreID);
+				FilterAndNotify(lore);
+			}
+		}
+	}
 
 	// Triggers when the lore dynel is removed from the client, either because it has despawned or the player has moved too far away
 	// With no dynel to query, all required info has to be known values or cached
@@ -441,12 +456,12 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (lore) { // Ensure the despawned dynel was tracked by this mod
 			lore.Type |= LoreData.ef_LoreType_Despawn; // Set the despawn flag
 
-			if (Config.GetValue("WaypointAlerts") & lore.Type) { RemoveWaypoint(lore.DynelID); }
+			RemoveWaypoint(lore.DynelID);
 			// Despawn notifications
 			if ((lore.Type & LoreData.ef_LoreType_Drop) && Config.GetValue("TrackDespawns")) {
 				if (FilterLore(lore)) { // Despawn notifications are subject to same filters as regular ones
 					var messageStrings:Array = GetMessageStrings(lore);
-					DispatchMessages(messageStrings, lore); // No details or raw categorizationID
+					DispatchMessages(messageStrings, lore); // No details or raw format string
 				}
 			}
 			delete TrackedLore[despawnedId];
@@ -465,15 +480,14 @@ class efd.LoreHound.LoreHound extends Mod {
 	// Much of the primary categorization info is now contained in the xml data file
 	private function ClassifyID(categorizationId:Number, loreId:Number):Number {
 		var indexEntry:Object = CategoryIndex[categorizationId];
-		var category:Number = indexEntry.excluding[loreId] ?
-			indexEntry.excluding[loreId] :
-			indexEntry.type;
-		return category ? category : LoreData.ef_LoreType_None;
+		var category:Number = indexEntry.excluding[loreId] || indexEntry.type;
+		return category || LoreData.ef_LoreType_None;
 	}
 
 	private static function ExpandedDetection(dynel:Dynel):Boolean {
 		// Check the dynel's lore ID, it may not have a proper entry in the string table (Polaris drone clause)
 		// Won't detect inactive event lore though (Shrouded Lore would slip through both tests most of the time)
+		// May detect other achievement related things (subject to super filters)
 		if (dynel.GetStat(e_Stats_LoreId, 2) != 0) { return true; }
 		// Have the localization system provide language dependent strings to compare
 		// Using exact comparison, should be slightly faster and eliminate almost all false positives
@@ -544,7 +558,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				var dynel:Dynel = lore.DynelInst;
 				var pos:Vector3 = dynel.GetPosition(0);
 				var posStr:String = 'x="'+ Math.round(pos.x) + '" y="' + Math.round(pos.z) + '" z="' + Math.round(pos.y) + '"';
-				messageStrings.push('<!-- ' + AttemptIdentification(lore) + ' --> <Lore loreID="' + lore.LoreID +  '" zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' />');
+				messageStrings.push('<Lore loreID="' + lore.LoreID +  '" zone="' + dynel.GetPlayfieldID() + '" ' + posStr + ' /> <!-- ' + AttemptIdentification(lore) + '(' + typeString + ') -->');
 			}
 		}
 		return messageStrings;
@@ -576,7 +590,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			return LDBFormat.Translate(lore.DynelInst.GetName());
 		}
 
-		if (lore.LoreID) {
+		if (lore.IsDataComplete) {
 			var topic:String = lore.Topic;
 			var index:Number = lore.Index;
 			if (!(topic && index)) {
@@ -601,12 +615,10 @@ class efd.LoreHound.LoreHound extends Mod {
 			return LocaleManager.FormatString("LoreHound", "LoreName", topic, catCode, index);
 		}
 
-		// Inactive event lore won't have a valid ID if it can be detected at all
+		// Inactive event lore, and some triggered lore, won't have a valid ID when detected
+		// We can partially ID some, but most is going to be "??"
 		if (lore.IsShroudedLore) { return LocaleManager.GetString("LoreHound", "InactiveShrouded"); }
-		if (lore.IsInactiveEventLore) { return LocaleManager.GetString("LoreHound", "InactiveEvent"); }
-		// Lore drops occasionally fail to completely load before they're detected, but usually succeed on second detection
-		// The only reason to see this now is if the automatic redetection system failed, or if some other bug occured
-		return LocaleManager.GetString("LoreHound", "IncompleteDynel");
+		return LocaleManager.GetString("LoreHound", "InactiveLore");
 	}
 
 	// This info is ommitted from FIFO messages
@@ -614,7 +626,7 @@ class efd.LoreHound.LoreHound extends Mod {
 	private function GetDetailStrings(lore:LoreData):Array {
 		var detailStrings:Array = new Array();
 		var details:Number = Config.GetValue("Details");
-		if (lore.Type == LoreData.ef_LoreType_Uncategorized) { details |= ef_Details_Location | ef_Details_FormatString; }
+		if (lore.Type == LoreData.ef_LoreType_Uncategorized) { details |= ef_Details_Location | ef_Details_CategoryIDs; }
 
 		var dynel:Dynel = lore.DynelInst;
 		if (details & ef_Details_Location) {
@@ -626,15 +638,8 @@ class efd.LoreHound.LoreHound extends Mod {
 			var playfield:String = LDBFormat.LDBGetText("Playfieldnames", dynel.GetPlayfieldID());
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "PositionInfo", playfield, Math.round(pos.x), Math.round(pos.y), Math.round(pos.z)));
 		}
-		if (details & ef_Details_FormatString) {
-			var formatStr:String = dynel.GetName();
-			// Strip off (seemingly) unimportant info and reformat to something more meaningful in this context
-			var ids:Array = formatStr.substring(formatStr.indexOf('id="')).split(' ', 2);
-			for (var i:Number = 0; i < ids.length; ++i) {
-				var str = ids[i];
-				ids[i] = str.substring(str.indexOf('"') + 1, str.length - 1);
-			}
-			detailStrings.push(LocaleManager.FormatString("LoreHound", "CategoryInfo", ids[0], ids[1]));
+		if (details & ef_Details_CategoryIDs) {
+			detailStrings.push(LocaleManager.FormatString("LoreHound", "CategoryInfo", lore.CategorizationID.toString(), lore.LoreID));
 		}
 		if (details & ef_Details_DynelId) {
 			detailStrings.push(LocaleManager.FormatString("LoreHound", "InstanceInfo", dynel.GetID().toString()));
@@ -642,6 +647,7 @@ class efd.LoreHound.LoreHound extends Mod {
 		if (details & ef_Details_StatDump) {
 			// Fishing expedition, trying to find anything potentially useful
 			// Dev/debug only, does not need localization
+			// TODO: Move this out to a dev tool mod?
 			detailStrings.push("Stat Dump: Mode " + DetailStatMode);
 			var start:Number = (DetailStatRange - 1) * 1000000;
 			var end:Number = DetailStatRange * 1000000;
@@ -651,6 +657,7 @@ class efd.LoreHound.LoreHound extends Mod {
 					detailStrings.push("Stat: #" + statID + " Value: " + val);
 				}
 			}
+			detailStrings.push("Stat: #" + e_Stats_LoreId + "(LoreID) Value: " + dynel.GetStat(e_Stats_LoreId, DetailStatMode));
 		}
 		return detailStrings;
 	}
@@ -685,8 +692,16 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	/// Waypoint rendering
 	private function CreateWaypoint(dynel:Dynel, loreName:String):Void {
+		var dynelID:ID32 = dynel.GetID();
+		var existing:Waypoint = WaypointSystem.m_CurrentPFInterface.m_Waypoints[dynelID.toString()];
+		if (existing) {
+			// Waypoint already exists likely from an incomplete detection that's being updated
+			existing.m_Label = loreName;
+			WaypointSystem.SlotWaypointRenamed(dynelID);
+			return;
+		}
 		var waypoint:Waypoint = new Waypoint();
-		waypoint.m_Id = dynel.GetID();
+		waypoint.m_Id = dynelID;
 		waypoint.m_WaypointType = _global.Enums.WaypointType.e_RMWPScannerBlip;
 		waypoint.m_WaypointState = _global.Enums.QuestWaypointState.e_WPStateActive;
 		waypoint.m_Label = loreName;
@@ -739,6 +754,7 @@ class efd.LoreHound.LoreHound extends Mod {
 				var dynel:Dynel = lore.DynelInst;
 				var scrPos:Point = dynel.GetScreenPosition();
 				var waypoint:CustomWaypoint = WaypointSystem.m_RenderedWaypoints[key];
+				waypoint.m_Waypoint.m_Color = Config.GetValue("WaypointColour");
 				waypoint.m_Waypoint.m_ScreenPositionX = scrPos.x;
 				waypoint.m_Waypoint.m_ScreenPositionY = scrPos.y;
 				waypoint.m_Waypoint.m_DistanceToCam = dynel.GetCameraDistance(0);

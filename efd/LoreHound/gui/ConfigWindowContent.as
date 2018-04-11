@@ -24,7 +24,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		// Disable focus to prevent selections from locking user input until the window closes
 		CBModEnabled.disableFocus = true;
 		CBTopbar.disableFocus = true;
-		CBIgnoreOffSeasonLore.disableFocus = true;
 		CBTrackDespawns.disableFocus = true;
 		CBErrorReports.disableFocus = true;
 		CBExtraTests.disableFocus = true;
@@ -63,7 +62,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
 		CBTopbar.addEventListener("select", this, "CBTopbar_Select");
-		CBIgnoreOffSeasonLore.addEventListener("select", this, "CBIgnoreOffSeasonLore_Select");
 		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
 		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
 		CBExtraTests.addEventListener("select", this, "CBExtraTests_Select");
@@ -91,9 +89,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		if (setting == "TopbarIntegration" || setting == undefined) {
 			CBTopbar.selected = Config.GetValue("TopbarIntegration");
 		}
-		if (setting == "IgnoreOffSeasonLore" || setting == undefined) {
-			CBIgnoreOffSeasonLore.selected = Config.GetValue("IgnoreOffSeasonLore");
-		}
 		if (setting == "TrackDespawns" || setting == undefined) {
 			CBTrackDespawns.selected = Config.GetValue("TrackDespawns");
 		}
@@ -113,7 +108,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 			var details = Config.GetValue("Details");
 			CBDetailTimestamp.selected = (details & LoreHound.ef_Details_Timestamp) == LoreHound.ef_Details_Timestamp;
 			CBDetailLocation.selected = (details & LoreHound.ef_Details_Location) == LoreHound.ef_Details_Location;
-			CBDetailCategory.selected = (details & LoreHound.ef_Details_FormatString) == LoreHound.ef_Details_FormatString;
+			CBDetailCategory.selected = (details & LoreHound.ef_Details_CategoryIDs) == LoreHound.ef_Details_CategoryIDs;
 			CBDetailInstance.selected = (details & LoreHound.ef_Details_DynelId) == LoreHound.ef_Details_DynelId;
 		}
 	}
@@ -131,10 +126,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	private function CBTopbar_Select(event:Object):Void {
 		Config.SetValue("TopbarIntegration", event.selected);
-	}
-
-	private function CBIgnoreOffSeasonLore_Select(event:Object):Void {
-		Config.SetValue("IgnoreOffSeasonLore", event.selected);
 	}
 
 	private function CBTrackDespawns_Select(event:Object):Void {
@@ -158,7 +149,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	private function CBDetailCategory_Select(event:Object):Void {
-		Config.SetFlagValue("Details", LoreHound.ef_Details_FormatString, event.selected);
+		Config.SetFlagValue("Details", LoreHound.ef_Details_CategoryIDs, event.selected);
 	}
 
 	private function CBDetailInstance_Select(event:Object):Void {
@@ -202,7 +193,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	// Checkboxes
 	private var CBModEnabled:CheckBox;
 	private var CBTopbar:CheckBox;
-	private var CBIgnoreOffSeasonLore:CheckBox;
 	private var CBTrackDespawns:CheckBox;
 	private var CBErrorReports:CheckBox;
 	private var CBExtraTests:CheckBox;

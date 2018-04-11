@@ -19,6 +19,7 @@ class efd.LoreHound.LoreData {
 	public static var ef_LoreType_Uncategorized:Number = 1 << 4; // Newly detected lore, will need to be catalogued
 	public static var ef_LoreType_SpecialItem:Number = 1 << 5; // Special pickups or other items related to lore (Pieces o'Joe, Draug Hearts, Scarabs, Demonic Crystals etc.)
 	public static var ef_LoreType_All:Number = (1 << 6) - 1;
+	public static var ef_LoreType_Spawned:Number = ef_LoreType_All ^ ef_LoreType_Despawn; // Commonly used alternative to All
 
 	public function LoreData(dynel:Dynel, formatStrID:Number, type:Number, overrideID:Number) {
 		// The dynel will be invalid when the lore tracking callbacks are disabled
@@ -27,7 +28,7 @@ class efd.LoreHound.LoreData {
 		DynelID = dynel.GetID();
 		CategorizationID = formatStrID;
 		Type = type;
-		_LoreID = overrideID;
+		LoreID = overrideID || DynelInst.GetStat(e_Stats_LoreId, 2);;
 	}
 
 	// Extracts the format string ID from the xml localization formatting tag
@@ -38,13 +39,9 @@ class efd.LoreHound.LoreData {
 		return Number(formatStrId.substring(0, formatStrId.indexOf('"')));
 	}
 
-	public function get LoreID():Number {
-		if (!_LoreID) { _LoreID = DynelInst.GetStat(e_Stats_LoreId, 2); }
-		return _LoreID;
-	}
+	public function RefreshLoreID():Number { return LoreID = DynelInst.GetStat(e_Stats_LoreId, 2); }
 
-	// Heuristic, may occasionally eat a problematic placed lore
-	public function get IsInactiveEventLore():Boolean { return LoreID == 0 && (Type == ef_LoreType_Placed || IsShroudedLore); }
+	public function get IsDataComplete():Boolean { return LoreID > 0; }
 
 	public function get IsShroudedLore():Boolean { return CategorizationID == 7993128; }
 
@@ -56,7 +53,7 @@ class efd.LoreHound.LoreData {
 	public function get Source():Number { return Lore.GetTagViewpoint(LoreID); }
 
 	public function get Index():Number {
-		if (_Index == undefined) {
+		if (_Index == undefined && LoreID) {
 			var source:Number = Source;
 			var siblings:Array = Lore.GetDataNodeById(LoreID).m_Parent.m_Children;
 			var index:Number = 1; // Lore entries start count at 1
@@ -79,7 +76,7 @@ class efd.LoreHound.LoreData {
 	public var DynelID:ID32;
 	public var CategorizationID:Number;
 	public var Type:Number;
+	public var LoreID:Number;
 
-	private var _LoreID:Number;
 	private var _Index:Number;
 }

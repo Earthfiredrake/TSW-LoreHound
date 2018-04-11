@@ -190,9 +190,9 @@ class efd.LoreHound.lib.LocaleManager {
 //   10050: Very out of date tutorial text
 //   10058: Spoilers! Various story texts... seems to be a mix of computer terminals, found notes and phone texts
 //   10059: Video playback status messages
-//   10060: Achivement/Lore window boilerplate
+//   10060: Achievement/Lore window boilerplate
 //   10062: TSW scenario console strings
-//   10063: Museum strings (exhibit descriptions, upgrade prompts, player achivements)
+//   10063: Museum strings (exhibit descriptions, upgrade prompts, player achievements)
 //   13000: Installer text
 //   14000: Patcher text
 //   14250: Character rename prompts

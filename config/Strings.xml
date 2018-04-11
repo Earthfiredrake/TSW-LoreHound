@@ -57,7 +57,6 @@
 		<TopbarNone en="Disabled" />
 		<TopbarVTIO en="VTIO Only" />
 		<TopbarAny en="Enabled" />
-		<OtherSettingInactive en="Ignore Off Season Lore" />
 		<OtherSettingDespawn en="Track Despawns" />
 		<OtherSettingReporting en="Automated Reports" />
 		<OtherSettingExtraTest en="Extended Testing" />
@@ -85,14 +84,13 @@
 		<BuzzingSource en="" /> <!-- Provided for customization -->
 		<BlackSignalSource en="BS" />
 		<UnknownSource en="?!?" /> <!-- Somebody new talking at us through lore! -->
-		<InactiveEvent en="Inactive event lore" />
-		<InactiveShrouded en="Inactive shrouded lore" />
-		<InvalidLoreID en="Invalid lore ID" /> <!-- Name used if lore could not be found with provided id -->
-		<IncompleteDynel en="Incomplete data, rescan failed" /> <!-- Name used if no id was available, and not likely to be event lore -->
+		<InactiveLore en="?Lore? (trigger/event)" /> <!-- Lore was lacking a LoreID or other identifying value -->
+		<InactiveShrouded en="Inactive shrouded (event) lore" />
+		<InvalidLoreID en="Invalid lore ID" /> <!-- Lore had a LoreID, but it failed to map to a name -->
 		<TimestampInfo en="[%|1$02|:%|2$02|] " /> <!-- 1$ = hours, 2$ = minutes; default string zero pads to two digits -->
 		<PositionInfo en="%1% (%2%, %4%, %3%)" /> <!-- %1% = Playfield name (translated by game); %2%,%3%,%4% = position vector x,y,z (values are rounded to nearest integer and y is vertical(note the swizzle in output)) -->
-		<CategoryInfo en="Category ID: %1% Supergroup: %2%" /> <!-- Values used in categorization, related to game's localization system -->
-		<InstanceInfo en="Dynel ID: %1%" /> <!-- ID numbers used to identify a specific lore pickup -->
+		<CategoryInfo en="Category ID: %1% Lore ID: %2%" /> <!-- Values used in categorization, related to game's localization system -->
+		<InstanceInfo en="Dynel ID: %1%" /> <!-- ID numbers used to identify a specific dynel instance -->
 		<!-- For the following: %1% = LoreName (above) -->
 		<PlacedFifo en="Lore (%1%) nearby" />
 		<PlacedChat en="Placed lore nearby (%1%)" />

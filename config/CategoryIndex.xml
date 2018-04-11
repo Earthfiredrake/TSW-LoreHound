@@ -20,6 +20,9 @@
 			<Reclassify loreID="7816" category="Trigger" /> <!-- The Bomb #7, requires backtracking -->
 			<Reclassify loreID="7864" category="Trigger" /> <!-- Lilith #9, spawns after fight -->
 			<Reclassify loreID="8881" category="Trigger" /> <!-- Padurii #3, requires mission -->
+			<Reclassify loreID="10819" category="Trigger" /> <!-- Marquard's Mansion #3, requires action -->
+			<Reclassify loreID="10828" category="Trigger" /> <!-- Aigamuxa #5, requires action -->
+			<Reclassify loreID="10839" category="Trigger" /> <!-- Demon Hyena #7, requires action -->
 		</ID>
 	</Category>
 	<Category name="Trigger"> <!-- Will spawn at fixed location once a condition is met -->
@@ -56,6 +59,11 @@
 		<ID value="9240080"> <!-- Shared by almost all known monster drop or spawned bestiary lore -->
 			<Reclassify loreID="9275" category="Trigger" /> <!-- Golems #8, player triggered event in TSW, time based trigger in SWL (with 2 min despawn) -->
 			<!-- <Reclassify loreID="8482" category="Trigger" /> --> <!-- Bogeyman #4; Fixed locations; Category Retained: Despawn Tracking -->
+			<Reclassify loreID="10812" category="Trigger" /> <!-- Binding of the Aigamuxa #2 -->
+			<Reclassify loreID="10813" category="Trigger" /> <!-- Binding of the Aigamuxa #4 -->
+			<Reclassify loreID="10822" category="Trigger" /> <!-- Marquard's Mansion #6 -->
+			<Reclassify loreID="10827" category="Trigger" /> <!-- Aigamuxa #4 -->
+			<Reclassify loreID="10846" category="Trigger" /> <!-- Kongamato #6 -->
 		</ID>
 	</Category>
 	<Category name="SpecialItem"> <!-- Non-lore, but related items -->
