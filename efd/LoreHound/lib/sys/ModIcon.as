@@ -390,9 +390,9 @@ class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
 		// It's a bit tight like this, but the spacing was excessive the other way
 		// The array.join makes it easy to skip the \n if there are less than two lines
 		var tooltipStrings:Array = new Array();
-		if (LeftMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipLeft", LeftMouseInfo.Tooltip.call(ModPtr.Get()))); }
-		if (RightMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipRight", RightMouseInfo.Tooltip.call(ModPtr.Get()))); }
-		var extra:String = ExtraTooltipInfo.call(ModPtr.Get());
+		if (LeftMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipLeft", LeftMouseInfo.Tooltip.call(mod))); }
+		if (RightMouseInfo) { tooltipStrings.push(LocaleManager.FormatString("GUI", "TooltipRight", RightMouseInfo.Tooltip.call(mod))); }
+		var extra:String = ExtraTooltipInfo.call(mod);
 		if (extra) { tooltipStrings.push(extra); }
 		if (tooltipStrings.length > 0) { data.AddDescription("<font " + TooltipTextFont + ">" + tooltipStrings.join('\n') + "</font>"); }
 

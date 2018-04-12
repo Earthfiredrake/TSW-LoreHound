@@ -80,7 +80,9 @@ class efd.LoreHound.lib.DebugUtils {
 		GlobalDebugDV.SignalChanged.Connect(SetDebugMode);
 		LocalDebugDV = DistributedValue.Create(dvPrefix + modName + "DebugMode");
 		LocalDebugDV.SignalChanged.Connect(SetDebugMode);
-		DebugMode = GlobalDebugDV.GetValue() || LocalDebugDV.GetValue() || debug;
+		var localDebug:Boolean = LocalDebugDV.GetValue();
+		var globalDebug:Boolean = GlobalDebugDV.GetValue();
+		DebugMode = localDebug != undefined ? localDebug : globalDebug != undefined ? globalDebug : debug;
 
 		// Create Mod's instance and setup the static wrappers
 		var dbu:DebugUtils = new DebugUtils();

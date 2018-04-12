@@ -2,8 +2,6 @@
 // Released under the terms of the MIT License
 // https://github.com/Earthfiredrake/TSW-LoreHound
 
-import gfx.utils.Delegate;
-
 import com.GameInterface.DistributedValue;
 import com.Utils.Archive;
 
@@ -11,6 +9,7 @@ import efd.LoreHound.lib.Mod;
 import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.sys.config.Versioning;
 import efd.LoreHound.lib.sys.Window;
+import efd.LoreHound.lib.util.WeakDelegate;
 
 
 // ConfigHost implementation
@@ -53,7 +52,7 @@ class efd.LoreHound.lib.sys.ConfigManager {
 		ResetDV = DistributedValue.Create(Mod.DVPrefix + mod.ModName + "ResetConfig");
 		ResetDV.SignalChanged.Connect(ResetConfig, this);
 
-		ConfigWindow = Window.Create(mod, {WindowName : "ConfigWindow", LoadEvent : Delegate.create(this, ConfigWindowLoaded)});
+		ConfigWindow = Window.Create(mod, {WindowName : "ConfigWindow", LoadEvent : WeakDelegate.Create(this, ConfigWindowLoaded)});
 	}
 
 	private function ConfigWindowLoaded(windowContent:Object):Void { windowContent.AttachConfig(Config); }
