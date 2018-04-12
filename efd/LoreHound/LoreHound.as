@@ -39,7 +39,7 @@ class efd.LoreHound.LoreHound extends Mod {
 			// Dev/debug settings at top so commenting out leaves no hanging ','
 			// Debug : true,
 			Name : "LoreHound",
-			Version : "1.4.0.alpha",
+			Version : "1.4.0",
 			Subsystems : {
 				Config : {
 					Init : ConfigManager.Create,
@@ -138,6 +138,8 @@ class efd.LoreHound.LoreHound extends Mod {
 				} else { ClearWaypoints(); }
 				break;
 			case "AlertForCollected":
+				if (!(newValue & LoreData.ef_LoreType_Drop)) { Config.SetValue("TrackDespawns", false); }
+				// Fallthrough intentional
 			case "AlertForUncollected":
 				// Spawn waypoints for detected lore that now meets the filter criteria
 				var addedTypes:Number = newValue & ~oldValue;
@@ -151,6 +153,10 @@ class efd.LoreHound.LoreHound extends Mod {
 							// Waypoints to remove should automatically do so during the next refresh cycle
 					}
 				}
+				break;
+			case "TrackDespawns":
+				if (newValue) { Config.SetFlagValue("AlertForCollected", LoreData.ef_LoreType_Drop, true); }
+				Icon.Refresh();
 				break;
 			case "ExtraTesting":
 				for (var key:String in TrackedLore) {
@@ -223,7 +229,11 @@ class efd.LoreHound.LoreHound extends Mod {
 			var existingAlerts = Config.GetValue("FifoLevel") | Config.GetValue("ChatLevel");
 			Config.SetValue("WaypointAlerts", (Config.GetValue("ShowWaypoints") ? existingAlerts : LoreData.ef_LoreType_None));
 			// Copy unclaimed lore to per-category setting (no existing setting for claimed lore)
-			Config.SetValue("AlertForUncollected", (Config.GetValue("IgnoreUnclaimedLore") ? LoreData.ef_LoreType_Uncategorized : LoreData.ef_LoreType_All - LoreData.ef_LoreType_Despawn));
+			Config.SetValue("AlertForUncollected", (Config.GetValue("IgnoreUnclaimedLore") ? LoreData.ef_LoreType_Uncategorized : LoreData.ef_LoreType_Spawned));
+		}
+		if (Versioning.CompareVersions("1.4.0.beta", oldVersion) > 0) {
+			// Despawn tracking now mandates uncollected alerts for drop lore
+			if (!(Config.GetValue("AlertForCollected") & LoreData.ef_LoreType_Drop)) { Config.SetValue("TrackDespawns", false); }
 		}
 	}
 
@@ -596,24 +606,17 @@ class efd.LoreHound.LoreHound extends Mod {
 		return detailStrings;
 	}
 
-	// Note: Array parameters are cleared by function
 	private function DispatchMessages(messageStrings:Array, lore:LoreData, detailStrings:Array):Void {
-		if ((Config.GetValue("WaypointAlerts") & lore.Type) && !(lore.Type & LoreData.ef_LoreType_Despawn)) {
-			CreateWaypoint(lore.DynelInst, String(messageStrings.shift()));
-		}
-		if (Config.GetValue("FifoAlerts") & lore.Type) { FifoMsg(messageStrings.shift()); }
+		if (Config.GetValue("FifoAlerts") & lore.Type) { FifoMsg(messageStrings[1]); }
 		if (Config.GetValue("ChatAlerts") & lore.Type) {
-			ChatMsg(messageStrings.shift(), { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) });
-			while (detailStrings.length > 0) {
-				ChatMsg(detailStrings.shift(), { noPrefix : true });
+			ChatMsg(messageStrings[2], { forceTimestamp : (Config.GetValue("Details") & ef_Details_Timestamp) });
+			for (var i:Number = 0; i < detailStrings.length; ++i) {
+				ChatMsg(detailStrings[i], { noPrefix : true });
 			}
 		}
-		if (Config.GetValue("CartographerLogDump") && messageStrings.length > 0) {
-			// Situations where a log dump was not possible (despawns) would also not generate a report
-			// If generated report will always be in index 3, and log dump will always be in the last slot (either 3 or 4)
-			Debug.LogMsg(String(messageStrings.shift()));
-			// Relevant details are already embedded
-		}
+		if (lore.Type & LoreData.ef_LoreType_Despawn) { return; } // Early return, following message types don't apply for despawns
+		if (Config.GetValue("WaypointAlerts") & lore.Type) { CreateWaypoint(lore.DynelInst, messageStrings[0]); }
+		if (Config.GetValue("CartographerLogDump")) { Debug.LogMsg(messageStrings[3]); }
 	}
 
 	/// Waypoint rendering

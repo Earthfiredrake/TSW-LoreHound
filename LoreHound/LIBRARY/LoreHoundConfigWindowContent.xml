@@ -1,4 +1,4 @@
-<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="LoreHoundConfigWindowContent" itemID="58c82523-00000211" linkageExportForAS="true" linkageIdentifier="LoreHoundConfigWindowContent" linkageClassName="efd.LoreHound.gui.ConfigWindowContent" lastModified="1523495838" lastUniqueIdentifier="54">
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="LoreHoundConfigWindowContent" itemID="58c82523-00000211" linkageExportForAS="true" linkageIdentifier="LoreHoundConfigWindowContent" linkageClassName="efd.LoreHound.gui.ConfigWindowContent" lastModified="1523507377" lastUniqueIdentifier="54">
   <timeline>
     <DOMTimeline name="LoreHoundConfigWindowContent">
       <layers>
@@ -27,29 +27,30 @@
                     <Point x="75" y="35"/>
                   </transformationPoint>
                 </DOMSymbolInstance>
+                <DOMSymbolInstance libraryItemName="LoreHoundCategorySettingGroup" name="DropLoreGroup" centerPoint3DX="230" centerPoint3DY="35">
+                  <matrix>
+                    <Matrix tx="155"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="75" y="35"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
                 <DOMGroup>
+                  <matrix>
+                    <Matrix tx="10"/>
+                  </matrix>
                   <members>
-                    <DOMSymbolInstance libraryItemName="LoreHoundCategorySettingGroup" name="DropLoreGroup" selected="true" centerPoint3DX="230" centerPoint3DY="35">
+                    <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBTrackDespawns" selected="true" centerPoint3DX="185" centerPoint3DY="150" uniqueID="42">
                       <matrix>
-                        <Matrix tx="155"/>
+                        <Matrix tx="175" ty="140"/>
                       </matrix>
                       <transformationPoint>
-                        <Point x="75" y="35"/>
+                        <Point x="10" y="10"/>
                       </transformationPoint>
-                    </DOMSymbolInstance>
-                    <DOMGroup selected="true">
-                      <members>
-                        <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBTrackDespawns" selected="true" centerPoint3DX="175" centerPoint3DY="150" uniqueID="42">
-                          <matrix>
-                            <Matrix tx="165" ty="140"/>
-                          </matrix>
-                          <transformationPoint>
-                            <Point x="10" y="10"/>
-                          </transformationPoint>
-                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='42'>
 </component>
 ]]></dataBindingXML>
-                          <parametersAsXML><![CDATA[   <property id="data">
+                      <parametersAsXML><![CDATA[   <property id="data">
       <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
    </property>
    <property id="disableConstraints">
@@ -68,22 +69,20 @@
       <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
    </property>
 ]]></parametersAsXML>
-                        </DOMComponentInstance>
-                        <DOMDynamicText name="LBDespawn" selected="true" width="116" height="16" isSelectable="false">
-                          <matrix>
-                            <Matrix tx="187" ty="142"/>
-                          </matrix>
-                          <textRuns>
-                            <DOMTextRun>
-                              <characters>OtherSettingDespawn</characters>
-                              <textAttrs>
-                                <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
-                              </textAttrs>
-                            </DOMTextRun>
-                          </textRuns>
-                        </DOMDynamicText>
-                      </members>
-                    </DOMGroup>
+                    </DOMComponentInstance>
+                    <DOMDynamicText name="LBDespawn" selected="true" width="116" height="16" isSelectable="false">
+                      <matrix>
+                        <Matrix tx="197" ty="142"/>
+                      </matrix>
+                      <textRuns>
+                        <DOMTextRun>
+                          <characters>OtherSettingDespawn</characters>
+                          <textAttrs>
+                            <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                          </textAttrs>
+                        </DOMTextRun>
+                      </textRuns>
+                    </DOMDynamicText>
                   </members>
                 </DOMGroup>
                 <DOMSymbolInstance libraryItemName="LoreHoundCategorySettingGroup" name="SpecialItemGroup" centerPoint3DX="232.5" centerPoint3DY="255">
@@ -124,7 +123,7 @@
                       <transformationPoint>
                         <Point x="10" y="10"/>
                       </transformationPoint>
-                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='23'>
 </component>
 ]]></dataBindingXML>
                       <parametersAsXML><![CDATA[   <property id="data">
@@ -167,7 +166,7 @@
                       <transformationPoint>
                         <Point x="10" y="10"/>
                       </transformationPoint>
-                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='25'>
 </component>
 ]]></dataBindingXML>
                       <parametersAsXML><![CDATA[   <property id="data">
@@ -197,7 +196,7 @@
                       <transformationPoint>
                         <Point x="10" y="10"/>
                       </transformationPoint>
-                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='27'>
 </component>
 ]]></dataBindingXML>
                       <parametersAsXML><![CDATA[   <property id="data">
@@ -253,7 +252,7 @@
                       <transformationPoint>
                         <Point x="10" y="10"/>
                       </transformationPoint>
-                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='41'>
 </component>
 ]]></dataBindingXML>
                       <parametersAsXML><![CDATA[   <property id="data">
@@ -323,7 +322,7 @@
                           <transformationPoint>
                             <Point x="10" y="10"/>
                           </transformationPoint>
-                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath=''>
 </component>
 ]]></dataBindingXML>
                           <parametersAsXML><![CDATA[   <property id="data">
@@ -370,7 +369,7 @@
                           <transformationPoint>
                             <Point x="10" y="10"/>
                           </transformationPoint>
-                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath=''>
 </component>
 ]]></dataBindingXML>
                           <parametersAsXML><![CDATA[   <property id="data">
@@ -415,7 +414,7 @@
                       <transformationPoint>
                         <Point x="10" y="10"/>
                       </transformationPoint>
-                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                      <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath='29'>
 </component>
 ]]></dataBindingXML>
                       <parametersAsXML><![CDATA[   <property id="data">
@@ -528,7 +527,7 @@
                           <transformationPoint>
                             <Point x="10" y="10"/>
                           </transformationPoint>
-                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+                          <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='LoreHoundConfigWindowContent' oldCopiedComponentPath=''>
 </component>
 ]]></dataBindingXML>
                           <parametersAsXML><![CDATA[   <property id="data">

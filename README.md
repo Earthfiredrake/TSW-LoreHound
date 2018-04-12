@@ -1,61 +1,117 @@
 # TSW-LoreHound
-Proximity detection for lore in Secret World Legends, including non-visible pickups.
+
+Proximity detection for lore in Secret World Legends, including non-visible pickups. <br/>
 Legacy (TSW) compatible.
 
 ## Overview
-Will detect and attempt to identify lore pickups when they enter or spawn within ~25m of the player. Lore pickups have been roughly categorized into four groups.
-+ Placed: Basic placed lore. Usually always available but also includes most event lore and a few that require extra work to reveal
-  + Am attempting to recategorize the conditional spawning ones, so if you encounter any that don't appear by default let me know
-  + Lore for inactive events will not be fully identified and is excluded from notifications by default. Once the event is running, the missing data is available and detection works normally
-  + Some event lore appears to have been removed from the game entirely rather than just disabled so cannot be detected at all outside of the event
-+ Triggered: Requires a particular condition to spawn or be visible but doesn't despawn (as far as I know)
-  + Commonly in instances that don't permit MUs, such as dungeons or replayable mission areas
-  + Also a lot in some areas of KD
-+ Dropped: Mostly bestiary lore drops from monsters and triggered spawns. Will time out after a short period of time.
-  + A tracking option can inform you when these despawn, as long as you stay in the vicinity (somewhere between ~75-100m).
+
+Detects and identifies lore pickups when they enter or spawn within ~25m of the player. Notifications can be sent to chat (System channel), pop-up (FIFO) text, and/or as HUD (not map) waypoints. Clicking on the icon will bring up the settings menu where the behaviour can be customized further (see below for details).
+
+Lore pickups have been roughly categorized into four groups:
++ Placed: Basic placed lore. Usually available for pickup with no extra work
++ Triggered: Requires a particular condition to spawn or be visible
+  + May or may not be detected before that condition is met
++ Dropped: Largely, but not exclusively, bestiary lore from mobs
+  + Most despawn after a short period, with an option to track and notify of this
     + Bestiary lore has a 5min timeout.
 	+ KD rare spawn drops have a 1min timeout.
-+ Uncategorized: Something that I haven't run across yet, so haven't been able to place in a group.
-  + Opting into the automated report option permits the collection of required information to be mailed to me when you open the bank, saving you the trouble. (Automated reports remain untested in SWL.)
-+ Related Items: Items which, while not lore themselves, are directly related to acquiring certain lore
++ Uncategorized: Something new that needs to be assigned a category, chat details provide the required information if you'd like to let me know about it
++ Related Items: While not lore themselves, are directly related to acquiring certain lore
+  + Mostly scarabs
 
-Each category can independently have notifications output to either chat (System channel), as pop-up (FIFO) alerts, or with HUD (not map) waypoints. Default settings provide a wide range of notifications for most lore, including already known drop and uncategorized lore, but these can be customized extensively by clicking the icon. When sending a notification through the chat, a set of additional details can be displayed. Those marked with a '*' will always be displayed with Uncategorized lore and are used to identify it in the index.
-+ Timestamp: Puts a timestamp on detections, so you can know when the drop was without having to timestamp all of the System channel (revealing many mysteriously blank lines that it otherwise ignores).
-+ Location*: Map name and coordinate vector for the lore
-  + The vector has been swizzled into [x,z,y] format, where y is the vertical coordinate
-+ Category IDs*: Identifying information that is used to confirm and categorize detected objects.
-  + Officially these have no relevance to the lore's behaviour; unofficially it's too conveniently coincidental.
-+ Instance IDs: Identifier values for the particular pickup object in the world.
-  + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects.
+## Links
 
-Additional Options
-+ "Topbar Integration": Enable to lock the mod icon to the default topbar or a topbar mod that supports the VTIO registration system (such as Meeehr's topbar or ModFolder). Disable to revert the mod to a free floating icon that can be placed elsewhere on the screen.
-+ "Extended Testing": To improve efficiency and reduce false-positives, it only checks against the existing list of known/suspected lore. This option will activate additional testing on objects that would otherwise be ignored, for use if it fails to detect something that it should have.
-+ "Log Cartographer Data": Detected lore notifications are logged in "ClientLog.txt" file, in a format which can be easily extracted for use by my Cartographer mod.
-+ "Waypoint Colour": The colour (6 digit RGB Hex notation) to use on onscreen waypoints.
-
-Settings are saved account wide and will be shared across characters. If you'd prefer unique settings for each character, renaming "LoginPrefs.xml" to "CharPrefs.xml" when installing/upgrading the mod should work without any problems. A clean install of the mod is recommended if doing this for the first time, as it will be unable to transfer existing settings anyway.
+**Forum Topic**: https://forums.funcom.com/t/lorehound-lore-proximity-alerts/2217 <br/>
+**Download**: https://www.curseforge.com/swlegends/tswl-mods/lorehound <br/>
+**Source Repository**: https://github.com/Earthfiredrake/TSW-LoreHound <br/>
 
 ## Installation
+
 The packaged release should be unzipped (including the internal folder) into the listed folder:
 <br/>SWL: [SWL Directory]\Data\Gui\Custom\Flash
 <br/>TSW: [TSW Directory]\Data\Gui\Customized\Flash
 
-The safest method for upgrading (required for installing) is to have the client closed and delete any existing .bxml files in the LoreHound directory. Hotpatching (using /reloadui) works as long as neither Modules.xml or LoginPrefs.xml have changed.
+If Modules.xml or any *Prefs.xml files are being changed (such as when first installing) the client should be fully closed and restarted to install the mod. Otherwise, it's possible to do a hotpatch with '/reloadui' after updating the .swf and any other supporting files.
 
-An internal update system *should* carry forward settings from a limited range of previous versions (currently back to v1.0.0) Attempting to upgrade an earlier version will reset all settings to defaults, unless upgrades are staged to each in between major version.
+Settings may change slightly between versions, and an attempt has been made to provide as unsurprising behaviour as possible when upgrading from recent versions. To reduce the amount of legacy upgrade code the lowest upgradeable version may change. Currently versions prior to v1.0.0 will have their settings reset to defaults if not upgraded in stages.
 
-If updating v0.1.1-alpha a clean reinstall is recommended. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
+v0.1.1-alpha did not support the versioning system, and should be fully uninstalled prior to upgrading. Remove the existing mod entirely and login to the game to clear any existing settings before installing a more recent version.
+
+## Configuration
+
+**Category Settings**:
+Each lore category (above) has its own notification options. Notifications can be limited to only those lores you do not yet have, or set to include the ones you've already picked up (useful if doing a lore run or to provide callouts of drops for other people). By default two categories have alerts for lore you've already picked up. Drops, which need it to properly notify of despawns, and uncategorized lore, which provide information that can then be added to future versions of the mod.
+
+**Despawn Tracking**:
+The drop category has an additional option to provide despawn tracking. This requires that alerts for claimed lore be enabled, attempting to mismatch the settings will toggle the other as needed. This feature will cause dropped lore provide additional alerts when the lore despawns or you move too far away from it to continue tracking. It does not affect the waypoint, which only requires alerts for claimed lore to persist until the lore despawns. Additionally, while tracking lore the icon will have an exclamation mark on it and the tooltip will list all currently tracked lore.
+
+**Chat Details**:
+When an alert is output to system chat, these options set some of the formatting and additional information provided. Uncategorized lore reports will override these settings to ensure that required information is available. With the exception of the timestamp, these details are unavailable for despawn notifications.
++ Timestamp: Adds the time of detection without having to timestamp all of the System channel (revealing many mysteriously blank lines that it otherwise ignores)
++ Location: Zone name and coordinate vector for the lore
+  + Swizzled to better match map coordinates; [x,z,y], as y is the vertical axis for the game engine
++ Category IDs: IDs used by the filtering systems; First used as a heuristic for basic categorization, second identifies the lore entry
++ Instance IDs: Identifier values for the particular object in the world
+  + Occasionally useful if a single lore seems to be getting spammed to determine that they are actually multiple objects
+
+**Additional Options**:
++ Enable Mod: Turns off the mod, can be quickly done by right clicking the icon
++ Topbar Integration: Lock the mod icon to the default topbar or a topbar mod that supports the VTIO registration system (such as Meeehr's topbar or ModFolder). Disable to revert the mod to a free floating icon that can be placed elsewhere on the screen
++ Extended Testing: This option has two effects. It will activate some additional testing in an effort to detect lore that has no data entry at all. It will also permit the mod to raise alerts for lore that it cannot fully identify, including various lore triggers or inactive event lore. As it cannot be identified, it will not be properly named and cannot be checked against collected lore for filtering purposes
++ Log Cartographer Data: Detected lore notifications are logged in "ClientLog.txt" file, in a format which can be easily extracted for use by my Cartographer mod
++ Waypoint Colour: The colour (6 digit RGB hex notation) to use on onscreen waypoints
+
+My mod framework also includes some standardized supporting features, the more useful of which include:
++ Icon position and scale can be adjusted by using the default GUI unlock mode
++ '/setoption efdLoreHoundResetConfig true' will quickly reset all options to default settings
++ '/setoption emfListMods true' lists all installed framework mods, with version and author info, in System chat
+
+Settings are saved account wide and will be shared across characters. Some settings have recently been removed or merged, see the change log for details.
+
+## Known Issues & FAQ
+
+The following issues are known to exist in the most recent release:
++ There may be five uncategorized lore IDs somewhere in the game
+  + One is believed to be event related and unavailable at the moment
++ Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them or issuing alerts that should be disabled
++ The waypoint colour customization interface is a bit kludgey
+
+Where are the waypoints on my map? <br/>
+I have not found any way for an in-game mod to interact with or overlay the map UI or the waypoint files. While this mod can help you locate things once you're close, a waypoint pack such as Lassie's may be a helpful supplement. You may also be interested in my prototype Cartographer map mod, which will eventually have support for direct updates from a future version of LoreHound, if I can ever iron out the bugs.
+
+Can I adjust the detection range? <br/>
+No. The API for the proximity detection system I am using does not give me access to that feature. Similarly the despawn tracking range is outside of my control (and slightly random). Once detected, the range at which onscreen waypoints disappear could be customized, but the current range seems to be good enough that the extra work for customization isn't warranted.
+
+Can it tell me where lore X is? <br/>
+Not really. LoreHound does not actually contain a database of lore locations or names, it generates the notifications on the fly based on the detected object. If looking for the location of a specific lore, I suggest using a community info site, such as TSWDB or Crygaia wiki.
+
+LoreHound says a lore dropped, where is it? <br/>
+It's likely you already have it. The default settings include detection of already claimed lore drops to facilitate callouts and despawn tracking, which can easilly be disabled if not useful.
+
+A guide says there's a lore here, where is it? <br/>
+The game has a number of different methods to disguise triggered lore and keep it from rendering. Some of these prevent the mod from detecting the lore at all, others leave the lore in a detectable but non-identifiable state. These are filtered out unless the settings are changed to display them.
+
+Why is so much of it disabled by default? <br/>
+It isn't anymore (v1.3.3), but for the record: The original intent of LoreHound was to provide a system to detect invisible lore drops, specifically from the rider Samhain event in TSW. I tried to avoid spamming notifications or spoiling lore locations for those who would rather hunt them down personally. While popular demand and my own use have led to the mod becoming more flexible, the default settings have only recently been changed to reflect the more common usage.
+
+Defect reports, suggestions, and contributions are always welcome. The forum post is the ideal place to leave a message, but I also track the CurseForge comments and GitHub's issue tracker. For little things or quick troubleshooting flag me down in discord (@Peloprata on the official server's #modding channel) or look for me in game (often lurking in #Sanctuary).
 
 ## Change Log
-Version Next
-+ Change to Modules.xml & LoginPrefs.xml (standardization of DV names)
-+ Onscreen markers no longer truncate long names and mostly keep them onscreen
-+ Shrouded Lore (if it ever comes back) now properly categorized as triggered (still obeys Offseason setting)
-+ Listed by "/setoption efdListMods true"
-+ Various backend improvements
 
-Version 1.3.3
+**Version 1.4.0**
++ Settings changes
+  + Auto report system has been removed, recently added content is similar enough to existing ones that the feature doesn't justify the upkeep at this time
+  + Inactive (offseason) event lore setting has been merged with the Extra Testing setting
+  + Drop despawn tracking is now more explicitly linked to alerts for already collected drop lore
+  + Colour customization now takes effect immediately
+  + Change to Modules.xml & LoginPrefs.xml (standardization of DV names)
++ Improved identification of triggered lores
++ Onscreen markers no longer truncate long names and mostly keep them onscreen
++ Data updated to include SAF content
++ Shrouded Lore (if it ever comes back) now properly categorized as triggered
++ Various backend improvements and library bug fixes
+
+**Version 1.3.3**
 + Classification improvements
   + KD: More initially invisible lore now in the triggered category
   + Light in black places: "Related Items" now includes a candlestick in a basement (but not Prof. Plum)
@@ -75,7 +131,7 @@ Version 1.3.3
   + Strings.xml has had a minor format change
     + Any text customization will need to be copied to the new file (the old format no longer works)
 
-Version 1.3.0
+**Version 1.3.0**
 + New category "Related Items" for non-lore pickups and objects related to unlocking lore; currently has entries for:
   + Pieces of Joe: Will be detected only if they are currently spawned
   + Demonic Crystals
@@ -88,7 +144,7 @@ Version 1.3.0
 + Log output has been slightly reformatted and a basic python script has been included to quickly parse relevant entries
   + Usage requires a suitable python interpreter to be installed, and will dump the data into a LoreHound.txt file in the LoreHound directory
 
-Version 1.2.4
+**Version 1.2.4**
 + By request: Waypoint colour may now be customized to something less like a sabotage mission marker
   + Default changed from 0xF6D600 to the slightly oranger 0xFFAA00
   + Colour changes will not affect currently displayed waypoints
@@ -97,18 +153,18 @@ Version 1.2.4
   + Does not require onscreen notification to work, but does filter on other criteria
 + Various minor framework patches
 
-Version 1.2.2
+**Version 1.2.2**
 + Waypoints now refresh immediately to reflect change in preferences, or when lore is claimed
 + Fixes GUI Edit Mode regression bug, icon can once again be moved and resized
 + Some lore which previously fell into the "Placed" category is now being reclassified as "Triggered". This requires manual confirmation, so it a work in progress, and currently consists of:
   + Padurii #3
 
-Version 1.2.0
+**Version 1.2.0**
 + Expanded options for tracking known/unkown lore
 + Expanded options for waypoint notifications
 + Unifies lore tracking and waypoints, should no longer forget to provide despawn notifications
 
-Version 1.1.0
+**Version 1.1.0**
 + Setting migration from versions prior to v1.0.0 no longer supported
 + Onscreen flags at detected lore locations!
   + It's a rather ugly hack at the moment, the occasional ak'ab may request hugs
@@ -116,7 +172,7 @@ Version 1.1.0
 + Fixed a bug with auto report setting corruption that was causing the system to fail
   + During the update a chat message will be issued if you were affected, and that setting will be reset
 
-Version 1.0.0
+**Version 1.0.0**
 + An actual release version!
 + Options menu no longer possessed by a gaki, you can now esc from it
 + Can timestamp detections without having to timestamp all of System chat
@@ -133,7 +189,7 @@ Version 1.0.0
 + Install process has recovered from amnesia, remembers to save default settings after fresh install without being prompted.
 + Unknown lore id count: 7 (still)
 
-Version 0.6.0-beta
+**Version 0.6.0-beta**
 + Now even lazier, does less work wherever possible
   + Setting for "new content" will re-enable some of these tests, but should not be needed until new content arrives. May be useful if a particular piece of lore does not seem to be detected at all.
 + No longer goes berserk around certain players, and has been told to stop sniffing German corpses
@@ -142,7 +198,7 @@ Version 0.6.0-beta
 + Various other code cleanup and back-end changes
 + Unknown lore id count: 7
 
-Version 0.5.0-beta
+**Version 0.5.0-beta**
 + New responses to lore pickups that don't connect to anything (formerly "Unable to identify")
   + Partially initialized drops will be poked until they shape up
   + Disabled event lore flagged as such
@@ -153,67 +209,24 @@ Version 0.5.0-beta
   + Topbars cause shrinkage, but it's still there
 + Unknown lore id count: 10
 
-Version 0.4.0-beta
+**Version 0.4.0-beta**
 + First open beta release
 + Learned a new trick, now identifies lore with topic and entry #
 + Suborned the postal service into serving as an automated bug report system (opt-in)
 + Settings GUI added w/ Topbar integration, disillusioning debug menu of its supposed popularity
 + Unknown lore id count: 15
 
-Version 0.1.1-alpha
+**Version 0.1.1-alpha**
 + Proof of concept
 + Grumpy dog has unfriendly info format and no GUI access to settings
 + Unknown lore id count:  26
 
-## Known Issues & FAQ
-The following issues are known to exist in the most recent release:
-+ There appear to be five uncategorized lore IDs somewhere in the game
-  + One is believed to be event related and unavailable at the moment
-+ Sometimes has strange behaviour when zoning into instances with nearby lore, either failing to detect them or issuing alerts that should be disabled
-  + Have been having problems reproducing this one reliably
-+ There seems to be an issue where it starts sending duplicate notifications, possibly related to lost connections, will investigate further but repro may be random
-+ Settings window labels are truncated to fixed sizes
-  + Custom or translated settings menu text may have size issues, if you want to provide translations I can tweak the label sizes to compensate
-+ The waypoint colour customization interface is a bit kludgey
+## Future Work
+Aside from ongoing code tweaks, bug fixes and data maintenance, this one is near complete. A few extra features I've been considering:
++ Interop protocol so that LoreHound can pass detection data to other mods (ie: Cartographer)
++ Localization is an option if somebody's willing to volunteer translations
 
-Where are the waypoints on my map? <br/>
-I have not found any way for an in-game mod to interact with or overlay the map UI or the waypoint files. While this mod can help you locate things once you're close, a waypoint pack such as Lassie's may be a helpful supplement. I am currently working on a supplementary map mod, Cartographer, which will eventually have support for direct updates from a future version of LoreHound.
-
-Can I adjust the detection range? <br/>
-No. The API for the proximity detection system I am using does not give me access to that feature. Similarly the despawn tracking range is outside of my control (and slightly random). Once detected, the range at which onscreen waypoints disappear could be customized, but does not seem to be that important to people.
-
-Can it tell me where lore X is? <br/>
-Not really. LoreHound does not actually contain a database of lore locations or names, it generates the notifications on the fly based on the detected object. If looking for the location of a specific lore, I suggest using a community info site, such as TSWDB or Crygaia wiki.
-
-Why is so much of it disabled by default? <br/>
-It isn't anymore (v1.3.3), but for the record: The original intent of LoreHound was to provide a system to detect invisible lore drops, specifically from the rider Samhain event in TSW. I tried to avoid spamming notifications or spoiling lore locations for those who would rather hunt them down personally. While popular demand and my own use have led to the mod becoming more flexible, the default settings have only recently been changed to reflect the way most people use this mod.
-
-## Testing and Further Developments
-This continues to be something of a work in progress, though I'm mostly satisfied that it achieves the objectives. I am considering:
-+ Some form of whitelisting to further filter the accepted values:
-  + The *easy* version would be one that simply works on loreIDs after initial filtering, as a global white list.
-  + More complicated systems (intelligent per-category whitelists, random drops only, etc.) would require additional information to be saved about each lore entry.
-+ Localization would be nice, but I'm not going to rely on Google and my limited knowledge of French to be at all accurate. Somebody else will have to provide me with translations, if there is sufficient interest.
-+ Possible runtime linkage with Cartographer once it gets far enough into development.
-+ Some lore is detected in one type, while it behaves as something different, there is an ongoing effort to correct this for two major reasons:
-  + Consistency of alerts with behaviour
-  + Preventing drop lore from spamming Cartographer with large numbers of location waypoints
-    + While simply preventing duplicates by loreID is possible, a large number of existing lore entries with multiple (fixed) spawn points suggests that such a solution is not flexible enough
-
-A feature for helping with The Abandoned lore was found to be unworkable. Lore.IsLockedForChar either does not work as advertised, or requires GM permissions.
-
-Defect reports, suggestions, and contributions are always welcome. Message Peloprata in #modding on the SWL discord, or in-game by mail or pm, or leave a message on the Curse or GitHub page. I am infrequently in TSW at this point, so mail there is likely to go unread.
-
-Curse Mirror: https://www.curseforge.com/swlegends/tswl-mods/lorehound
-
-Source Repository: https://github.com/Earthfiredrake/TSW-LoreHound
-
-## Building from Source
-Requires copies of the TSW and Scaleform CLIK APIs. Existing project files are configured for Flash Pro CS5.5.
-
-Master/Head is the most recent packaged release. Develop/Head is usually slightly behind my current local test build. As much as possible I try to avoid regressions or unbuildable commits but new features may be incomplete and unstable and there may be additional debug code that will be removed or disabled prior to release.
-
-Once built, 'LoreHound.swf' and the contents of 'config' should be copied to the directory 'LoreHound' in the game's mod directory. '/reloadui' is sufficient to force the game to load an updated swf or mod data file, but changes to the game config files (LoginPrefs.xml and Modules.xml) will require a restart of the client and possible deletion of .bxml caches from the mod directory. If the LogParser.py tool is required, it should be copied to the install directory as well.
+A concept for identifying people in need of Abandoned lore didn't work out when tested
 
 ## License and Attribution
 Copyright (c) 2017-2018 Earthfiredrake<br/>

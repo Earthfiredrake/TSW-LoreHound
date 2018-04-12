@@ -1,4 +1,4 @@
-<DOMDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" backgroundColor="#666666" width="100" height="100" currentTimeline="1" xflVersion="2.1" creatorInfo="Adobe Flash Professional CS5.5" platform="Windows" versionInfo="Saved by Adobe Flash Windows 11.5 build 349" majorVersion="11" minorVersion="5" buildNumber="349" viewAngle3D="10.8137112665991" nextSceneIdentifier="738" playOptionsPlayLoop="false" playOptionsPlayPages="false" playOptionsPlayFrameActions="false" autoSaveHasPrompted="true">
+<DOMDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" backgroundColor="#666666" width="100" height="100" currentTimeline="1" xflVersion="2.1" creatorInfo="Adobe Flash Professional CS5.5" platform="Windows" versionInfo="Saved by Adobe Flash Windows 11.5 build 349" majorVersion="11" minorVersion="5" buildNumber="349" viewAngle3D="10.8137112665991" nextSceneIdentifier="754" playOptionsPlayLoop="false" playOptionsPlayPages="false" playOptionsPlayFrameActions="false" autoSaveHasPrompted="true">
      <folders>
           <DOMFolderItem name="Components" itemID="58bd2983-000001e4"/>
           <DOMFolderItem name="Components/Component Assets" itemID="49d65b18-000003c5"/>
@@ -11,10 +11,10 @@
      </fonts>
      <media>
           <DOMBitmapItem name="Components/Windows Assets/Drop Shadow Bitmap" itemID="4f8da942-00001f90" sourceExternalFilepath="./LIBRARY/Components/Windows Assets/Drop Shadow Bitmap" sourceLastImported="1334683970" allowSmoothing="true" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Components/Windows Assets/Drop Shadow Bitmap./LIBRARY/Components/Windows Assets/Drop Shadow Bitmap" bitmapDataHRef="M 3 1488838255.dat" frameRight="3080" frameBottom="5040"/>
-          <DOMBitmapItem name="Icons/IconAlert.png" itemID="58c71256-000001f6" sourceExternalFilepath="./LIBRARY/Icons/IconAlert.png" sourceLastImported="1489447962" externalFileCRC32="3553982865" externalFileSize="5461" originalCompressionType="lossless" quality="50" href="Icons/IconAlert.png" bitmapDataHRef="M 4 1489441366.dat" frameRight="640" frameBottom="640"/>
+          <DOMBitmapItem name="Icons/IconAlert.png" itemID="58c71256-000001f6" sourceExternalFilepath="./LIBRARY/Icons/IconAlert.png" sourceLastImported="1489447962" originalCompressionType="lossless" quality="50" href="Icons/IconAlert.png" bitmapDataHRef="M 4 1489441366.dat" frameRight="640" frameBottom="640"/>
           <DOMBitmapItem name="Icons/IconOff.png" itemID="58bbcd8b-00000273" sourceExternalFilepath="./LIBRARY/Icons/IconOff.png" sourceLastImported="1488508904" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconOff.png" bitmapDataHRef="M 1 1488702071.dat" frameRight="640" frameBottom="640"/>
           <DOMBitmapItem name="Icons/IconOn.png" itemID="58bbcd8d-00000274" sourceExternalFilepath="./LIBRARY/Icons/IconOn.png" sourceLastImported="1488508886" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconOn.png" bitmapDataHRef="M 2 1488702071.dat" frameRight="640" frameBottom="640"/>
-          <DOMBitmapItem name="Icons/IconReport.png" itemID="58c71256-000001fb" sourceExternalFilepath="./LIBRARY/Icons/IconReport.png" sourceLastImported="1489447975" externalFileCRC32="1884736576" externalFileSize="5423" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconReport.png" bitmapDataHRef="M 5 1489441366.dat" frameRight="640" frameBottom="640"/>
+          <DOMBitmapItem name="Icons/IconReport.png" itemID="58c71256-000001fb" sourceExternalFilepath="./LIBRARY/Icons/IconReport.png" sourceLastImported="1489447975" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconReport.png" bitmapDataHRef="M 5 1489441366.dat" frameRight="640" frameBottom="640"/>
      </media>
      <symbols>
           <Include href="Components/CheckBoxNoneLabel.xml" itemID="4b1533e5-00002615" lastModified="1515460859"/>
@@ -33,7 +33,7 @@
           <Include href="Components/Windows Assets/ResizeButton.xml" itemID="4cdd0f78-0000489b" lastModified="1297760571"/>
           <Include href="Components/Windows Assets/Stroke.xml" loadImmediate="false" itemID="4f8dac5f-00002035" lastModified="1334686728"/>
           <Include href="LoreHoundCategorySettingGroup.xml" itemID="58c8559b-00000237" lastModified="1498519227"/>
-          <Include href="LoreHoundConfigWindowContent.xml" itemID="58c82523-00000211" lastModified="1523495838"/>
+          <Include href="LoreHoundConfigWindowContent.xml" itemID="58c82523-00000211" lastModified="1523507377"/>
           <Include href="LoreHoundIcon.xml" itemID="58c8438e-0000022c" lastModified="1489519573"/>
      </symbols>
      <timelines>
@@ -54,25 +54,25 @@
      </timelines>
      <PrinterSettings/>
      <publishHistory>
+          <PublishItem publishSize="516" publishTime="1523507333"/>
+          <PublishItem publishSize="516" publishTime="1523507333"/>
+          <PublishItem publishSize="516" publishTime="1523507333"/>
+          <PublishItem publishSize="516" publishTime="1523507332"/>
+          <PublishItem publishSize="471" publishTime="1523507332"/>
+          <PublishItem publishSize="516" publishTime="1523507332"/>
+          <PublishItem publishSize="516" publishTime="1523507331"/>
+          <PublishItem publishSize="516" publishTime="1523507331"/>
+          <PublishItem publishSize="516" publishTime="1523507331"/>
+          <PublishItem publishSize="471" publishTime="1523507330"/>
+          <PublishItem publishSize="27989" publishTime="1523507330"/>
+          <PublishItem publishSize="516" publishTime="1523507330"/>
+          <PublishItem publishSize="27989" publishTime="1523507329"/>
+          <PublishItem publishSize="27989" publishTime="1523507329"/>
+          <PublishItem publishSize="27989" publishTime="1523507329"/>
+          <PublishItem publishSize="27989" publishTime="1523507328"/>
           <PublishItem publishSize="528" publishTime="1523495820"/>
           <PublishItem publishSize="528" publishTime="1523495820"/>
           <PublishItem publishSize="528" publishTime="1523495820"/>
           <PublishItem publishSize="528" publishTime="1523495820"/>
-          <PublishItem publishSize="471" publishTime="1523495819"/>
-          <PublishItem publishSize="528" publishTime="1523495819"/>
-          <PublishItem publishSize="528" publishTime="1523495819"/>
-          <PublishItem publishSize="528" publishTime="1523495818"/>
-          <PublishItem publishSize="528" publishTime="1523495818"/>
-          <PublishItem publishSize="471" publishTime="1523495818"/>
-          <PublishItem publishSize="27998" publishTime="1523495817"/>
-          <PublishItem publishSize="528" publishTime="1523495817"/>
-          <PublishItem publishSize="27998" publishTime="1523495817"/>
-          <PublishItem publishSize="27998" publishTime="1523495817"/>
-          <PublishItem publishSize="528" publishTime="1523495816"/>
-          <PublishItem publishSize="27998" publishTime="1523495816"/>
-          <PublishItem publishSize="27998" publishTime="1523495815"/>
-          <PublishItem publishSize="528" publishTime="1523419521"/>
-          <PublishItem publishSize="528" publishTime="1523419521"/>
-          <PublishItem publishSize="528" publishTime="1523419521"/>
      </publishHistory>
 </DOMDocument>

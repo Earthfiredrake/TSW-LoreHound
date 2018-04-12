@@ -5,8 +5,8 @@
             xmlns:xmp="http://ns.adobe.com/xap/1.0/">
          <xmp:CreatorTool>Adobe Flash Professional CS5.5 - build 325</xmp:CreatorTool>
          <xmp:CreateDate>2017-01-14T04:00:04-07:00</xmp:CreateDate>
-         <xmp:MetadataDate>2018-04-11T19:57:12-06:00</xmp:MetadataDate>
-         <xmp:ModifyDate>2018-04-11T19:57:12-06:00</xmp:ModifyDate>
+         <xmp:MetadataDate>2018-04-11T22:28:48-06:00</xmp:MetadataDate>
+         <xmp:ModifyDate>2018-04-11T22:28:48-06:00</xmp:ModifyDate>
       </rdf:Description>
       <rdf:Description rdf:about=""
             xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -16,7 +16,7 @@
             xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
             xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"
             xmlns:stRef="http://ns.adobe.com/xap/1.0/sType/ResourceRef#">
-         <xmpMM:InstanceID>xmp.iid:F2FF7B65F23DE811BCB889AC2710175D</xmpMM:InstanceID>
+         <xmpMM:InstanceID>xmp.iid:8E3903C3F63DE811A889AA4140264433</xmpMM:InstanceID>
          <xmpMM:DocumentID>xmp.did:F2FF7B65F23DE811BCB889AC2710175D</xmpMM:DocumentID>
          <xmpMM:OriginalDocumentID>xmp.did:90CE827F37DAE61190579C0D821D36C8</xmpMM:OriginalDocumentID>
          <xmpMM:History>
@@ -269,6 +269,12 @@
                <rdf:li rdf:parseType="Resource">
                   <stEvt:action>created</stEvt:action>
                   <stEvt:instanceID>xmp.iid:F2FF7B65F23DE811BCB889AC2710175D</stEvt:instanceID>
+                  <stEvt:when>2017-01-14T04:00:04-07:00</stEvt:when>
+                  <stEvt:softwareAgent>Adobe Flash Professional CS5.5 - build 349</stEvt:softwareAgent>
+               </rdf:li>
+               <rdf:li rdf:parseType="Resource">
+                  <stEvt:action>created</stEvt:action>
+                  <stEvt:instanceID>xmp.iid:8E3903C3F63DE811A889AA4140264433</stEvt:instanceID>
                   <stEvt:when>2017-01-14T04:00:04-07:00</stEvt:when>
                   <stEvt:softwareAgent>Adobe Flash Professional CS5.5 - build 349</stEvt:softwareAgent>
                </rdf:li>
