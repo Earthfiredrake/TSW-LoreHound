@@ -1,0 +1,170 @@
+<DOMComponentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/LoreHoundWindow" itemID="5a643707-00000460" linkageExportForAS="true" linkageIdentifier="LoreHoundWindow" linkageClassName="efd.LoreHound.lib.sys.window.ModWindow" lastModified="1521100871" lastUniqueIdentifier="13" displayAsComponent="false" customIconID="0" persistLivePreview11="true" editFrameIndex="1" requiredMinimumPlayerVersion="0" requiredMinimumASVersion="0" parametersAreLocked="true">
+  <timeline>
+    <DOMTimeline name="LoreHoundWindow">
+      <layers>
+        <DOMLayer name="Title" color="#9933CC" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMDynamicText name="m_Title" width="56" height="21.05" includeOutlines="true" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="42" ty="12"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters></characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" autoKern="false" leftMargin="30" size="16" bitmapSize="320" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMBitmapInstance libraryItemName="Icons/IconOn.png">
+                  <matrix>
+                    <Matrix tx="5" ty="5"/>
+                  </matrix>
+                </DOMBitmapInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Close Button" color="#4FFFFF" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMComponentInstance libraryItemName="Components/Windows Assets/CloseButton" name="m_CloseButton" centerPoint3DX="108.5" centerPoint3DY="13" uniqueID="3">
+                  <matrix>
+                    <Matrix a="0.723159790039063" d="0.723159790039063" tx="101.95" ty="6.45"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="9.05" y="9.15"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="autoSize">
+      <Inspectable name="autoSize" variable="autoSize" category="" verbose="0" defaultValue="none" enumeration="none,left,center,right" type="List"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disableFocus">
+      <Inspectable name="disableFocus" variable="disableFocus" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="enableInitCallback">
+      <Inspectable name="enableInitCallback" variable="enableInitCallback" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="soundMap">
+      <Inspectable name="soundMap" variable="soundMap" category="" verbose="0" defaultValue="theme:default,focusIn:focusIn,focusOut:focusOut,select:select,rollOver:rollOver,rollOut:rollOut,press:press,doubleClick:doubleClick,click:click" type="Object"/>
+   </property>
+   <property id="toggle">
+      <Inspectable name="toggle" variable="toggle" category="" verbose="0" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Stroke" color="#FF4FFF" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/Stroke" name="m_Stroke" selected="true" centerPoint3DX="61" centerPoint3DY="110">
+                  <transformationPoint>
+                    <Point x="61" y="110"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Resize Button" color="#FF800A" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/ResizeButton" name="m_ResizeButton" centerPoint3DX="112.75" centerPoint3DY="210.85">
+                  <matrix>
+                    <Matrix tx="103.75" ty="201.25"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="9" y="9.6"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Background" color="#4FFF4F" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/Background" name="m_Background" centerPoint3DX="64" centerPoint3DY="64">
+                  <transformationPoint>
+                    <Point/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Drop Shadow" color="#9933CC" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/DropShadow" name="m_DropShadow" centerPoint3DX="59.4" centerPoint3DY="110.5">
+                  <matrix>
+                    <Matrix a="0.973663330078125" tx="-15.5" ty="-15.5"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="76.95" y="126"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+  <parametersAsXML><![CDATA[   <property id="allowResize">
+      <Inspectable name="allowResize" variable="allowResize" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="help">
+      <Inspectable name="help" variable="help" category="" verbose="0" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="_formPadding">
+      <Inspectable name="formPadding" variable="_formPadding" category="" verbose="0" defaultValue="10" type="Number"/>
+   </property>
+   <property id="_formSource">
+      <Inspectable name="formSource" variable="_formSource" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="_formType">
+      <Inspectable name="formType" variable="_formType" category="" verbose="0" defaultValue="symbol" enumeration="symbol,swf" type="List"/>
+   </property>
+   <property id="_maxHeight">
+      <Inspectable name="maxHeight" variable="_maxHeight" category="" verbose="0" defaultValue="0" type="Number"/>
+   </property>
+   <property id="_maxWidth">
+      <Inspectable name="maxWidth" variable="_maxWidth" category="" verbose="0" defaultValue="0" type="Number"/>
+   </property>
+   <property id="_minHeight">
+      <Inspectable name="minHeight" variable="_minHeight" category="" verbose="0" defaultValue="0" type="Number"/>
+   </property>
+   <property id="_minWidth">
+      <Inspectable name="minWidth" variable="_minWidth" category="" verbose="0" defaultValue="0" type="Number"/>
+   </property>
+   <property id="title">
+      <Inspectable name="title" variable="title" category="" verbose="0" defaultValue="Title" type="String"/>
+   </property>
+]]></parametersAsXML>
+</DOMComponentItem>

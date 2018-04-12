@@ -1,0 +1,44 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="LoreHoundIcon" itemID="58c8438e-0000022c" linkageExportForAS="true" linkageIdentifier="LoreHoundIcon" lastModified="1489519573">
+  <timeline>
+    <DOMTimeline name="LoreHoundIcon" currentFrame="1">
+      <layers>
+        <DOMLayer name="Icon" color="#4FFF4F" current="true" isSelected="true" autoNamed="false" heightMultiplier="2">
+          <frames>
+            <DOMFrame index="0" name="inactive" labelType="name" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements>
+                <DOMBitmapInstance libraryItemName="Icons/IconOff.png"/>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="1" name="active" labelType="name" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements>
+                <DOMBitmapInstance libraryItemName="Icons/IconOn.png"/>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="2" name="alerted" labelType="name" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements>
+                <DOMBitmapInstance libraryItemName="Icons/IconAlert.png"/>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="3" name="reporting" labelType="name" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements>
+                <DOMBitmapInstance libraryItemName="Icons/IconReport.png"/>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

@@ -1,0 +1,78 @@
+<DOMDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" backgroundColor="#666666" width="100" height="100" currentTimeline="1" xflVersion="2.1" creatorInfo="Adobe Flash Professional CS5.5" platform="Windows" versionInfo="Saved by Adobe Flash Windows 11.5 build 349" majorVersion="11" minorVersion="5" buildNumber="349" viewAngle3D="10.8137112665991" nextSceneIdentifier="738" playOptionsPlayLoop="false" playOptionsPlayPages="false" playOptionsPlayFrameActions="false" autoSaveHasPrompted="true">
+     <folders>
+          <DOMFolderItem name="Components" itemID="58bd2983-000001e4"/>
+          <DOMFolderItem name="Components/Component Assets" itemID="49d65b18-000003c5"/>
+          <DOMFolderItem name="Components/Windows Assets" itemID="4e806212-00000c79"/>
+          <DOMFolderItem name="Fonts" itemID="58bddfcb-00000218"/>
+          <DOMFolderItem name="Icons" itemID="58bf2a12-00000934"/>
+     </folders>
+     <fonts>
+          <DOMFontItem name="Fonts/_StandardFont" itemID="5a519477-0000024d" linkageExportForAS="true" linkageIdentifier="_StandardFont" font="Futura-Medium" size="0" id="1" sourceLastImported="1521165721" embedRanges="4|5|17|18|20"/>
+     </fonts>
+     <media>
+          <DOMBitmapItem name="Components/Windows Assets/Drop Shadow Bitmap" itemID="4f8da942-00001f90" sourceExternalFilepath="./LIBRARY/Components/Windows Assets/Drop Shadow Bitmap" sourceLastImported="1334683970" allowSmoothing="true" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Components/Windows Assets/Drop Shadow Bitmap./LIBRARY/Components/Windows Assets/Drop Shadow Bitmap" bitmapDataHRef="M 3 1488838255.dat" frameRight="3080" frameBottom="5040"/>
+          <DOMBitmapItem name="Icons/IconAlert.png" itemID="58c71256-000001f6" sourceExternalFilepath="./LIBRARY/Icons/IconAlert.png" sourceLastImported="1489447962" externalFileCRC32="3553982865" externalFileSize="5461" originalCompressionType="lossless" quality="50" href="Icons/IconAlert.png" bitmapDataHRef="M 4 1489441366.dat" frameRight="640" frameBottom="640"/>
+          <DOMBitmapItem name="Icons/IconOff.png" itemID="58bbcd8b-00000273" sourceExternalFilepath="./LIBRARY/Icons/IconOff.png" sourceLastImported="1488508904" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconOff.png" bitmapDataHRef="M 1 1488702071.dat" frameRight="640" frameBottom="640"/>
+          <DOMBitmapItem name="Icons/IconOn.png" itemID="58bbcd8d-00000274" sourceExternalFilepath="./LIBRARY/Icons/IconOn.png" sourceLastImported="1488508886" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconOn.png" bitmapDataHRef="M 2 1488702071.dat" frameRight="640" frameBottom="640"/>
+          <DOMBitmapItem name="Icons/IconReport.png" itemID="58c71256-000001fb" sourceExternalFilepath="./LIBRARY/Icons/IconReport.png" sourceLastImported="1489447975" externalFileCRC32="1884736576" externalFileSize="5423" useImportedJPEGData="false" compressionType="lossless" originalCompressionType="lossless" quality="50" href="Icons/IconReport.png" bitmapDataHRef="M 5 1489441366.dat" frameRight="640" frameBottom="640"/>
+     </media>
+     <symbols>
+          <Include href="Components/CheckBoxNoneLabel.xml" itemID="4b1533e5-00002615" lastModified="1515460859"/>
+          <Include href="Components/Component Assets/box.xml" loadImmediate="false" itemID="4f6b3c49-00002695" lastModified="1332427849"/>
+          <Include href="Components/Component Assets/check.xml" loadImmediate="false" itemID="49cd367e-000002cb" lastModified="1316610748"/>
+          <Include href="Components/Component Assets/ConfigColourPatch.xml" loadImmediate="false" itemID="59947318-00000238" lastModified="1515460535"/>
+          <Include href="Components/Component Assets/ConfigWindowContentBackground.xml" loadImmediate="false" itemID="58be1607-00000ff3" lastModified="1515461568"/>
+          <Include href="Components/GemOverlay.xml" itemID="55fd2a2d-0000c82e" lastModified="1442754411"/>
+          <Include href="Components/LoreHoundWindow.xml" itemID="5a643707-00000460" lastModified="1521100871"/>
+          <Include href="Components/Windows Assets/Background.xml" loadImmediate="false" itemID="4f8d6938-00000b1c" lastModified="1488852438"/>
+          <Include href="Components/Windows Assets/CloseBackground.xml" loadImmediate="false" itemID="4f8d6938-00000b25" lastModified="1316766673"/>
+          <Include href="Components/Windows Assets/CloseButton.xml" itemID="4f8d6938-00000b22" lastModified="1488840025"/>
+          <Include href="Components/Windows Assets/CloseSymbol.xml" loadImmediate="false" itemID="4f8d6938-00000b28" lastModified="1316766424"/>
+          <Include href="Components/Windows Assets/DropShadow.xml" loadImmediate="false" itemID="4f8da947-00001f91" lastModified="1334684906"/>
+          <Include href="Components/Windows Assets/Footer.xml" loadImmediate="false" itemID="4f9184fb-000000ee" lastModified="1334936827"/>
+          <Include href="Components/Windows Assets/ResizeButton.xml" itemID="4cdd0f78-0000489b" lastModified="1297760571"/>
+          <Include href="Components/Windows Assets/Stroke.xml" loadImmediate="false" itemID="4f8dac5f-00002035" lastModified="1334686728"/>
+          <Include href="LoreHoundCategorySettingGroup.xml" itemID="58c8559b-00000237" lastModified="1498519227"/>
+          <Include href="LoreHoundConfigWindowContent.xml" itemID="58c82523-00000211" lastModified="1523495838"/>
+          <Include href="LoreHoundIcon.xml" itemID="58c8438e-0000022c" lastModified="1489519573"/>
+     </symbols>
+     <timelines>
+          <DOMTimeline name="Scene 1">
+               <layers>
+                    <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+                         <frames>
+                              <DOMFrame index="0" keyMode="9728">
+                                   <Actionscript>
+                                        <script><![CDATA[#include "Lorehound.incl.as"]]></script>
+                                   </Actionscript>
+                                   <elements/>
+                              </DOMFrame>
+                         </frames>
+                    </DOMLayer>
+               </layers>
+          </DOMTimeline>
+     </timelines>
+     <PrinterSettings/>
+     <publishHistory>
+          <PublishItem publishSize="528" publishTime="1523495820"/>
+          <PublishItem publishSize="528" publishTime="1523495820"/>
+          <PublishItem publishSize="528" publishTime="1523495820"/>
+          <PublishItem publishSize="528" publishTime="1523495820"/>
+          <PublishItem publishSize="471" publishTime="1523495819"/>
+          <PublishItem publishSize="528" publishTime="1523495819"/>
+          <PublishItem publishSize="528" publishTime="1523495819"/>
+          <PublishItem publishSize="528" publishTime="1523495818"/>
+          <PublishItem publishSize="528" publishTime="1523495818"/>
+          <PublishItem publishSize="471" publishTime="1523495818"/>
+          <PublishItem publishSize="27998" publishTime="1523495817"/>
+          <PublishItem publishSize="528" publishTime="1523495817"/>
+          <PublishItem publishSize="27998" publishTime="1523495817"/>
+          <PublishItem publishSize="27998" publishTime="1523495817"/>
+          <PublishItem publishSize="528" publishTime="1523495816"/>
+          <PublishItem publishSize="27998" publishTime="1523495816"/>
+          <PublishItem publishSize="27998" publishTime="1523495815"/>
+          <PublishItem publishSize="528" publishTime="1523419521"/>
+          <PublishItem publishSize="528" publishTime="1523419521"/>
+          <PublishItem publishSize="528" publishTime="1523419521"/>
+     </publishHistory>
+</DOMDocument>

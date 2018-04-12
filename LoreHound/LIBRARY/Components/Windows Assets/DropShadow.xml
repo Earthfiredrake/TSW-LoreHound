@@ -1,0 +1,21 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/DropShadow" itemID="4f8da947-00001f91" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/Components/Windows.fla" sourceLibraryItemHRef="Windows Assets/DropShadow" sourceLastModified="1334684906" scaleGridLeft="38.5" scaleGridRight="115.5" scaleGridTop="63" scaleGridBottom="189" lastModified="1334684906" sourceItemID="4f8da947-00001f91">
+  <timeline>
+    <DOMTimeline name="DropShadow">
+      <layers>
+        <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMBitmapInstance selected="true" libraryItemName="Components/Windows Assets/Drop Shadow Bitmap">
+                  <matrix>
+                    <Matrix a="1.0194091796875" d="0.99603271484375"/>
+                  </matrix>
+                </DOMBitmapInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

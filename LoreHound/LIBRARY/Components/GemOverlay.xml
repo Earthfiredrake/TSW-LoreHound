@@ -1,0 +1,89 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/GemOverlay" itemID="55fd2a2d-0000c82e" linkageExportForAS="true" linkageIdentifier="GemOverlay" scaleGridLeft="4.8" scaleGridRight="73.2" scaleGridTop="5.6" scaleGridBottom="31.2" lastModified="1442754411" lastUniqueIdentifier="1">
+  <timeline>
+    <DOMTimeline name="GemOverlay">
+      <layers>
+        <DOMLayer name="actions" color="#9933CC" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="9" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="9" duration="10" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="19" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="labels" color="#FF800A" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="10" name="unlit" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="10" duration="10" name="lit" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="overlay" color="#4FFF4F" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="10" keyMode="9728">
+              <elements>
+                <DOMRectangleObject objectWidth="80" objectHeight="36" x="1.2" y="1.6" lockFlag="true" topLeftRadius="4" topRightRadius="4" bottomLeftRadius="4" bottomRightRadius="4">
+                  <matrix>
+                    <Matrix tx="-1.2" ty="-1.6"/>
+                  </matrix>
+                  <fill>
+                    <SolidColor alpha="0.247058823529412"/>
+                  </fill>
+                  <stroke>
+                    <DashedStroke scaleMode="normal" weight="0.1" pixelHinting="true" sharpCorners="true">
+                      <fill>
+                        <SolidColor color="#3AD9FF"/>
+                      </fill>
+                    </DashedStroke>
+                  </stroke>
+                </DOMRectangleObject>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="10" duration="10" keyMode="9728">
+              <elements>
+                <DOMRectangleObject objectWidth="80" objectHeight="36" x="1.2" y="1.6" lockFlag="true" topLeftRadius="4" topRightRadius="4" bottomLeftRadius="4" bottomRightRadius="4">
+                  <matrix>
+                    <Matrix tx="-1.2" ty="-1.6"/>
+                  </matrix>
+                  <fill>
+                    <SolidColor color="#0099FF" alpha="0.247058823529412"/>
+                  </fill>
+                  <stroke>
+                    <DashedStroke scaleMode="horizontal" weight="0.1" pixelHinting="true" sharpCorners="true">
+                      <fill>
+                        <SolidColor color="#3AD9FF"/>
+                      </fill>
+                    </DashedStroke>
+                  </stroke>
+                </DOMRectangleObject>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="scale9" color="#FF4FFF" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="20" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

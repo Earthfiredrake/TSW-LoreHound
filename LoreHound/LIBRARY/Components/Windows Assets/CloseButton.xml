@@ -1,0 +1,222 @@
+<DOMComponentItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/CloseButton" itemID="4f8d6938-00000b22" linkageExportForAS="true" linkageIdentifier="CloseButton" linkageClassName="gfx.controls.Button" lastModified="1488840025" lastUniqueIdentifier="38" displayAsComponent="false" customIconID="0" actionscriptClass="gfx.controls.Button" persistLivePreview11="true" editFrameIndex="1" requiredMinimumPlayerVersion="0" requiredMinimumASVersion="0" parametersAreLocked="true">
+  <timeline>
+    <DOMTimeline name="CloseButton">
+      <layers>
+        <DOMLayer name="Labels / Actions" color="#9933CC" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="9" name="up" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="9" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="10" duration="9" name="over" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="19" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="20" duration="9" name="down" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="29" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="30" duration="9" name="disabled" labelType="name" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+            <DOMFrame index="39" keyMode="9728">
+              <Actionscript>
+                <script><![CDATA[stop();]]></script>
+              </Actionscript>
+              <elements/>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Close Symbol" color="#808080" locked="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="30" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseSymbol" centerPoint3DX="9.05" centerPoint3DY="9.1">
+                  <matrix>
+                    <Matrix tx="3.35" ty="3.4"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="5.7" y="5.7"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="30" duration="10" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseSymbol" centerPoint3DX="9.1" centerPoint3DY="9.35">
+                  <matrix>
+                    <Matrix tx="3.4" ty="3.65"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="5.7" y="5.7"/>
+                  </transformationPoint>
+                  <color>
+                    <Color alphaMultiplier="0.5"/>
+                  </color>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Close Background" color="#4F80FF" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" duration="9" tweenType="motion" motionTweenSnap="true" keyMode="22017">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseBackground" selected="true" centerPoint3DX="7.55" centerPoint3DY="7.6">
+                  <matrix>
+                    <Matrix tx="0.05" ty="0.1"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="7.5" y="7.5"/>
+                  </transformationPoint>
+                  <color>
+                    <Color tintMultiplier="0.17" tintColor="#FF0000"/>
+                  </color>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="9" duration="10" tweenType="motion" motionTweenSnap="true" keyMode="22017">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseBackground" selected="true" centerPoint3DX="7.55" centerPoint3DY="7.6">
+                  <matrix>
+                    <Matrix tx="0.05" ty="0.1"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="7.5" y="7.5"/>
+                  </transformationPoint>
+                  <color>
+                    <Color tintColor="#FF0000"/>
+                  </color>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="19" duration="11" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseBackground" centerPoint3DX="7.55" centerPoint3DY="7.6">
+                  <matrix>
+                    <Matrix tx="0.05" ty="0.1"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="7.5" y="7.5"/>
+                  </transformationPoint>
+                  <color>
+                    <Color tintMultiplier="0.17" tintColor="#FF0000"/>
+                  </color>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+            <DOMFrame index="30" duration="10" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Windows Assets/CloseBackground" centerPoint3DX="7.55" centerPoint3DY="7.6">
+                  <matrix>
+                    <Matrix tx="0.05" ty="0.1"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="7.5" y="7.5"/>
+                  </transformationPoint>
+                  <color>
+                    <Color alphaMultiplier="0.5"/>
+                  </color>
+                </DOMSymbolInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+  <parametersAsXML><![CDATA[   <property id="autoSize">
+      <Inspectable name="autoSize" variable="autoSize" category="" verbose="0" defaultValue="none" enumeration="none,left,center,right" type="List"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disableFocus">
+      <Inspectable name="disableFocus" variable="disableFocus" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="enableInitCallback">
+      <Inspectable name="enableInitCallback" variable="enableInitCallback" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="soundMap">
+      <Inspectable name="soundMap" variable="soundMap" category="" verbose="0" defaultValue="theme:default,focusIn:focusIn,focusOut:focusOut,select:select,rollOver:rollOver,rollOut:rollOut,press:press,doubleClick:doubleClick,click:click" type="Object"/>
+   </property>
+   <property id="toggle">
+      <Inspectable name="toggle" variable="toggle" category="" verbose="0" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+  <classProperties><![CDATA[<class id="gfx.controls.Button" >
+      <InspectableList param1="disabled" param2="disableFocus" param3="visible" param4="toggle" param5="labelID" param6="disableConstraints" param7="enableInitCallback" param8="autoSize" param9="soundMap" />
+   <method id="autoSize" returnType="String">
+      <Inspectable type="String" enumeration="none,left,center,right" defaultValue="none" />
+   </method>
+   <property id="data" type="Object" >
+      <Inspectable type="String" />
+   </property>
+   <method id="disableConstraints" returnType="Boolean">
+      <Inspectable defaultValue="false" verbose="1" />
+   </method>
+   <method id="disableFocus" returnType="Boolean">
+      <Inspectable defaultValue="false" verbose="1" />
+   </method>
+   <method id="disabled" returnType="Boolean">
+      <Inspectable defaultValue="false" verbose="1" />
+   </method>
+   <property id="inspectableGroupName" type="String" >
+      <Inspectable name="group" defaultValue="buttonGroup" />
+   </property>
+   <method id="labelID" returnType="String">
+      <Inspectable name="label" defaultValue="" />
+   </method>
+   <method id="selected" returnType="Boolean">
+      <Inspectable defaultValue="false" />
+   </method>
+   <property id="soundMap" type="Object" >
+      <Inspectable type="Object" defaultValue="theme:default,focusIn:focusIn,focusOut:focusOut,select:select,rollOver:rollOver,rollOut:rollOut,press:press,doubleClick:doubleClick,click:click" />
+   </property>
+   <property id="toggle" type="Boolean" defaultValue="false">
+      <Inspectable defaultValue="false" />
+   </property>
+</class>
+<class id="gfx.core.UIComponent" >
+      <InspectableList param1="disabled" param2="visible" param3="enableInitCallback" param4="soundMap" />
+   <method id="disabled" returnType="Boolean">
+      <Inspectable defaultValue="false" verbose="1" />
+   </method>
+   <property id="enableInitCallback" type="Boolean" defaultValue="true">
+      <Inspectable defaultValue="true" verbose="1" />
+   </property>
+   <property id="soundMap" type="Object" >
+      <Inspectable type="Object" defaultValue="theme:default,focusIn:focusIn,focusOut:focusOut" />
+   </property>
+   <method id="visible" returnType="Boolean">
+      <Inspectable defaultValue="true" verbose="1" />
+   </method>
+</class>
+<class id="MovieClip" >
+</class>
+]]></classProperties>
+</DOMComponentItem>

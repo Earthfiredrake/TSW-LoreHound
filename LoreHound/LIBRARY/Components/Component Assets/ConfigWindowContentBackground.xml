@@ -1,0 +1,26 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Component Assets/ConfigWindowContentBackground" itemID="58be1607-00000ff3" scaleGridLeft="9" scaleGridRight="113" scaleGridTop="9" scaleGridBottom="209" lastModified="1515461568">
+  <timeline>
+    <DOMTimeline name="ConfigWindowContentBackground">
+      <layers>
+        <DOMLayer name="Fill" color="#4FFF4F" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape isDrawingObject="true">
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor alpha="0.8"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle0="1" edges="!2240 0|200 0!200 0[0 0 0 200!0 200|0 4200!0 4200[0 4400 200 4400!200 4400|2240 4400!2240 4400[2440 4400 2440 4200!2440 4200|2440 200!2440 200[2440 0 2240 0"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

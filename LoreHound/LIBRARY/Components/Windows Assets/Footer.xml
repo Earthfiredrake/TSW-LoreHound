@@ -1,0 +1,49 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/Footer" itemID="4f9184fb-000000ee" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/Components/Windows.fla" sourceLibraryItemHRef="Windows Assets/Footer" sourceLastModified="1334936827" lastModified="1334936827" sourceItemID="4f9184fb-000000ee">
+  <timeline>
+    <DOMTimeline name="Footer">
+      <layers>
+        <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <LinearGradient>
+                        <matrix>
+                          <Matrix a="-0.000518798828125" b="-0.038360595703125" c="0.0255889892578125" d="-6.103515625e-005" tx="61.4" ty="30.5"/>
+                        </matrix>
+                        <GradientEntry color="#494949" alpha="0.149019607843137" ratio="0"/>
+                        <GradientEntry color="#494949" alpha="0.650980392156863" ratio="1"/>
+                      </LinearGradient>
+                    </FillStyle>
+                    <FillStyle index="2">
+                      <SolidColor color="#737373"/>
+                    </FillStyle>
+                    <FillStyle index="3">
+                      <LinearGradient>
+                        <matrix>
+                          <Matrix a="-4.57763671875e-005" b="-0.02557373046875" c="0.0255889892578125" d="-4.57763671875e-005" tx="61.1" ty="22.65"/>
+                        </matrix>
+                        <GradientEntry color="#494949" alpha="0.149019607843137" ratio="0"/>
+                        <GradientEntry color="#494949" alpha="0.650980392156863" ratio="1"/>
+                      </LinearGradient>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle1="1" edges="!2440 20S2|2442 140"/>
+                    <Edge fillStyle1="3" edges="!2442 140S2|2442 679!2442 679[2442 879 2242 879!2242 879|202 879!202 879[2 879 2 679!2 679|2 140"/>
+                    <Edge fillStyle0="1" fillStyle1="3" edges="!2 140S3|2442 140"/>
+                    <Edge fillStyle1="2" edges="!2 20S2|2 0!2 0|2442 0!2442 0|2442 20!2442 20|2440 20"/>
+                    <Edge fillStyle0="1" fillStyle1="2" edges="!2440 20S3|2 20"/>
+                    <Edge fillStyle1="1" edges="!2 140S2|0 20!0 20|2 20"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

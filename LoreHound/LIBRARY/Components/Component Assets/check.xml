@@ -1,0 +1,26 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Component Assets/check" itemID="49cd367e-000002cb" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/GUI/PetInventory/PetInventory.fla" sourceLibraryItemHRef="Windows Assets/Components/Component Assets/Checkbox Assets/check" sourceLastModified="1316610748" lastModified="1316610748" sourceItemID="49cd367e-000002cb">
+  <timeline>
+    <DOMTimeline name="check">
+      <layers>
+        <DOMLayer name="check" color="#FF800A" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#FFFFFF"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle1="1" edges="!110 169|20 111!20 111|18 69!18 69|100 128!100 128[#9B.9A #3A.4F 225 30!225 30|222 78!222 78[#90.F3 #72.0D 110 169"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

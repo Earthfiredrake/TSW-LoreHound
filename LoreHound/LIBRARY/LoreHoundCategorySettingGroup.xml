@@ -1,0 +1,265 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="LoreHoundCategorySettingGroup" itemID="58c8559b-00000237" linkageExportForAS="true" linkageIdentifier="LoreHoundCategorySettingGroup" linkageClassName="efd.LoreHound.gui.LoreCategorySettingGroup" lastModified="1498519227" lastUniqueIdentifier="12">
+  <timeline>
+    <DOMTimeline name="LoreHoundCategorySettingGroup">
+      <layers>
+        <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMSymbolInstance libraryItemName="Components/Component Assets/ConfigWindowContentBackground" centerPoint3DX="75" centerPoint3DY="90">
+                  <matrix>
+                    <Matrix a="1.2294921875" d="0.727279663085938" ty="10"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="61" y="110"/>
+                  </transformationPoint>
+                </DOMSymbolInstance>
+                <DOMDynamicText name="GroupTitle" width="146" height="19.75" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="2" ty="2"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>Title</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" autoKern="false" size="15" bitmapSize="300" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBFifoEnabled" centerPoint3DX="20" centerPoint3DY="55" uniqueID="7">
+                  <matrix>
+                    <Matrix tx="10" ty="45"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="10" y="10"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="data">
+      <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="selected">
+      <Inspectable name="selected" variable="selected" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+                <DOMDynamicText name="LBFifoEnabled" width="116" height="16" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="32" ty="47"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreSettingFifo</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMDynamicText name="LBChatEnabled" width="116" height="15.8" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="32" ty="67"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreSettingChat</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBChatEnabled" centerPoint3DX="20" centerPoint3DY="75" uniqueID="9">
+                  <matrix>
+                    <Matrix tx="10" ty="65"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="10" y="10"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="data">
+      <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="selected">
+      <Inspectable name="selected" variable="selected" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+                <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBWaypointsEnabled" centerPoint3DX="20" centerPoint3DY="35" uniqueID="10">
+                  <matrix>
+                    <Matrix tx="10" ty="25"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="10" y="10"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="data">
+      <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="selected">
+      <Inspectable name="selected" variable="selected" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+                <DOMDynamicText name="LBWaypointsEnabled" width="116" height="16" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="32" ty="27"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreSettingWP</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMDynamicText name="LBLoreStatesTitle" width="116" height="18.45" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="12" ty="82"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreStatesTitle</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" size="14" bitmapSize="280" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMDynamicText name="LBAlertUncollected" width="116" height="16" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="37" ty="102"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreSettingUncollected</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMDynamicText name="LBAlertCollected" width="116" height="15.8" isSelectable="false">
+                  <matrix>
+                    <Matrix tx="37" ty="122"/>
+                  </matrix>
+                  <textRuns>
+                    <DOMTextRun>
+                      <characters>LoreSettingCollected</characters>
+                      <textAttrs>
+                        <DOMTextAttrs aliasText="false" bitmapSize="240" face="_StandardFont*" fillColor="#FFFFFF"/>
+                      </textAttrs>
+                    </DOMTextRun>
+                  </textRuns>
+                </DOMDynamicText>
+                <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBAlertUncollected" centerPoint3DX="25" centerPoint3DY="110" uniqueID="11">
+                  <matrix>
+                    <Matrix tx="15" ty="100"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="10" y="10"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="data">
+      <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="selected">
+      <Inspectable name="selected" variable="selected" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+                <DOMComponentInstance libraryItemName="Components/CheckBoxNoneLabel" name="CBAlertCollected" centerPoint3DX="25" centerPoint3DY="130" uniqueID="12">
+                  <matrix>
+                    <Matrix tx="15" ty="120"/>
+                  </matrix>
+                  <transformationPoint>
+                    <Point x="10" y="10"/>
+                  </transformationPoint>
+                  <dataBindingXML><![CDATA[<component metaDataFetched='true' schemaUrl='' schemaOperation='' sceneRootLabel='Scene 1' oldCopiedComponentPath=''>
+</component>
+]]></dataBindingXML>
+                  <parametersAsXML><![CDATA[   <property id="data">
+      <Inspectable name="data" variable="data" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="disableConstraints">
+      <Inspectable name="disableConstraints" variable="disableConstraints" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="disabled">
+      <Inspectable name="disabled" variable="disabled" category="" verbose="1" defaultValue="false" type="Boolean"/>
+   </property>
+   <property id="labelID">
+      <Inspectable name="label" variable="labelID" category="" verbose="0" defaultValue="" type="String"/>
+   </property>
+   <property id="selected">
+      <Inspectable name="selected" variable="selected" category="" verbose="0" defaultValue="true" type="Boolean"/>
+   </property>
+   <property id="visible">
+      <Inspectable name="visible" variable="visible" category="" verbose="1" defaultValue="true" type="Boolean"/>
+   </property>
+]]></parametersAsXML>
+                </DOMComponentInstance>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

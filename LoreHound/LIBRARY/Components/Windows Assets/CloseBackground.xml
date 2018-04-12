@@ -1,0 +1,33 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/CloseBackground" itemID="4f8d6938-00000b25" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/Components/Windows.fla" sourceLibraryItemHRef="Windows Assets/CloseBackground" sourceLastModified="1316766673" lastModified="1316766673" sourceItemID="4f8d6938-00000b25">
+  <timeline>
+    <DOMTimeline name="CloseBackground">
+      <layers>
+        <DOMLayer name="Button Circle" color="#4FFF4F" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape isDrawingObject="true">
+                  <transformationPoint>
+                    <Point x="7.55" y="7.55"/>
+                  </transformationPoint>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#727375"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle1="1" edges="!179 360[105 360 53 307!53 307[0 254 0 179!0 179[0 105 53 53!53 53[105 0 179 0!179 0[255 0 307 53!307 53[360 105 360 179!360 179[360 254 307 307!307 307[255 360 179 360"/>
+                    <Edge cubics="!307 307(;237,377 123,377 53,307q307 307Q255 360q179 360Q105 360q53 307);"/>
+                    <Edge cubics="!53 307(;-18,237 -18,123 53,53q53 307Q0 254q0 179Q0 105q53 53);"/>
+                    <Edge cubics="!53 53(;123,-18 237,-18 307,53q53 53Q105 0q179 0Q255 0q307 53);"/>
+                    <Edge cubics="!307 53(;378,123 378,237 307,307q307 53Q360 105q360 179Q360 254q307 307);"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

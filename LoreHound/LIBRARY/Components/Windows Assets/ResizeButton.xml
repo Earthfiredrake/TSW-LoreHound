@@ -1,0 +1,86 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/ResizeButton" itemID="4cdd0f78-0000489b" linkageExportForAS="true" linkageIdentifier="ResizeButton" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/Components/Windows.fla" sourceLibraryItemHRef="Windows Assets/ResizeButton" sourceLastModified="1297760571" lastModified="1297760571" sourceItemID="4cdd0f78-0000489b">
+  <timeline>
+    <DOMTimeline name="ResizeButton" guides='&lt;guidelines&gt;&lt;guideline direction="h"&gt;0&lt;/guideline&gt;&lt;guideline direction="v"&gt;0&lt;/guideline&gt;&lt;/guidelines&gt;'>
+      <layers>
+        <DOMLayer name="Layer 2" color="#9933CC" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <strokes>
+                    <StrokeStyle index="1">
+                      <SolidStroke scaleMode="normal" caps="none">
+                        <fill>
+                          <SolidColor color="#D4D0C8" alpha="0.6"/>
+                        </fill>
+                      </SolidStroke>
+                    </StrokeStyle>
+                  </strokes>
+                  <edges>
+                    <Edge strokeStyle="1" edges="!313 71|67 318"/>
+                    <Edge strokeStyle="1" edges="!313 167S4|162 318"/>
+                    <Edge cubics="!313 251(;313,251 247,318 247,318q313 251 247 318);"/>
+                    <Edge cubics="!313 71(;313,71 67,318 67,318q313 71 67 318);"/>
+                    <Edge cubics="!313 167(;313,167 162,318 162,318q313 167 162 318);"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Layer 4" color="#FF4FFF">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <strokes>
+                    <StrokeStyle index="1">
+                      <SolidStroke scaleMode="normal" caps="none">
+                        <fill>
+                          <SolidColor color="#D6D6D6" alpha="0.498039215686275"/>
+                        </fill>
+                      </SolidStroke>
+                    </StrokeStyle>
+                  </strokes>
+                  <edges>
+                    <Edge strokeStyle="1" edges="!304 68|58 314!304 164|153 314"/>
+                    <Edge cubics="!304 248(;304,248 238,314 238,314q304 248 238 314);"/>
+                    <Edge cubics="!304 68(;304,68 58,314 58,314q304 68 58 314);"/>
+                    <Edge cubics="!304 164(;304,164 153,314 153,314q304 164 153 314);"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Layer 5" color="#4FFFFF" locked="true" outline="true" useOutlineView="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#FFFFFF" alpha="0"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle0="1" fillStyle1="1" edges="!9 10S1|9 375"/>
+                    <Edge fillStyle0="1" edges="!9 375S1|207 375!207 375[365 375 365 217!365 217|365 10!365 10|9 10"/>
+                    <Edge fillStyle0="1" edges="!9 10|-4 10!-4 10|-4 375!-4 375|9 375"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Layer 3" color="#FF800A">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements/>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

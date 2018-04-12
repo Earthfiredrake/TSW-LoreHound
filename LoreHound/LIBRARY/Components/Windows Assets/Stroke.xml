@@ -1,0 +1,27 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Windows Assets/Stroke" itemID="4f8dac5f-00002035" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/Components/Windows.fla" sourceLibraryItemHRef="Windows Assets/Stroke" sourceLastModified="1334686728" scaleGridLeft="9.5" scaleGridRight="111" scaleGridTop="10.25" scaleGridBottom="209.5" lastModified="1334686728" sourceItemID="4f8dac5f-00002035">
+  <timeline>
+    <DOMTimeline name="Stroke">
+      <layers>
+        <DOMLayer name="Layer 1" color="#4FFF4F" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#FFFFFF"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle0="1" edges="!2420 210|2420 4190!2420 4190[2420 4380 2230 4380!2230 4380|210 4380!210 4380[20 4380 20 4190!20 4190|20 210!20 210[20 20 210 20!210 20|2230 20!2230 20[2420 20 2420 210!2230 0|210 0!210 0[0 0 0 210!0 210|0 4190!0 4190[0 4400 210 4400
+!210 4400|2230 4400!2230 4400[2440 4400 2440 4190!2440 4190|2440 210!2440 210[2440 0 2230 0"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>

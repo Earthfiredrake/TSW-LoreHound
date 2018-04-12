@@ -1,0 +1,44 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="Components/Component Assets/box" itemID="4f6b3c49-00002695" sourceFlashFilepath="../../../../Library/Flash/AS2/TSW/GUI/PetInventory/PetInventory.fla" sourceLibraryItemHRef="Windows Assets/Components/Component Assets/Checkbox Assets/box" sourceLastModified="1332427849" lastModified="1332427849" sourceItemID="4e79ddea-00000275">
+  <timeline>
+    <DOMTimeline name="box">
+      <layers>
+        <DOMLayer name="Fill" color="#4FFF4F" current="true" isSelected="true" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#525252" alpha="0.803921568627451"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle1="1" edges="!220 220|20 220!20 220|20 20!20 20|220 20!220 20|220 220"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+        <DOMLayer name="Stroke" color="#9933CC" autoNamed="false">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#FFFFFF"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle0="1" edges="!240 0|0 0!0 0|0 240!0 240|240 240!240 240|240 0!220 220|20 220!20 220|20 20!20 20|220 20!220 20|220 220"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>
