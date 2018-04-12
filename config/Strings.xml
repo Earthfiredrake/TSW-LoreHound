@@ -58,7 +58,6 @@
 		<TopbarVTIO en="VTIO Only" />
 		<TopbarAny en="Enabled" />
 		<OtherSettingDespawn en="Track Despawns" />
-		<OtherSettingReporting en="Automated Reports" />
 		<OtherSettingExtraTest en="Extended Testing" />
 		<OtherSettingLogDump en="Log Cartographer Data" />
 		<OtherSettingWPColour en="Waypoint Colour" />
@@ -70,20 +69,12 @@
 		<TooltipShowSettings en="Show Options" />
 		<TooltipShowInterface en="[Display Interface]" />
 		<TooltipTracking en="Tracking Drops:" />
-		<TooltipReports en="Reports Pending: %1%" /> <!-- %1% = Number of pending reports -->
 	</GUI>
-	<AutoReport> <!-- Only used for player notifications, report content is internal -->
-		<ReportQueued en="A report has been generated and will be sent when you are next at the bank" />
-		<Submitted en="All queued reports have been sent. Thank you for your assistance" />
-		<FailSend en="One or more reports failed to send and will remain queued" />
-		<FailDeliver en="One or more reports could not be delivered and will remain queued" />
-		<ErrorDesc en="Reason: %1%" /> <!-- %1% = game provided error message, unknown localization -->
-	</AutoReport>
 	<LoreHound> <!-- Chat and fifo messages specific to this mod -->
 		<LoreName en="%1% %2%#%3%" /> <!-- %1% = game provided lore topic; %2% = Source (one of below); %3% = Lore# (adjusted for sanity) -->
 		<BuzzingSource en="" /> <!-- Provided for customization -->
 		<BlackSignalSource en="BS" />
-		<UnknownSource en="?!?" /> <!-- Somebody new talking at us through lore! -->
+		<UnknownSource en="?WHO?" /> <!-- Somebody new talking at us through lore! -->
 		<InactiveLore en="?Lore? (trigger/event)" /> <!-- Lore was lacking a LoreID or other identifying value -->
 		<InactiveShrouded en="Inactive shrouded (event) lore" />
 		<InvalidLoreID en="Invalid lore ID" /> <!-- Lore had a LoreID, but it failed to map to a name -->
@@ -110,7 +101,4 @@
 		<ScarabColourGreen en="%1%, Green" />
 		<ScarabColourRed en="%1%, Red" />
 	</LoreHound>
-	<Patch> <!-- Update notes if a patch resulted in unexpected settings changed -->
-		<AutoReportRepair en="Auto report settings were not saving, this has been fixed and they have been reset to defaults." />
-	</Patch>
 </StringCategories>

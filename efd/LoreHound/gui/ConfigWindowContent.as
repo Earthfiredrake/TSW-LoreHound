@@ -25,7 +25,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBModEnabled.disableFocus = true;
 		CBTopbar.disableFocus = true;
 		CBTrackDespawns.disableFocus = true;
-		CBErrorReports.disableFocus = true;
 		CBExtraTests.disableFocus = true;
 		CBDetailTimestamp.disableFocus = true;
 		CBDetailLocation.disableFocus = true;
@@ -33,9 +32,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		CBDetailInstance.disableFocus = true;
 		CBLogDump.disableFocus = true;
 
-		LocaleManager.ApplyLabel(LBInactive);
 		LocaleManager.ApplyLabel(LBDespawn);
-		LocaleManager.ApplyLabel(LBAutoReport);
 		LocaleManager.ApplyLabel(LBDetailGroupTitle);
 		LocaleManager.ApplyLabel(LBTimestamp);
 		LocaleManager.ApplyLabel(LBLocation);
@@ -56,14 +53,11 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	public function AttachConfig(config:ConfigWrapper):Void {
 		Config = config;
 		ConfigUpdated();
-		AutoReportConfigUpdated();
 		Config.SignalValueChanged.Connect(ConfigUpdated, this);
-		Config.GetValue("AutoReport").SignalValueChanged.Connect(AutoReportConfigUpdated, this);
 
 		CBModEnabled.addEventListener("select", this, "CBModEnabled_Select");
 		CBTopbar.addEventListener("select", this, "CBTopbar_Select");
 		CBTrackDespawns.addEventListener("select", this, "CBTrackDespawns_Select");
-		CBErrorReports.addEventListener("select", this, "CBErrorReports_Select");
 		CBExtraTests.addEventListener("select", this, "CBExtraTests_Select");
 		CBDetailTimestamp.addEventListener("select", this, "CBDetailTimestamp_Select");
 		CBDetailLocation.addEventListener("select", this, "CBDetailLocation_Select");
@@ -113,12 +107,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 		}
 	}
 
-	private function AutoReportConfigUpdated(setting:String, newValue, oldValue):Void {
-		if (setting == "Enabled" || setting == undefined) {
-			CBErrorReports.selected = Config.GetValue("AutoReport").GetValue("Enabled");
-		}
-	}
-
 	/// Selection event handlers
 	private function CBModEnabled_Select(event:Object):Void {
 		Config.SetValue("Enabled", event.selected);
@@ -130,10 +118,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 
 	private function CBTrackDespawns_Select(event:Object):Void {
 		Config.SetValue("TrackDespawns", event.selected);
-	}
-
-	private function CBErrorReports_Select(event:Object):Void {
-		Config.GetValue("AutoReport").SetValue("Enabled", event.selected);
 	}
 
 	private function CBExtraTests_Select(event:Object):Void {
@@ -171,9 +155,7 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	}
 
 	//Labels
-	private var LBInactive:TextField;
 	private var LBDespawn:TextField;
-	private var LBAutoReport:TextField;
 
 	private var LBDetailGroupTitle:TextField;
 	private var LBTimestamp:TextField;
@@ -194,7 +176,6 @@ class efd.LoreHound.gui.ConfigWindowContent extends WindowComponentContent {
 	private var CBModEnabled:CheckBox;
 	private var CBTopbar:CheckBox;
 	private var CBTrackDespawns:CheckBox;
-	private var CBErrorReports:CheckBox;
 	private var CBExtraTests:CheckBox;
 	private var CBLogDump:CheckBox;
 
