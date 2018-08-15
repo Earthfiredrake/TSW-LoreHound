@@ -23,6 +23,8 @@
 			<Reclassify loreID="10819" category="Trigger" /> <!-- Marquard's Mansion #3, requires action -->
 			<Reclassify loreID="10828" category="Trigger" /> <!-- Aigamuxa #5, requires action -->
 			<Reclassify loreID="10839" category="Trigger" /> <!-- Demon Hyena #7, requires action -->
+			<Reclassify loreID="10923" category="Trigger" /> <!-- Faction Conflict #3 -->
+			<Reclassify loreID="10925" category="Trigger" /> <!-- Faction Conflict #5 -->
 		</ID>
 	</Category>
 	<Category name="Trigger"> <!-- Will spawn at fixed location once a condition is met -->
@@ -64,6 +66,9 @@
 			<Reclassify loreID="10822" category="Trigger" /> <!-- Marquard's Mansion #6 -->
 			<Reclassify loreID="10827" category="Trigger" /> <!-- Aigamuxa #4 -->
 			<Reclassify loreID="10846" category="Trigger" /> <!-- Kongamato #6 -->
+			<Reclassify loreID="11001" category="Trigger" /> <!-- Stonehenge Simulation #3 -->
+			<Reclassify loreID="11004" category="Trigger" /> <!-- Stonehenge Simulation #6 -->
+			<Reclassify loreID="11005" category="Trigger" /> <!-- Stonehenge Simulation #7 -->
 		</ID>
 	</Category>
 	<Category name="SpecialItem"> <!-- Non-lore, but related items -->
