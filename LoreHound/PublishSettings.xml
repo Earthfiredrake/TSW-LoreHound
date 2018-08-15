@@ -76,7 +76,7 @@
     <ExternalPlayer></ExternalPlayer>
     <ActionScriptVersion>2</ActionScriptVersion>
     <PackageExportFrame>1</PackageExportFrame>
-    <PackagePaths>.;../../../Library/Flash/AS2/CLIK;../../../Library/Flash/AS2/TSW;$(LocalData)/Classes;</PackagePaths>
+    <PackagePaths>../../../Library/Flash/AS2/CLIK;../../../Library/Flash/AS2/TSW;$(LocalData)/Classes;</PackagePaths>
     <AS3PackagePaths>.</AS3PackagePaths>
     <AS3ConfigConst>CONFIG::FLASH_AUTHORING=&quot;true&quot;;</AS3ConfigConst>
     <DebuggingPermitted>0</DebuggingPermitted>

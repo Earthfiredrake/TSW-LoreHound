@@ -242,9 +242,7 @@ class efd.LoreHound.lib.Mod {
 
 	// Config changed handler will not be triggered by initial loading
 	// Update handlers get an initial shot at the loaded settings
-	private function ConfigChanged(setting:String, newValue, oldValue):Void {
-
-	}
+	private function ConfigChanged(setting:String, newValue, oldValue):Void { }
 
 /// Standard Icon Mouse Behaviour Packages
 	public var IconMouse_ToggleUserEnabled:Object = { Action : ToggleUserEnabled, Tooltip : ToggleUserEnabledTooltip };
