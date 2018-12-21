@@ -244,6 +244,7 @@ class efd.LoreHound.lib.LocaleManager {
 //   50311: Spoilers! Illuminati mission reports
 //   50312: Spoilers! Dragon mission reports
 //   50313: Mission unlock requirements
+//   50316: Spoilers! Dragon mission reports (post Tokyo variants)
 //  *51000: [npc_template] Names for NPCs, pets, monsters
 //  *52000: [regions] Names for playfields (by playfield ID)
 //   52001: Server names (Fun fact: the full list includes several of the 17)

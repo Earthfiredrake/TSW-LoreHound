@@ -69,11 +69,6 @@ class efd.LoreHound.LoreHound extends Mod {
 
 	public function LoreHound(hostMovie:MovieClip) {
 		super(GetModInfo(), hostMovie);
-		// Ingame debug menu registers variables that are initialized here, but not those initialized at class scope
-		// - Perhaps flash does static evaluation and decides to collapse constant variables?
-		// - Regardless of the why, this will let me tweak these at runtime
-		DetailStatRange = 1; // Start with the first million
-		DetailStatMode = 2; // Defaulting to mode 2 based on repeated comments in game source that it is somehow "full"
 		SystemsLoaded.CategoryIndex = false;
 
 		TrackedLore = new Object();
@@ -711,12 +706,6 @@ class efd.LoreHound.LoreHound extends Mod {
 	private static var e_Stats_LoreId:Number = 2000560; // Most lore dynels seem to store the LoreId at this stat index, those that don't are either not fully loaded, or event related
 
 	private static var c_MaxWaypointRange:Number = 50; // Maximum display range for waypoints, in metres
-
-	// When doing a stat dump, use/change these parameters to determine the range of the stats to dump
-	// It will dump the Nth million stat ids, with the mode parameter provided
-	// Tradeoff between the length of time locked up, and the number of tests needed
-	private var DetailStatRange:Number;
-	private var DetailStatMode:Number;
 
 	private var IndexFile:XML;
 

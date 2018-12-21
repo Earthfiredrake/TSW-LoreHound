@@ -144,13 +144,13 @@ class efd.LoreHound.lib.Mod {
 
 	// Notify when a core subsystem has finished loading to ensure that LoadComplete properly triggers
 	// Also a convenient place to override and trigger events that require multiple subsystems to be loaded
+	// TODO: Timeout warning to notify of systems that fail to properly register their state
 	private function UpdateLoadProgress(loadedSystem:String):Boolean {
 		Debug.TraceMsg(loadedSystem + " Loaded");
 		SystemsLoaded[loadedSystem] = true;
 		for (var system:String in SystemsLoaded) {
 			if (!SystemsLoaded[system]) { return false; }
 		}
-		Debug.TraceMsg("Is fully loaded");
 		LoadComplete();
 	}
 
@@ -164,6 +164,7 @@ class efd.LoreHound.lib.Mod {
 		ModLoadedDV.SetValue(Version);
 		// No errors force disabled during load, assume things are working and fetch the serialized state (or true)
 		if (ModEnabledDV.GetValue() === undefined) { ModEnabledDV.SetValue(Config.GetValue("Enabled", true)); }
+		Debug.TraceMsg("Is fully loaded");
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
@@ -178,7 +179,7 @@ class efd.LoreHound.lib.Mod {
 			CheckEnableState();
 			return Config.SaveConfig();
 		} else {
-			if (!Config.IsLoaded) {	Config.LoadConfig(archive);	}
+			if (!Config.IsLoaded) { Config.LoadConfig(archive); }
 			EnabledByGame = true;
 			CheckEnableState();
 		}

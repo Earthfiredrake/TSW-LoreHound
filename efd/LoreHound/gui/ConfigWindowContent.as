@@ -13,7 +13,6 @@ import com.Components.WindowComponentContent;
 import efd.LoreHound.gui.LoreCategorySettingGroup;
 import efd.LoreHound.lib.sys.config.ConfigWrapper;
 import efd.LoreHound.lib.LocaleManager;
-import efd.LoreHound.lib.Mod;
 import efd.LoreHound.LoreHound;
 import efd.LoreHound.LoreData;
 
