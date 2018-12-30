@@ -129,7 +129,7 @@ class efd.LoreHound.lib.Mod {
 
 		ConfigHost = modInfo.Subsystems.Config.Init(this, modInfo.Subsystems.Config.InitObj);
 		// TODO: Some mods won't have to serialize this, because it only makes sense as an error disable
-		Config.NewSetting("Enabled", true); // This should be used for serialization only, not to trigger a change in state
+		Config.NewSetting("Enabled", true);
 		Config.SignalConfigLoaded.Connect(ConfigLoaded, this);
 
 		InterfaceWindow = modInfo.Subsystems.Interface.Init(this, modInfo.Subsystems.Interface.InitObj);
@@ -162,9 +162,8 @@ class efd.LoreHound.lib.Mod {
 		// TODO: Load icon invisibly, and only make it visible when loading is successfully complete?
 		SignalLoadCompleted.Emit();
 		ModLoadedDV.SetValue(Version);
-		// No errors force disabled during load, assume things are working and fetch the serialized state (or true)
-		if (ModEnabledDV.GetValue() === undefined) { ModEnabledDV.SetValue(Config.GetValue("Enabled", true)); }
 		Debug.TraceMsg("Is fully loaded");
+		ModEnabledDV.SetValue(Config != undefined ? Config.GetValue("Enabled", true) : true);
 	}
 
 	// The game itself toggles the mod's activation state (based on modules.xml criteria)
@@ -188,21 +187,28 @@ class efd.LoreHound.lib.Mod {
 	//  Flash triggered enable state DV has changed
 	private function ModEnabledChanged(dv:DistributedValue):Void {
 		var newValue:Boolean = dv.GetValue();
+		// Certain bugs (cyclic strong references) can result in an instance of the mod remaining in memory despite being removed from the visual tree during a /reloadui
+		// This attempts to detect those instances, by hooking a warning that will be triggered if the mod constructor is called while another instance still exists
 		if (newValue == undefined) { Debug.DevMsg("A prior instance was not fully cleaned up before construction of a new instance"); }
-		if (newValue && SystemsLoaded != undefined) {
-			Debug.ErrorMsg("Failed to load required components, and cannot be enabled");
-			for (var key:String in SystemsLoaded) {
-				if (!SystemsLoaded[key]) { Debug.ErrorMsg("Missing: " + key, { noHeader : true }); }
-			}
+		if (newValue && (FatalError || SystemsLoaded != undefined)) {
+			if (FatalError) {
+				Debug.ErrorMsg("Unable to activate due to a previous fatal error");
+				Debug.ErrorMsg("Original Error: " + FatalError, { noHeader : true });
+			} else {
+				Debug.ErrorMsg("Failed to load required components, and cannot be enabled");
+				for (var key:String in SystemsLoaded) {
+					if (!SystemsLoaded[key]) { Debug.ErrorMsg("Missing: " + key, { noHeader : true }); }
+				}
+			}	
 			dv.SetValue(false);
-		} else {
-			CheckEnableState();
-			Config.SetValue("Enabled", ModEnabledDV.GetValue());
-			if (Icon == undefined) {
-				// No Icon, probably means it's a console style mod
-				// Provide alternate notification
-				ChatMsg(LocaleManager.GetString("General", newValue ? "Enabled" : "Disabled"));
-			}
+			return;
+		}
+		CheckEnableState();
+		Config.SetValue("Enabled", dv.GetValue());
+		if (Icon == undefined) {
+			// No Icon, probably means it's a console style mod
+			// Provide alternate notification
+			ChatMsg(LocaleManager.GetString("General", newValue ? "Enabled" : "Disabled"));
 		}
 	}
 
@@ -217,7 +223,7 @@ class efd.LoreHound.lib.Mod {
 	}
 
 	// TODO: Figure out what else needs to be hooked up to DebugUtils.SignalFatalError
-    private function OnFatalError(error:String) { ModEnabledDV.SetValue(false); }
+    private function OnFatalError(error:String) { FatalError = error; }
 
 	public function OnUnload():Void {
 		ModLoadedDV.SetValue(false);
@@ -243,7 +249,14 @@ class efd.LoreHound.lib.Mod {
 
 	// Config changed handler will not be triggered by initial loading
 	// Update handlers get an initial shot at the loaded settings
-	private function ConfigChanged(setting:String, newValue, oldValue):Void { }
+	private function ConfigChanged(setting:String, newValue, oldValue):Void {
+		switch(setting) {
+			case "Enabled" : {
+				ModEnabledDV.SetValue(newValue);
+				break;
+			}
+		}
+	}
 
 /// Standard Icon Mouse Behaviour Packages
 	public var IconMouse_ToggleUserEnabled:Object = { Action : ToggleUserEnabled, Tooltip : ToggleUserEnabledTooltip };
@@ -338,6 +351,7 @@ class efd.LoreHound.lib.Mod {
 	public function get ModLoadedVarName():String { return DVPrefix + ModName + "Loaded"; }
 	public var ModLoadedDV:DistributedValue; // Locks-out interface when mod fails to load, may also be used for basic cross-mod integration
 	public var SystemsLoaded:Object; // Tracks asynchronous data loads so that functions aren't called without proper data, removed once loading complete
+	public var FatalError:String;
 	public var SignalLoadCompleted:Signal;
 
 	public function get ModEnabledVarName():String { return DVPrefix + ModName + "Enabled"; }
