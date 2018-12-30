@@ -1,13 +1,6 @@
 ﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
-
-import com.Utils.Format;
-import com.Utils.LDBFormat;
-import com.Utils.Signal;
-
-import efd.LoreHound.lib.DebugUtils;
-import efd.LoreHound.lib.Mod;
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 // Provides string localization features, consisting of two major components:
 //   Parses xml files containing categorized strings (ie: Strings.xml) and stores the localized strings in a globally available lookup table
@@ -22,7 +15,7 @@ import efd.LoreHound.lib.Mod;
 //   Where:
 //     CategoryKey and StringKey are lookup keys (generally making unique pairs)
 //       Categories may be re-opened and extended after initial definition, but re-defined StringKeys will replace the originals
-//     fmtSrc -> (cat="CategoryKey" str="StringKey") | rbd="id=# category=#" | (en="english/default" [fr="french"][de="german"])
+//     fmtSrc -> (cat="CategoryKey" str="StringKey") | rdb="category=# id=#" | (en="english/default" [fr="french"][de="german"])
 
 //   Multiple fmtSrcs are permitted, but they will be evaluated in order of precidence, and will ignore any results after finding a valid source
 //     str: Sourced from the string file, and must be already loaded, mostly used when other mod data repeatedly uses generic string segments
@@ -40,7 +33,12 @@ import efd.LoreHound.lib.Mod;
 
 // Also provides some formatting utilities for strings and simplified lookups for common UI elements
 
-class efd.LoreHound.lib.LocaleManager {
+import com.Utils.Format;
+import com.Utils.LDBFormat;
+import com.Utils.Signal;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "LocaleManager.lcl.as"
 	private function LocaleManager() { } // Static class for ease of access and singleton nature
 
 	public static function Initialize(testLocale:String):Void {
@@ -249,7 +247,7 @@ class efd.LoreHound.lib.LocaleManager {
 //  *52000: [regions] Names for playfields (by playfield ID)
 //   52001: Server names (Fun fact: the full list includes several of the 17)
 //   53000: [feat_specialized_trees] Not sure, it's got some weapon tree mentions in there and a lot of filler
-//   54000: [breedenum] Names of creature types, (compare to monster kill count achievements, and GetStat results)
+//   54000: [breedenum] Names of creature types, seems to be in GetStat[89] for monster dynels
 //   55000: [simpledynels] Internal names for non-interactive dynel objects?
 //   55200: [stackinglines] Unsure, seems to be some debuffs
 //   55700: Spoilers! Lore texts (also achievement, pet, and sprint descriptions, emotes, tutorial messages... stuff that ends up under Lore.as)

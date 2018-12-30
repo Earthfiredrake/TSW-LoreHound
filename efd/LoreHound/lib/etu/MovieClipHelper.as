@@ -1,10 +1,10 @@
 ﻿// Copyright 2015, eltorqiro
 // Released under the terms of the MIT License
 // https://github.com/eltorqiro/TSW-Utils
-// Modified for LoreHound:
-//   Copyright 2017, Earthfiredrake
+// Modified for EFD SWL Mod Framework:
+//   Copyright 2017-2018, Earthfiredrake
 //   Used and released under the terms of the MIT License
-//   https://github.com/Earthfiredrake/TSW-LoreHound
+//   https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 /**
  *
@@ -12,8 +12,9 @@
  * - e.g. create a clip+class without needing a symbol in the library for it, or create an instance of a symbol with a class specified at runtime
  *
  */
-class efd.LoreHound.lib.etu.MovieClipHelper {
 
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "MovieClipHelper.lcl.as"
 	/**
 	 * static class only, cannot be instantiated
 	 */

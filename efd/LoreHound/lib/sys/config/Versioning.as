@@ -1,17 +1,16 @@
 ﻿// Copyright 2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
+
+// Config subsystem component for mod and framework versioning and upgrades
+// Handles framework setting migrations, and requests migration from mod if needed
 
 import flash.geom.Point; // DEPRECATED(v1.0.0): Temporary upgrade support
 
 import com.GameInterface.DistributedValue; // DEPRECATED(v1.0.0): Temporary upgrade support
 
-import efd.LoreHound.lib.LocaleManager;
-import efd.LoreHound.lib.Mod;
-
-// Config subsystem component for mod and framework versioning and upgrades
-// Handles framework setting migrations, and requests migration from mod if needed
-class efd.LoreHound.lib.sys.config.Versioning {
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "Versioning.lcl.as"
 	public function Versioning(mod:Mod, initObj:Object) {
 		ModObj = mod;
 		Config = mod.Config;

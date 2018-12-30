@@ -1,27 +1,6 @@
 ﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
-
-import flash.filters.DropShadowFilter;
-import flash.geom.Point;
-
-import gfx.utils.Delegate;
-
-import com.GameInterface.DistributedValue;
-import com.GameInterface.Tooltip.TooltipData;
-import com.GameInterface.Tooltip.TooltipInterface;
-import com.GameInterface.Tooltip.TooltipManager;
-import com.Utils.GlobalSignal;
-import com.Utils.Signal;
-import com.Utils.WeakPtr;
-import GUIFramework.SFClipLoader;
-
-import efd.LoreHound.lib.etu.GemController;
-import efd.LoreHound.lib.etu.MovieClipHelper;
-
-import efd.LoreHound.lib.DebugUtils;
-import efd.LoreHound.lib.LocaleManager;
-import efd.LoreHound.lib.Mod;
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 // Icon subsystem implementation
 // Dependencies:
@@ -48,7 +27,22 @@ import efd.LoreHound.lib.Mod;
 //           IconMouse_ToggleConfigWindow: Toggles the mod config window DV
 //       ExtraTooltipInfo: Returns a string of additional info to append to the tooltip, default undefined
 
-class efd.LoreHound.lib.sys.ModIcon extends MovieClip {
+import flash.filters.DropShadowFilter;
+import flash.geom.Point;
+
+import gfx.utils.Delegate;
+
+import com.GameInterface.DistributedValue;
+import com.GameInterface.Tooltip.TooltipData;
+import com.GameInterface.Tooltip.TooltipInterface;
+import com.GameInterface.Tooltip.TooltipManager;
+import com.Utils.GlobalSignal;
+import com.Utils.Signal;
+import com.Utils.WeakPtr;
+import GUIFramework.SFClipLoader;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "ModIcon.lcl.as"
 	/// Initialization
 	public static function Create(mod:Mod, initObj:Object):MovieClip {
 		// Check dependencies

@@ -1,15 +1,10 @@
 ﻿// Copyright 2015, eltorqiro
 // Released under the terms of the MIT License
 // https://github.com/eltorqiro/TSW-Utils
-// Modified for LoreHound:
+// Modified for EFD SWL Mod Framework:
 //   Copyright 2017-2018, Earthfiredrake
 //   Used and released under the terms of the MIT License
-//   https://github.com/Earthfiredrake/TSW-LoreHound
-
-import gfx.core.UIComponent;
-import com.Utils.Rect;
-import flash.geom.Point;
-
+//   https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 /**
  * Used by the GemController to create individual overlays around each gem target
@@ -17,10 +12,15 @@ import flash.geom.Point;
  * This cannot be instantiated using new GemOverlay(), but must instead be attached to a movieclip symbol.  However, creating instances of GemOverlay outside of GemController is reasonably useless.
  *
  */
-class efd.LoreHound.lib.etu.GemOverlay extends UIComponent {
 
-	public static var __className:String = "efd.LoreHound.lib.etu.GemOverlay";
+import flash.geom.Point;
 
+import gfx.core.UIComponent;
+
+import com.Utils.Rect;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "GemOverlay.lcl.as"
 	public function GemOverlay() {
 
 		if ( _padding == undefined ) {

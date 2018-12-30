@@ -1,22 +1,10 @@
 ﻿// Copyright 2017-2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
-import gfx.utils.Delegate;
-
-import com.GameInterface.Chat; // FIFO messages
-import com.GameInterface.DistributedValue;
-import com.GameInterface.Utils; // Chat messages *shrug*
-import com.Utils.Archive;
-import com.Utils.Signal;
-
-import efd.LoreHound.lib.DebugUtils;
-// TODO: Finish tidying up the last components
-import efd.LoreHound.lib.LocaleManager;
-
-// Mod Framework v1.1.1
+// Mod Framework v1.1.2
 // Revision numbers are for internal merge tracking only, and do not require an upgrade notification
-// See ConfigManager for notification format
+// See ConfigManager for notification format for major/minor upgrades
 
 //   The following DistributedValue names are reserved for use by the framework; some are hard-coded, some are just convenient standardized names:
 //   [pfx] is a developer unique prefix (I use 'efd'), [Name] is the name of the mod
@@ -61,7 +49,7 @@ import efd.LoreHound.lib.LocaleManager;
 //     Doing something useful (or at least interesting)
 
 // When adapting any code for another mod:
-//   Always use a unique namespace for the mod on all class, import and __className definitions
+//   Always use a unique namespace for the mod on all class, import and __className definitions (in *.lcl.as files)
 //     The flash environment caches classes by fully namespace qualified identifier when first encountered
 //     Whichever mod loads first gets to be the authoritive definition for all classes it defines
 //     This can be helpful if loading order is known (Game API loads before mods), but mods can't otherwise depend on being loaded in any particular order
@@ -69,7 +57,16 @@ import efd.LoreHound.lib.LocaleManager;
 //     Due to similar caching behaviour, where anybody's library asset by that name will use whatever class was linked
 //     See etu.MovieClipHelper for functions to do dynamic linking
 
-class efd.LoreHound.lib.Mod {
+import gfx.utils.Delegate;
+
+import com.GameInterface.Chat; // FIFO messages
+import com.GameInterface.DistributedValue;
+import com.GameInterface.Utils; // Chat messages *shrug*
+import com.Utils.Archive;
+import com.Utils.Signal;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "Mod.lcl.as"
 /// Initialization and Cleanup
 	// The ModInfo object has the following fields:
 	//   Debug (optional, default false)

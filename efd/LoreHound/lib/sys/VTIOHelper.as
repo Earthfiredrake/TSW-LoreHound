@@ -1,14 +1,6 @@
 ﻿// Copyright 2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
-
-import gfx.utils.Delegate;
-
-import com.GameInterface.DistributedValue;
-import com.Utils.WeakPtr;
-
-import efd.LoreHound.lib.LocaleManager;
-import efd.LoreHound.lib.Mod;
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 // LinkVTIO subsystem implementation
 // Dependencies: None (Icon and Config optional)
@@ -16,7 +8,14 @@ import efd.LoreHound.lib.Mod;
 //   ConfigDV:String (default undefined) Name of DistributedValue to attach to the VTIO mod's configuration UI
 // Handles registration with VTIO compatible topbar and container mods
 // Generally included if a mod has an icon, but can be used for any mod
-class efd.LoreHound.lib.sys.VTIOHelper {
+
+import gfx.utils.Delegate;
+
+import com.GameInterface.DistributedValue;
+import com.Utils.WeakPtr;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "VTIOHelper.lcl.as"
 	public static function Create(mod:Mod, initObj:Object):VTIOHelper {
 		return new VTIOHelper(mod, initObj);
 	}

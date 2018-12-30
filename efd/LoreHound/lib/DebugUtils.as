@@ -1,6 +1,6 @@
 ﻿// Copyright 2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/SWL-LoreHound
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 // Provides basic debugging tools
 //   LogMsg: Outputs a string to the ClientLog.txt file
@@ -32,8 +32,8 @@ import com.GameInterface.Log;
 import com.GameInterface.Utils;
 import com.Utils.Signal;
 
-class efd.LoreHound.lib.DebugUtils {
-
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "DebugUtils.lcl.as"
 /// Basic interface
 	// If not using framework, first instance should be generated using StaticInit()
 	public function DebugUtils(sysName:String) {

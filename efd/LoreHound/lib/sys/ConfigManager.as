@@ -1,16 +1,6 @@
 ﻿// Copyright 2018, Earthfiredrake
 // Released under the terms of the MIT License
-// https://github.com/Earthfiredrake/TSW-LoreHound
-
-import com.GameInterface.DistributedValue;
-import com.Utils.Archive;
-
-import efd.LoreHound.lib.Mod;
-import efd.LoreHound.lib.sys.config.ConfigWrapper;
-import efd.LoreHound.lib.sys.config.Versioning;
-import efd.LoreHound.lib.sys.Window;
-import efd.LoreHound.lib.util.WeakDelegate;
-
+// https://github.com/Earthfiredrake/SWL-FrameworkMod
 
 // ConfigHost implementation
 // Dependencies:
@@ -25,7 +15,6 @@ import efd.LoreHound.lib.util.WeakDelegate;
 //   LibUpgrades:Array of {mod:String, lib:String} (semi-optional, default handles no library upgrades)
 //     List of final mod versions (if >= MinUpgradableVersion) that used each prior version of the library
 
-
 // The framework reserves the following Config setting names for internal use:
 //   "Enabled": Exists for e_ModType_Reactive mods
 //   Added by ConfigHost (Versioning):
@@ -38,7 +27,12 @@ import efd.LoreHound.lib.util.WeakDelegate;
 //     "IconPosition": Deleted if VTIO mod is handling layout; otherwise, a single (X) coordinate with TopbarIntegration or a Point without it
 //     "IconScale": Deleted if integrated with any topbar
 //     "TopbarIntegration": VTIO integration without an icon is implied by attachment of VTIOHelper
-class efd.LoreHound.lib.sys.ConfigManager {
+
+import com.GameInterface.DistributedValue;
+import com.Utils.Archive;
+
+// Mod namespace qualified imports and class definition are #included from locally overriden file
+#include "ConfigManager.lcl.as"
 	public static function Create(mod:Mod, initObj:Object) {
 		return new ConfigManager(mod, initObj);
 	}
